@@ -19,7 +19,7 @@
 These code examples are designed to demonstrate how to integrate ldogejs modules
 with minimal configuration.
 
-- [Simple fullnode](examples/fullnode.js) - Creates a `FullNode` object and
+- [Simple fullnode](examples/fullnode.js) - Creates a `Fullnode` object and
   connects to `testnet`.
 - [Connect to peer](examples/connect-to-peer.js) - Connects to a user-defined
   peer in `regtest` mode.

@@ -1,7 +1,0 @@
-#!/usr/bin/env node
-
-'use strict';
-
-console.error('%s%s',
-  'Warning: The `ldogejs cli` interface is deprecated.\n',
-  'Please use `ldogejs-cli` and `bwallet-cli` instead.');

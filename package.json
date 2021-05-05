@@ -22,6 +22,7 @@
     "node": ">=10.0.0"
   },
   "dependencies": {
+    "@types/bn.js": "^5.1.0",
     "bcfg": "git+https://github.com/bcoin-org/bcfg.git#semver:~0.1.6",
     "bcrypto": "git+https://github.com/bcoin-org/bcrypto.git#semver:~5.4.0",
     "bcurl": "git+https://github.com/bcoin-org/bcurl.git#semver:^0.1.9",
@@ -42,13 +43,13 @@
     "bsock": "git+https://github.com/bcoin-org/bsock.git#semver:~0.1.9",
     "bsocks": "git+https://github.com/bcoin-org/bsocks.git#semver:~0.2.6",
     "btcp": "git+https://github.com/bcoin-org/btcp.git#semver:~0.1.5",
-    "buffer-map": "git+https://github.com/chjj/buffer-map.git#semver:~0.0.7",
+    "buffer-map": "^0.0.7",
     "bufio": "git+https://github.com/skyrawrcode/bufio.git",
     "bupnp": "git+https://github.com/bcoin-org/bupnp.git#semver:~0.2.6",
     "bval": "git+https://github.com/bcoin-org/bval.git#semver:~0.1.6",
     "bweb": "git+https://github.com/bcoin-org/bweb.git#semver:=0.1.10",
     "loady": "git+https://github.com/chjj/loady.git#semver:~0.0.5",
-    "n64": "git+https://github.com/chjj/n64.git#semver:~0.2.10",
+    "n64": "~0.2.10",
     "nan": "git+https://github.com/braydonf/nan.git#semver:=2.14.0"
   },
   "bundleDependencies": [
@@ -82,20 +83,24 @@
     "nan"
   ],
   "devDependencies": {
+    "@types/node": "^15.0.1",
     "bmocha": "git+https://github.com/bcoin-org/bmocha.git#semver:=2.1.5",
-    "mocha": "^8.3.2",
-    "nyc": "^15.1.0"
+    "nyc": "^15.1.0",
+    "typescript": "^4.2.4"
   },
   "main": "./lib/ldogejs.js",
+  "types": "./types",
   "bin": {
-    "ldogejs": "./bin/ldogejs",
-    "ldogejs-node": "./bin/node",
-    "ldogejs-spvnode": "./bin/spvnode",
-    "ldogejs-cli": "bin/ldogejs-cli",
-    "bwallet": "./bin/bwallet",
-    "bwallet-cli": "./bin/bwallet-cli"
+    "ldogejs": "dist/bin/ldogejs-cli.js",
+    "ldogejs-node": "dist/bin/node.js",
+    "ldogejs-spvnode": "dist/bin/spvnode.js",
+    "ldogejs-cli": "dist/bin/ldogejs-cli.js",
+    "bwallet": "dist/bin/bwallet-cli.js",
+    "bwallet-cli": "dist/bin/bwallet-cli.js"
   },
   "scripts": {
+    "build": "tsc",
+    "ldogejs-node": "tsc && node ./bin/node.js",
     "browserify": "browserify -s ldogejs lib/ldogejs-browser.js | uglifyjs -c > ldogejs.js",
     "clean": "rm -f {browser/,}{ldogejs.js,ldogejs-worker.js,app.js,worker.js}",
     "docs": "jsdoc -c jsdoc.json",
@@ -114,5 +119,6 @@
     "./lib/workers/child": "./lib/workers/child-browser.js",
     "./lib/workers/parent": "./lib/workers/parent-browser.js",
     "./lib/bcoin": "./lib/bcoin-browser.js"
-  }
+  },
+  "type": "module"
 }

@@ -184,13 +184,13 @@ API keys are used with HTTP Basic Auth:
 $ curl http://x:hunter2@localhost:8332/
 ```
 
-If ldogejs is installed globally, both `ldogejs-cli` and `bwallet-cli` should be
+If ldogejs is installed globally, both `ldogejs-cli` and `bwallet-cli.js` should be
 on your path.
 
 ``` bash
 $ ldogejs-cli info --api-key hunter2
 $ ldogejs-cli rpc getblockchaininfo --api-key hunter2
-$ bwallet-cli balance
+$ bwallet-cli.js balance
 ```
 
 ## Using Tor/SOCKS
