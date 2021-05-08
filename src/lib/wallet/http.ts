@@ -7,25 +7,36 @@
 
 'use strict';
 
-const assert = require('bsert');
-const path = require('src/lib/wallet/path');
-const {Server} = require('bweb');
-const Validator = require('bval');
-const base58 = require('bcrypto/lib/encoding/base58');
-const MTX = require('../primitives/mtx');
-const Outpoint = require('../primitives/outpoint');
-const Script = require('../script/script');
-const sha256 = require('bcrypto/lib/sha256');
-const random = require('bcrypto/lib/random');
-const {safeEqual} = require('bcrypto/lib/safe');
-const Network = require('../protocol/network');
-const Address = require('../primitives/address');
-const KeyRing = require('../primitives/keyring');
-const Mnemonic = require('../hd/mnemonic');
-const HDPrivateKey = require('../hd/private');
-const HDPublicKey = require('../hd/public');
-const common = require('./common');
-const pkg = require('../pkg');
+import Logger from 'blgr';
+import assert from 'bsert';
+import * as path from 'src/lib/wallet/path';
+import { Server } from 'bweb';
+import Validator from 'bval';
+import base58 from 'bcrypto/lib/encoding/base58';
+import {MTX} from '../primitives/mtx';
+import {Outpoint} from '../primitives/outpoint';
+import {Script} from '../script/script';
+import sha256 from 'bcrypto/lib/sha256';
+import random from 'bcrypto/lib/random';
+import { safeEqual } from 'bcrypto/lib/safe';
+import {Network} from '../protocol/network';
+import {Address} from '../primitives/address';
+import {KeyRing} from '../primitives/keyring';
+import {Mnemonic} from '../hd/mnemonic';
+import {HDPrivateKey} from '../hd/private';
+import {HDPublicKey} from '../hd/public';
+import * as common from './common';
+import * as pkg from '../pkg';
+import { WalletDB } from './walletdb';
+import { Node, RPC } from '../node';
+
+
+export interface HttpOptionsOptions {
+  node: Node;
+  logger: Logger;
+  network: Network;
+
+}
 
 /**
  * HTTP
@@ -33,13 +44,18 @@ const pkg = require('../pkg');
  */
 
 export class HTTP extends Server {
+  network: Network;
+  logger: Logger;
+  wdb: WalletDB;
+  rpc: RPC;
+  options: HttpOptionsOptions;
   /**
    * Create an http server.
    * @constructor
    * @param {Object} options
    */
 
-  constructor(options) {
+  constructor(options:HttpOptionsOptions) {
     super(new HTTPOptions(options));
 
     this.network = this.options.network;

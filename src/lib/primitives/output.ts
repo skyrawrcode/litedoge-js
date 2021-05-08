@@ -8,16 +8,23 @@
 'use strict';
 
 import bsert from 'bsert';
+import { Network } from '../protocol';
 
 const {assert} = bsert;
-const bio = require('bufio');
-const Amount = require('../btc/amount');
-const Network = require('../protocol/network');
-const Address = require('./address');
+import bio from 'bufio';
+import {Amount} from '../btc/amount';
+import {Address} from './address';
 import {Script} from '../script';
 
-const policy = require('../protocol/policy');
-const {inspectSymbol} = require('../utils');
+import {policy} from '../protocol';
+import { inspectSymbol } from '../utils';
+
+export interface OutputOptions {
+  address?: string|Address;
+  script?: Script;
+  value?: bigint;
+
+}
 
 /**
  * Represents a transaction output.
@@ -27,16 +34,16 @@ const {inspectSymbol} = require('../utils');
  */
 
 export class Output {
-  value: BigInt = BigInt(0);
+  value: bigint = BigInt(0);
   script: Script = new Script();
 
   /**
    * Create an output.
    * @constructor
-   * @param {Object?} options
+   * @param {OutputOptions?} options
    */
 
-  constructor(options = null) {
+  constructor(options:OutputOptions = null) {
     this.value = BigInt(0);
     this.script = new Script();
 
@@ -50,12 +57,11 @@ export class Output {
    * @param {Object} options
    */
 
-  fromOptions(options) {
+  fromOptions(options:OutputOptions) {
     assert(options, 'Output data is required.');
 
     if (options.value) {
-      assert(Number.isSafeInteger(options.value) && options.value >= 0,
-        'Value must be a uint64.');
+      assert( options.value >= 0n, 'Value must be a uint64.');
       this.value = options.value;
     }
 
@@ -74,19 +80,19 @@ export class Output {
    * @returns {Output}
    */
 
-  static fromOptions(options) {
+  static fromOptions(options:OutputOptions):Output {
     return new Output().fromOptions(options);
   }
 
   /**
    * Inject properties from script/value pair.
    * @private
-   * @param {Script|Address} script
-   * @param {Amount} value
+   * @param script
+   * @param value
    * @returns {Output}
    */
 
-  fromScript(script, value) {
+  fromScript(script:string|Script|Address, value:bigint):Output {
     if (typeof script === 'string')
       script = Address.fromString(script);
 
@@ -149,7 +155,7 @@ export class Output {
 
     const cmp = this.value - output.value;
 
-    if (cmp !== 0)
+    if (cmp !== 0n)
       return cmp;
 
     return this.script.compare(output.script);
@@ -161,7 +167,7 @@ export class Output {
    */
 
   getType() {
-    return Script.typesByVal[this.script.getType()].toLowerCase();
+    return Script.types[this.script.getType()].toLowerCase();
   }
 
   /**
@@ -208,7 +214,7 @@ export class Output {
    * @returns {Object}
    */
 
-  toJSON() {
+  toJSON():any {
     return this.getJSON();
   }
 
@@ -219,7 +225,7 @@ export class Output {
    * @returns {Object}
    */
 
-  getJSON(network) {
+  getJSON(network?:Network) {
     let addr = this.getAddress();
 
     network = Network.get(network);
@@ -249,7 +255,7 @@ export class Output {
     let size = this.getSize();
     size += 32 + 4 + 1 + 107 + 4;
 
-    return 3 * policy.getMinFee(size, rate);
+    return 3n * policy.getMinFee(size, rate);
   }
 
   /**

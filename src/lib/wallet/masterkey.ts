@@ -7,7 +7,7 @@
 'use strict';
 
 import assert from 'bsert';
-import bio from 'bufio';
+import bio, { StaticWriter } from 'bufio';
 import { Lock } from 'bmutex';
 import { random } from 'bcrypto';
 import { cleanse } from 'bcrypto';
@@ -561,7 +561,7 @@ export class MasterKey {
    * `[enc-flag][iv?][ciphertext?][extended-key?]`
    */
 
-  toWriter(bw: BufferWriter): BufferWriter {
+  toWriter(bw: BufferWriter | StaticWriter): BufferWriter|StaticWriter {
     if (this.encrypted) {
       bw.writeU8(1);
       bw.writeVarBytes(this.iv);

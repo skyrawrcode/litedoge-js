@@ -91,17 +91,17 @@ export function time(date:string) {
 
 /**
  * Reverse a hex-string.
- * @param {Buffer}
+ * @param buf {Buffer}
  * @returns {String} Reversed hex string.
  */
 
-export  function revHex(buf) {
+export  function revHex(buf:Buffer):string {
   assert(Buffer.isBuffer(buf));
 
   return Buffer.from(buf).reverse().toString('hex');
 };
 
-export function fromRev(str) {
+export function fromRev(str:string):Buffer {
   assert(typeof str === 'string');
   assert((str.length & 1) === 0);
 

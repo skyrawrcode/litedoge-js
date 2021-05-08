@@ -23,6 +23,9 @@
     // "declaration": true,                         /* Generates corresponding '.d.ts' file. */
     // "declarationMap": true,                      /* Generates a sourcemap for each corresponding '.d.ts' file. */
     "sourceMap": true,
+    "paths": {
+      "*": ["./types/*"]
+    },
     /* Generates corresponding '.map' file. */
     // "outFile": "./",                             /* Concatenate and emit output to single file. */
     "outDir": "./dist",
@@ -78,8 +81,10 @@
       "bmutex",
       "blgr",
       "bdb",
-      "buffer-map"
+      "buffer-map",
+      "bweb"
     ],
+  
     /* Type declaration files to be included in compilation. */
     // "allowSyntheticDefaultImports": true,        /* Allow default imports from modules with no default export. This does not affect code emit, just typechecking. */
     "esModuleInterop": true,

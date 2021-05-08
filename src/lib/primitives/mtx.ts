@@ -26,6 +26,15 @@ import { inspectSymbol } from '../utils';
 import { Script } from '../script';
 import { VerifyFlags } from '../script/common';
 
+export interface MTXOptions {
+  changeIndex: any;
+  locktime: number;
+  outputs: Output[];
+  inputs: Input[];
+  time: number;
+  version: number;
+
+}
 
 /**
  * MTX
@@ -46,7 +55,7 @@ export class MTX extends TX {
    * @param {Object} options
    */
 
-  constructor(options: object = null) {
+  constructor(options: MTXOptions = null) {
     super();
 
     this.mutable = true;
@@ -63,7 +72,7 @@ export class MTX extends TX {
    * @param {Object} options
    */
 
-  fromOptions(options: TX) {
+  fromOptions(options: MTXOptions) {
     if (options.version != null) {
       assert((options.version >>> 0) === options.version,
         'Version must a be uint32.');
@@ -113,7 +122,7 @@ export class MTX extends TX {
    * @returns {MTX}
    */
 
-  static fromOptions(options: object): MTX {
+  static fromOptions(options: TX): MTX {
     return new MTX().fromOptions(options);
   }
 
@@ -123,8 +132,8 @@ export class MTX extends TX {
    * @returns {MTX}
    */
 
-  clone(): MTX {
-    const mtx = new this.constructor();
+  clone(): TX {
+    const mtx = new MTX();
     mtx.inject(this);
     mtx.changeIndex = this.changeIndex;
     return mtx;
@@ -299,19 +308,19 @@ export class MTX extends TX {
 
   /**
    * Calculate the fee for the transaction.
-   * @returns {Amount} fee (zero if not all coins are available).
+   * @returns {bigint} fee (zero if not all coins are available).
    */
 
-  getFee(): Amount {
+  getFee(): bigint {
     return super.getFee(this.view);
   }
 
   /**
    * Calculate the total input value.
-   * @returns {Amount} value
+   * @returns {bigint} value
    */
 
-  getInputValue(): Amount {
+  getInputValue(): bigint {
     return super.getInputValue(this.view);
   }
 
@@ -1704,7 +1713,8 @@ export class CoinSelector {
     const fee = policy.getMinFee(size, this.rate);
     return Math.min(fee, CoinSelector.MAX_FEE);
   }
-  static MAX_FEE(fee: any, MAX_FEE: any): Amount {
+
+  static MAX_FEE(fee: any, MAX_FEE: any): bigint {
     throw new Error('Method not implemented.');
   }
 

@@ -29,6 +29,7 @@ import {NullClient} from './nullclient';
 import {WorkerPool} from '../workers';
 import {Kernel} from '../staking/kernel';
 import {TX} from '../primitives';
+import { LoggerContext } from 'blgr/lib/logger';
 
 const layout = layouts.wdb;
 const tlayout = layouts.txdb;
@@ -40,6 +41,9 @@ const {
   MapRecord
 } = records;
 
+export interface WalletDBOptions {
+
+}
 /**
  * WalletDB
  * @property {Network} network
@@ -52,7 +56,7 @@ export class WalletDB extends EventEmitter {
   options: WalletOptions;
   reserveBalance: bigint;
   network: Network;
-  logger: any;
+  logger: LoggerContext;
   workers: WorkerPool;
   kernel: Kernel;
   client: any;
@@ -77,7 +81,7 @@ export class WalletDB extends EventEmitter {
    * @param {Object} options
    */
 
-  constructor(options) {
+  constructor(options:WalletOptionsOptions) {
     super();
 
     this.options = new WalletOptions(options);
@@ -2277,7 +2281,7 @@ class WalletOptions {
   logger: Logger;
   workers: any;
   client: any;
-  kernel: any;
+  kernel: Kernel;
   feeRate: number;
   prefix: any;
   location: any;
@@ -2432,7 +2436,7 @@ function fromString(str) {
   return buf;
 }
 
-function toString(buf) {
+function toString(buf:Buffer) {
   assert(buf.length > 0);
   assert(buf[0] === buf.length - 1);
   return buf.toString('ascii', 1, buf.length);

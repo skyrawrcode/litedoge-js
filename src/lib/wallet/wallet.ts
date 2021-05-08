@@ -12,8 +12,10 @@ import assert from 'bsert';
 import Logger from "blgr";
 import EventEmitter from 'events';
 import base58 from 'bcrypto/lib/encoding/base58';
+import hash160 from 'bcrypto/lib/hash160';
+import hash256 from 'bcrypto/lib/hash256';
 import bio from 'bufio';
-import {Hash160, Hash256, cleanse} from 'bcrypto';
+import { cleanse} from 'bcrypto/lib/bcrypto';
 import { TXDB } from './txdb';
 import { Path } from './path';
 import * as common from './common';
@@ -33,6 +35,8 @@ import { BufferSet } from 'buffer-map';
 import { WalletDB } from './walletdb';
 import { Kernel } from '../staking/kernel';
 import { Lock } from 'bmutex';
+import { BN } from 'bcrypto/lib/bn';
+import { SighashType } from '../script/common';
 
 
 export const StakeSplitAge = 9 * 24 * 60 * 60;
@@ -518,7 +522,7 @@ export class Wallet extends EventEmitter {
    * @param {Number?} [timeout=60]
    */
 
-  unlock(passphrase: Buffer | String, timeout?: number) {
+  unlock(passphrase: Buffer | string, timeout?: number) {
     return this.master.unlock(passphrase, timeout);
   }
 
@@ -1424,7 +1428,7 @@ export class Wallet extends EventEmitter {
 
     change.value += oldFee;
 
-    if (mtx.getFee() !== 0)
+    if (mtx.getFee() !== 0n)
       throw new Error('Arithmetic error for change.');
 
     change.value -= fee;
@@ -2164,7 +2168,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Balance}.
    */
 
-  async getBalance(acct) {
+  async getBalance(acct):Promise<bigint> {
     const account = await this.ensureIndex(acct);
     return this.txdb.getBalance(account);
   }
@@ -2380,7 +2384,7 @@ export class Wallet extends EventEmitter {
     }
 
     //Sign
-    const signatureCount = coinStakeTx.sign(walletKey, scriptTypes.ALL);
+    const signatureCount = coinStakeTx.sign(walletKey, SighashType.ALL);
 
     //Limit size
     const bytes = coinStakeTx.getVirtualSize();
@@ -2476,7 +2480,8 @@ export class Wallet extends EventEmitter {
     }
 
     const coinDay = centSeconds * consensus.CENT / consensus.COIN / (24n * 60n * 60n);
-    coinAge = BN.fromBuffer(coinDay.toArrayLike(Buffer, 'le', 8), 'le').toBigInt();
+    
+    coinAge = BN.fromBuffer(BN.fromBigInt(coinDay, 'le').toArrayLike(Buffer, 'le', 8), 'le').toBigInt();
     return coinAge;
   }
 

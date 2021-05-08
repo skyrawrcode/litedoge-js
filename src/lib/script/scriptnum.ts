@@ -245,7 +245,7 @@ export class ScriptNum extends I64 {
    * @returns {ScriptNum}
    */
 
-  static decode(data, minimal, limit) {
+  static decode(data:Buffer, minimal?:boolean, limit?:number) {
     return new ScriptNum().decode(data, minimal, limit);
   }
 

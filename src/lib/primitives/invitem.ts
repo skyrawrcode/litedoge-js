@@ -7,8 +7,8 @@
 
 'use strict';
 
-const bio = require('bufio');
-const util = require('../utils/util');
+import bio, { BufferWriter, StaticWriter } from 'bufio';
+import * as util from '../utils/util';
 
 /**
  * Inv Item
@@ -19,6 +19,9 @@ const util = require('../utils/util');
  */
 
 export class InvItem {
+  static types: any;
+  type:number;
+  hash:Buffer;
   /**
    * Create an inv item.
    * @constructor
@@ -26,7 +29,7 @@ export class InvItem {
    * @param {Hash} hash
    */
 
-  constructor(type, hash) {
+  constructor(type?:number, hash?:Buffer) {
     this.type = type;
     this.hash = hash;
   }
@@ -45,7 +48,7 @@ export class InvItem {
    * @param {BufferWriter} bw
    */
 
-  toWriter(bw) {
+  toWriter(bw:BufferWriter|StaticWriter) {
     bw.writeU32(this.type);
     bw.writeHash(this.hash);
     return bw;
@@ -151,27 +154,11 @@ export class InvItem {
  * @default
  */
 
-InvItem.types = {
-  TX: 1,
-  BLOCK: 2,
-  FILTERED_BLOCK: 3,
-  CMPCT_BLOCK: 4
+export enum types  {
+  TX=  1,
+  BLOCK=  2,
+  FILTERED_BLOCK= 3,
+  CMPCT_BLOCK= 4
 };
 
-/**
- * Inv types by value.
- * @const {Object}
- */
 
-InvItem.typesByVal = {
-  1: 'TX',
-  2: 'BLOCK',
-  3: 'FILTERED_BLOCK',
-  4: 'CMPCT_BLOCK'
-};
-
-/*
- * Expose
- */
-
-module.exports = InvItem;

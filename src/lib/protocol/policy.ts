@@ -11,7 +11,7 @@
  * @module protocol/policy
  */
 
-import {assert} from 'bsert';
+import assert from 'bsert';
 import * as consensus from './consensus';
 
 /**
@@ -217,7 +217,7 @@ export  function getMinFee(size, rate) {
   assert(rate >= 0n);
 
   if (size === 0)
-    return 0;
+    return 0n;
 
   let fee = rate * BigInt(size) / 1000n;
 
@@ -236,19 +236,19 @@ export  function getMinFee(size, rate) {
  * @returns {Amount} fee
  */
 
-export function getRoundFee(size, rate) {
+export function getRoundFee(size:number, rate:bigint) {
   if (rate == null)
     rate =  MIN_RELAY;
 
   assert(size >= 0);
-  assert(rate >= 0);
+  assert(rate >= 0n);
 
   if (size === 0)
     return 0;
 
-  let fee = rate * Math.ceil(size / 1000);
+  let fee = rate * BigInt(Math.ceil(size / 1000));
 
-  if (fee === 0 && rate > 0)
+  if (fee === 0n && rate > 0n)
     fee = rate;
 
   return fee;

@@ -13,7 +13,7 @@ import assert from 'bsert';
 import bio from 'bufio';
 import bdb from "bdb";
 import Logger from 'blgr';
-import { BufferSet } from 'buffer-map';
+import { BufferSet } from 'buffer-map/lib/buffer-map';
 import * as util from '../utils/util';
 import {Amount} from '../btc/amount';
 import {CoinView} from '../coins/coinview';
@@ -25,6 +25,9 @@ import * as consensus from '../protocol/consensus';
 import * as policy from '../protocol/policy';
 const { TXRecord } = records;
 import { inspectSymbol } from '../utils';
+import { Wallet } from "./wallet";
+import { Address, Input, Output, TX } from "../primitives";
+import { Path } from "./path";
 
 /**
  * TXDB
@@ -37,7 +40,7 @@ export class TXDB {
   logger: Logger;
   wid: number;
   locked: BufferSet;
-  wallet: {f};
+  wallet: Wallet;
   bucket: any;
   /**
    * Create a TXDB.
@@ -77,7 +80,7 @@ export class TXDB {
    * @param {Details} details
    */
 
-  emit(event, data, details) {
+  emit(event, data, details?: Details) {
     this.wdb.emit(event, this.wallet, data, details);
     this.wallet.emit(event, data, details);
   }
@@ -469,7 +472,7 @@ export class TXDB {
    * @returns {Promise}
    */
 
-  async insert(wtx, block) {
+  async insert(wtx:records.TXRecord, block) {
     const b = this.bucket.batch();
     const { tx, hash } = wtx;
     const height = block ? block.height : -1;
@@ -2046,7 +2049,7 @@ export class TXDB {
    * @returns {Promise} - Returns {@link Balance}.
    */
 
-  async getAccountBalance(acct) {
+  async getAccountBalance(acct:number) :Promise<Balance> {
     const data = await this.bucket.get(layout.r.encode(acct));
 
     if (!data)
@@ -2062,7 +2065,7 @@ export class TXDB {
    * @returns {Promise}
    */
 
-  async zap(acct, age) {
+  async zap(acct:number, age:number) {
     assert((age >>> 0) === age);
 
     const now = util.now();
@@ -2113,6 +2116,11 @@ export class TXDB {
  */
 
 class Balance {
+  account:number;
+  tx:number;
+  coin:number;
+  unconfirmed:bigint;
+  confirmed;bigint;
   /**
    * Create a balance.
    * @constructor
@@ -2226,6 +2234,9 @@ class Balance {
  */
 
 class BalanceDelta {
+  wallet: Balance;
+  accounts: Map<number, Balance>;
+  
   /**
    * Create a balance delta.
    * @constructor
@@ -2285,6 +2296,10 @@ class BalanceDelta {
  */
 
 class Credit {
+  coin: Coin;
+  spent: boolean;
+  own: boolean;
+
   /**
    * Create a credit.
    * @constructor
@@ -2292,7 +2307,7 @@ class Credit {
    * @param {Boolean?} spent
    */
 
-  constructor(coin, spent) {
+  constructor(coin?:Coin, spent?:boolean) {
     this.coin = coin || new Coin();
     this.spent = spent || false;
     this.own = false;
@@ -2380,7 +2395,17 @@ class Credit {
  * @alias module:wallet.Details
  */
 
-class Details {
+export class Details {
+  hash: Buffer;
+  tx: TX;
+  mtime: number;
+  size: number;
+  vsize: number;
+  block: Buffer|string;
+  height: number;
+  time: number;
+  inputs: Input[];
+  outputs: Output[];
   /**
    * Create transaction details.
    * @constructor
@@ -2388,7 +2413,7 @@ class Details {
    * @param {BlockMeta} block
    */
 
-  constructor(wtx, block) {
+  constructor(wtx:records.TXRecord, block:records.BlockMeta) {
     this.hash = wtx.hash;
     this.tx = wtx.tx;
     this.mtime = wtx.mtime;
@@ -2558,13 +2583,17 @@ class Details {
  */
 
 class DetailsMember {
+  value: bigint;
+  address: Address;
+  path: Path;
+  
   /**
    * Create details member.
    * @constructor
    */
 
   constructor() {
-    this.value = 0;
+    this.value = 0n;
     this.address = null;
     this.path = null;
   }
@@ -2603,6 +2632,11 @@ class DetailsMember {
  */
 
 class BlockRecord {
+  hash: Buffer;
+  height:number;
+  time:number;
+  hashes: BufferSet;
+
   /**
    * Create a block record.
    * @constructor
@@ -2611,7 +2645,7 @@ class BlockRecord {
    * @param {Number} time
    */
 
-  constructor(hash, height, time) {
+  constructor(hash? : Buffer, height?:number, time?:number) {
     this.hash = hash || consensus.ZERO_HASH;
     this.height = height != null ? height : -1;
     this.time = time || 0;

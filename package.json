@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@types/bn.js": "^5.1.0",
+    "@types/moment": "^2.13.0",
     "bcfg": "git+https://github.com/bcoin-org/bcfg.git#semver:~0.1.6",
     "bcrypto": "git+https://github.com/bcoin-org/bcrypto.git#semver:~5.4.0",
     "bcurl": "git+https://github.com/bcoin-org/bcurl.git#semver:^0.1.9",
@@ -89,7 +90,6 @@
     "typescript": "^4.2.4"
   },
   "main": "./lib/ldogejs.js",
-  "types": "./types",
   "bin": {
     "ldogejs": "dist/bin/ldogejs-cli.js",
     "ldogejs-node": "dist/bin/node.js",
@@ -100,7 +100,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "ldogejs-node": "tsc && node ./bin/node.js",
+    "ldogejs-node": "node ./bin/node.js",
     "browserify": "browserify -s ldogejs lib/ldogejs-browser.js | uglifyjs -c > ldogejs.js",
     "clean": "rm -f {browser/,}{ldogejs.js,ldogejs-worker.js,app.js,worker.js}",
     "docs": "jsdoc -c jsdoc.json",

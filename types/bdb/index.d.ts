@@ -1,86 +1,108 @@
 // Type definitions for bdb 1.3
 // Project: https://github.com/bcoin-org/bdb
 // Definitions by: skyrawrcode <https://github.com/ldoge>
+
+
+
 // Definitions: https://github.com/DefinitelyTyped/DefinitelyTyped
 declare module 'bdb' {
-export class DB {
-    constructor(...args: any[]);
+    export class IteratorItem {
+        key: Buffer;
+        value: Buffer;
+    }
+      
+    interface IteratorOptions {
 
-    approximateSize(...args: any[]): void;
+    }
+    export class Iterator {
+        each(callback: Function): Promise<void>;
+        end(): Promise<void>
+    ;
+    }
+    export class Batch {
+        put(...args: any[]): Batch;
+        write(): Promise<any>;
+        del(heightEntry: any) : Batch;
+    }
+    
+    export class DB {
+        constructor(...args: any[]);
 
-    backup(...args: any[]): void;
+        approximateSize(...args: any[]): void;
 
-    batch(...args: any[]): void;
+        backup(...args: any[]): void;
 
-    bucket(...args: any[]): any;
+        batch(...args: any[]): Batch;
 
-    child(...args: any[]): void;
+        bucket(...args: any[]): any;
 
-    clone(...args: any[]): void;
+        child(...args: any[]): void;
 
-    cloneTo(...args: any[]): void;
+        clone(...args: any[]): void;
 
-    close(...args: any[]): void;
+        cloneTo(...args: any[]): void;
 
-    compactRange(...args: any[]): void;
+        close(...args: any[]): void;
 
-    del(...args: any[]): void;
+        compactRange(...args: any[]): void;
 
-    destroy(...args: any[]): void;
+        del(...args: any[]): void;
 
-    dump(...args: any[]): void;
+        destroy(...args: any[]): void;
 
-    get(...args: any[]): Promise<any>;
+        dump(...args: any[]): void;
 
-    getProperty(...args: any[]): void;
+        get(...args: any[]): Promise<any>;
 
-    has(...args: any[]): void;
+        getProperty(...args: any[]): void;
 
-    init(...args: any[]): void;
+        has(key: Buffer): Promise<boolean>;
 
-    iterator(...args: any[]): Iterator<any>;
+        init(...args: any[]): void;
 
-    keys(...args: any[]): void;
+        iterator(...args: any[]): Iterator;
 
-    load(...args: any[]): void;
+        keys(...args: any[]): Promise<any[]>;
 
-    open(...args: any[]): void;
+        load(...args: any[]): void;
 
-    put(...args: any[]): void;
+        open(...args: any[]): void;
 
-    range(...args: any[]): void;
+        put(...args: any[]): void;
 
-    repair(...args: any[]): void;
+        range(options?: IteratorOptions): Promise<IteratorItem[]>;
 
-    root(...args: any[]): void;
+        repair(...args: any[]): void;
 
-    unload(...args: any[]): void;
+        root(...args: any[]): void;
 
-    values(...args: any[]): void;
+        unload(...args: any[]): void;
 
-    verify(...args: any[]): void;
+        values(...args: any[]): void;
 
-    wrap(...args: any[]): void;
+        verify(...args: any[]): void;
 
-}
+        wrap(...args: any[]): void;
 
-export class Key {
-    constructor(...args: any[]);
+    }
 
-    decode(...args: any[]): void;
+    export class Key {
+        constructor(...args: any[]);
 
-    encode(...args: any[]): void;
+        decode(...args: any[]): void;
 
-    max(...args: any[]): void;
+        encode(...args: any[]): void;
 
-    min(...args: any[]): void;
+        max(...args: any[]): void;
 
-    root(...args: any[]): void;
+        min(...args: any[]): void;
 
-}
+        root(...args: any[]): void;
 
-export function create(options: any): any;
+    }
 
-export function key(id: any, args?: any): any;
+    export function create(options: any): any;
+
+    export function key(id: any, args?: any): any;
 
 }

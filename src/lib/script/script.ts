@@ -17,13 +17,13 @@ import sha256 from 'bcrypto/lib/sha256';
 import hash160 from 'bcrypto/lib/hash160';
 import hash256 from 'bcrypto/lib/hash256';
 import secp256k1 from 'bcrypto/lib/secp256k1';
-import consensus from '../protocol/consensus';
-import policy from '../protocol/policy';
+import * as consensus from '../protocol/consensus';
+import * as policy from '../protocol/policy';
 import {Stack} from './stack';
 import {ScriptError} from './scripterror';
 import {ScriptNum} from './scriptnum';
-import {common} from './common';
-import {Address} from '../primitives';
+import * as common from './common';
+import {Address, TX} from '../primitives';
 
 const opcodes = common.opcodes;
 const scriptTypes = common.types;
@@ -62,18 +62,11 @@ export class Script {
   static opcodes = common.opcodes;
 
   /**
-   * Opcodes by value.
-   * @const {RevMap}
-   */
-
-  static opcodesByVal = common.opcodesByVal;
-
-  /**
    * Script and locktime flags. See {@link VerifyFlags}.
    * @enum {Number}
    */
 
-  static flags = common.flags;
+  static flags = common.VerifyFlags;
 
   /**
    * Sighash Types.
@@ -81,15 +74,9 @@ export class Script {
    * @default
    */
 
-  static hashType = common.hashType;
+  static hashType = common.SighashType;
 
-  /**
-   * Sighash types by value.
-   * @const {RevMap}
-   */
-
-  static hashTypeByVal = common.hashTypeByVal;
-
+  
   /**
    * Output script types.
    * @enum {Number}
@@ -97,13 +84,7 @@ export class Script {
 
   static types = common.types;
 
-  /**
-   * Output script types by value.
-   * @const {RevMap}
-   */
-
-  static typesByVal = common.typesByVal;
-
+  
 
   raw = EMPTY_BUFFER;
   code: Opcode[] = [];
@@ -472,7 +453,7 @@ export class Script {
    * @returns {String}
    */
 
-  toJSON() {
+  toJSON():string {
     return this.toRaw().toString('hex');
   }
 
@@ -574,7 +555,7 @@ export class Script {
    * @throws {ScriptError} Will be thrown on VERIFY failures.
    */
 
-  execute(stack, flags, tx, index, value, version) {
+  execute(stack:Stack, flags:number, tx:TX, index:number, value:bigint, version:number) {
     if (flags == null)
       flags = Script.flags.STANDARD_VERIFY_FLAGS;
 
@@ -1638,11 +1619,10 @@ export class Script {
 
   /**
    * Inject properties from an address.
-   * @private
    * @param address
    */
 
-  protected fromAddress(address: string | Address) {
+  fromAddress(address: string | Address) {
     if (typeof address === 'string')
       address = Address.fromString(address);
 
@@ -1787,7 +1767,7 @@ export class Script {
    * @returns {Address|null}
    */
 
-  getAddress() {
+  getAddress() :Address {
     return Address.fromScript(this);
   }
 
@@ -1846,7 +1826,7 @@ export class Script {
    * @returns {Buffer|null}
    */
 
-  getPubkey(minimal) {
+  getPubkey(minimal?:boolean):Buffer {
     if (!this.isPubkey(minimal))
       return null;
 
@@ -1888,7 +1868,7 @@ export class Script {
    * @returns {Buffer|null}
    */
 
-  getPubkeyhash(minimal) {
+  getPubkeyhash(minimal?: boolean) {
     if (!this.isPubkeyhash(minimal))
       return null;
 
@@ -2190,7 +2170,7 @@ export class Script {
    * @returns {Boolean}
    */
 
-  isScripthashInput() {
+  isScripthashInput():boolean {
     if (this.code.length < 1)
       return false;
 
@@ -2261,7 +2241,7 @@ export class Script {
    * @returns {Number} `-1` if not present.
    */
 
-  static getCoinbaseHeight(raw) {
+  static getCoinbaseHeight(raw:Buffer):number {
     if (raw.length === 0)
       return -1;
 
@@ -2313,7 +2293,7 @@ export class Script {
    * @returns {Boolean}
    */
 
-  isPushOnly() {
+  isPushOnly():boolean {
     for (const op of this.code) {
       if (op.value === -1)
         return false;
@@ -2850,7 +2830,7 @@ export class Script {
    * @throws Parse error.
    */
 
-  fromString(code) {
+  fromString(code:string) {
     assert(typeof code === 'string');
 
     code = code.trim();
@@ -3073,7 +3053,7 @@ function sortKeys(keys) {
  * @throws {ScriptError}
  */
 
-function validateKey(key, flags, version) {
+function validateKey(key:Buffer, flags:common.VerifyFlags, version:number) :boolean{
   assert(Buffer.isBuffer(key));
   assert(typeof flags === 'number');
   assert(typeof version === 'number');
@@ -3135,6 +3115,6 @@ function validateSignature(sig, flags) {
  * @returns {Boolean}
  */
 
-function checksig(msg, sig, key) {
+function checksig(msg:Buffer, sig:Buffer, key:Buffer):boolean {
   return secp256k1.verifyDER(msg, sig.slice(0, -1), key);
 }

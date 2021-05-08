@@ -7,32 +7,39 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const {Lock} = require('bmutex');
-const IP = require('binet');
-const dns = require('bdns');
-const tcp = require('btcp');
-const UPNP = require('bupnp');
-const socks = require('bsocks');
-const List = require('blst');
-const {BloomFilter, RollingFilter} = require('bfilter');
-const {BufferMap, BufferSet} = require('buffer-map');
-const util = require('../utils/util');
-const common = require('./common');
-const chainCommon = require('../blockchain/common');
-const Address = require('../primitives/address');
-const BIP152 = require('./bip152');
-const Network = require('../protocol/network');
-const Peer = require('./peer');
-const HostList = require('./hostlist');
-const InvItem = require('../primitives/invitem');
-const packets = require('./packets');
+import assert from 'bsert';
+import EventEmitter from 'events';
+import { Lock } from 'bmutex';
+import IP from 'binet';
+import dns from 'bdns';
+import tcp from 'btcp';
+import UPNP from 'bupnp';
+import socks from 'bsocks';
+import List from 'blst';
+import Logger from 'blgr';
+import { BloomFilter, RollingFilter } from 'bfilter';
+import { BufferMap, BufferSet } from 'buffer-map';
+import * as util from '../utils/util';
+import * as common from './common';
+import * as chainCommon from '../blockchain/common';
+import {Address} from '../primitives/address';
+import BIP152 from './bip152';
+import {Network} from '../protocol/network';
+import {Peer} from './peer';
+import HostList from './hostlist';
+import {InvItem} from '../primitives/invitem';
+import * as  packets from './packets';
 const services = common.services;
 const invTypes = InvItem.types;
 const packetTypes = packets.types;
 const scores = HostList.scores;
-const {inspectSymbol} = require('../utils');
+import { inspectSymbol } from '../utils';
+import { Mempool } from '../mempool/mempool';
+
+export interface PoolOptionsOptions{
+  network?:Network;
+
+}
 
 /**
  * Pool
@@ -42,13 +49,42 @@ const {inspectSymbol} = require('../utils');
  */
 
 export class Pool extends EventEmitter {
+  opened: boolean;
+  options:PoolOptions;
+  network:Network;
+  logger: Logger;
+  chain: undefined;
+  mempool: Mempool;
+  server: any;
+  nonces: NonceList;
+  locker: Lock;
+  connected: boolean;
+  disconnecting: boolean;
+  syncing: boolean;
+  discovering: boolean;
+  spvFilter: any;
+  txFilter: any;
+  blockMap: BufferSet;
+  txMap: BufferSet;
+  compactBlocks: BufferSet;
+  invMap: BufferMap;
+  pendingFilter: any;
+  pendingRefill: any;
+  checkpoints: boolean;
+  headerChain: any;
+  headerNext: any;
+  headerTip: any;
+  peers: PeerList;
+  hosts: any;
+  id: number;
+  timer: any;
   /**
    * Create a pool.
    * @constructor
    * @param {Object} options
    */
 
-  constructor(options) {
+  constructor(options: PoolOptionsOptions) {
     super();
 
     this.opened = false;
@@ -368,6 +404,9 @@ export class Pool extends EventEmitter {
   startTimer() {
     assert(this.timer == null, 'Timer already started.');
     this.timer = setInterval(() => this.discover(), Pool.DISCOVERY_INTERVAL);
+  }
+  static DISCOVERY_INTERVAL(arg0: () => Promise<void>, DISCOVERY_INTERVAL: any): any {
+    throw new Error('Method not implemented.');
   }
 
   /**
@@ -2766,6 +2805,9 @@ export class Pool extends EventEmitter {
 
     peer.send(new packets.GetBlockTxnPacket(block.toRequest()));
   }
+  destroy() {
+    throw new Error('Method not implemented.');
+  }
 
   /**
    * Handle `getblocktxn` packet.
@@ -3506,12 +3548,52 @@ Pool.DISCOVERY_INTERVAL = 120000;
  */
 
 class PoolOptions {
+  port: number;
+  host: string;
+
+
+  network: Network;
+  logger: Logger;
+  chain: undefined;
+  mempool: Mempool;
+  discover: boolean;
+  memory: boolean;
+  nonces: NonceList;
+  blockMode: number;
+  invTimeout: number;
+  nodes: any[];
+  seeds: string[];
+  feeRate: number;
+  banTime: any;
+  banScore: any;
+  agent: any;
+  version: any;
+  selfish: boolean;
+  spv: any;
+  checkpoints: any;
+  listen: any;
+  maxInbound: any;
+  publicPort: any;
+  upnp: any;
+  proxy: any;
+  compact: any;
+  bip37: any;
+  onion: any;
+  prefix: any;
+  noRelay: boolean;
+  publicHost: string;
+  createSocket: (port: any, host: any) => any;
+  resolve: (name: any) => any;
+  services: any;
+  requiredServices: any;
+  options: any;
+  maxOutbound: number;
   /**
    * Create pool options.
    * @constructor
    */
 
-  constructor(options) {
+  constructor(options?:PoolOptionsOptions) {
     this.network = Network.primary;
     this.logger = null;
     this.chain = null;
@@ -3926,6 +4008,12 @@ class PoolOptions {
  */
 
 class PeerList {
+  map: Map<any, any>;
+  ids: Map<any, any>;
+  list: any;
+  load: any;
+  inbound: number;
+  outbound: number;
   /**
    * Create peer list.
    * @constructor
@@ -4070,6 +4158,12 @@ class PeerList {
  */
 
 class BroadcastItem extends EventEmitter {
+  pool: any;
+  hash: any;
+  type: any;
+  msg: any;
+  jobs: any[];
+  timeout: any;
   /**
    * Create broadcast item.
    * @constructor
@@ -4237,6 +4331,8 @@ class BroadcastItem extends EventEmitter {
  */
 
 class NonceList {
+  map: BufferMap;
+  hosts: Map<any, any>;
   /**
    * Create nonce list.
    * @constructor
@@ -4288,6 +4384,10 @@ class NonceList {
  */
 
 class HeaderEntry {
+  hash: any;
+  height: any;
+  prev: any;
+  next: any;
   /**
    * Create header entry.
    * @constructor

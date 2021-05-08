@@ -7,34 +7,42 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const hash256 = require('bcrypto/lib/hash256');
-const secp256k1 = require('bcrypto/lib/secp256k1');
-const {BufferSet} = require('buffer-map');
-const util = require('../utils/util');
-const Amount = require('../btc/amount');
-const Network = require('../protocol/network');
-const Script = require('../script/script');
+import assert from 'bsert';
+import bio, { BufferReader, BufferWriter, StaticWriter } from 'bufio';
+import hash256 from 'bcrypto/lib/hash256';
+import secp256k1 from 'bcrypto/lib/secp256k1';
+import { BufferSet } from 'buffer-map';
+import * as util from '../utils/util';
+import {Amount} from '../btc/amount';
+import {Network} from '../protocol/network';
+import {Script} from '../script/script';
 
-const Outpoint = require('./outpoint');
-const InvItem = require('./invitem');
-const consensus = require('../protocol/consensus');
-const policy = require('../protocol/policy');
-const ScriptError = require('../script/scripterror');
+import {Outpoint} from './outpoint';
+import {InvItem} from './invitem';
+import {consensus} from '../protocol';
+import {policy} from '../protocol';
+import {ScriptError} from '../script/scripterror';
 const {encoding} = bio;
 const {hashType} = Script;
-const {inspectSymbol} = require('../utils');
-
-
-import { BufferReader, BufferWriter } from 'bufio';
-import { Hash } from 'crypto';
+import { inspectSymbol } from '../utils';
+import { Input } from './input';
+import { Output } from './output';
 import { CoinView } from '../coins/coinview';
-import { VerifyFlags } from '../script/common';
-import { WorkerPool } from '../workers';
+import { SighashType, VerifyFlags } from '../script/common';
 import { Coin } from './coin';
-import {Input} from './input';
-import {Output} from './output';
+import { WorkerPool } from '../workers';
+import { Address } from './address';
+
+
+export interface TXOptions {
+  locktime: any;
+  outputs: any;
+  inputs: any;
+  time: any;
+  version: any;
+
+}
+
 
 /**
  * TX
@@ -55,8 +63,8 @@ export class TX {
   locktime: number;
 
   mutable: boolean;
-  private _hash: Buffer | string;
-  private _hhash: Buffer | string;
+  private _hash: Buffer ;
+  private _hhash: string;
   private _raw: Buffer;
   private _offset: number;
   private _block: boolean;
@@ -70,7 +78,7 @@ export class TX {
    * @param {Object?} options
    */
 
-  constructor(options?: object | null) {
+  constructor(options?: TXOptions | null) {
     this.version = 1;
     this.inputs = [];
     this.outputs = [];
@@ -99,7 +107,7 @@ export class TX {
    * @param {Object} options
    */
 
-  fromOptions(options: TX) {
+  fromOptions(options: TXOptions) {
     assert(options, 'TX data is required.');
 
     if (options.version != null) {
@@ -141,7 +149,7 @@ export class TX {
    * @returns {TX}
    */
 
-  static fromOptions(options: object): TX {
+  static fromOptions(options: TXOptions): TX {
     return new this().fromOptions(options);
   }
 
@@ -192,13 +200,16 @@ export class TX {
 
   }
 
+
   /**
    * Hash the transaction.
    * @param  enc - Can be `'hex'` or `null`.
    * @returns {string|Buffer} hash
    */
 
-  hash(enc?: 'hex' | null): string | Buffer {
+  hash(): Buffer;
+  hash(enc:'hex'): string
+  hash(enc?: 'hex'): any {
     let h = this._hash;
 
     if (!h) {
@@ -214,7 +225,7 @@ export class TX {
         if (!this.mutable)
           this._hhash = hex;
       }
-      h = hex;
+      return hex;
     }
 
     return h;
@@ -246,7 +257,7 @@ export class TX {
    * @param {Boolean?} block
    */
 
-  toWriter(bw: BufferWriter, block: boolean | null = null) {
+  toWriter(bw: BufferWriter|StaticWriter, block: boolean | null = null) {
     if (this.mutable) {
       return this.writeNormal(bw);
     }
@@ -319,7 +330,7 @@ export class TX {
    * @returns {Object} Contains `size` .
    */
 
-  getSizes(): object {
+  getSizes(): RawTX {
     if (this.mutable) {
       return this.getNormalSizes();
     }
@@ -580,14 +591,13 @@ export class TX {
    * Verify signature.
    * @param {Number} index
    * @param {Script} prev
-   * @param {Amount} value
    * @param {Buffer} sig
    * @param {Buffer} key
    * @param {Number} version
    * @returns {Boolean}
    */
 
-  checksig(index: number, prev: Script, value: Amount, sig: Buffer, key: Buffer, version: number): boolean {
+  checksig(index: number, prev: Script, value: BigInt, sig: Buffer, key: Buffer, version: number): boolean {
     if (sig.length === 0)
       return false;
 
@@ -608,7 +618,7 @@ export class TX {
    * @returns {Buffer} Signature in DER format.
    */
 
-  signature(index: number, prev: Script, value: Amount, key: Buffer, type: SighashType, version: number): Buffer {
+  signature(index: number, prev: Script, value: bigint, key: Buffer, type: SighashType, version: number): Buffer {
     if (type == null)
       type = hashType.ALL;
 
@@ -851,7 +861,7 @@ export class TX {
    * @returns {Amount} fee (zero if not all coins are available).
    */
 
-  getFee(view: CoinView): Amount {
+  getFee(view: CoinView): bigint {
     if (!this.hasCoins(view))
       return BigInt(0);
 
@@ -864,7 +874,7 @@ export class TX {
    * @returns {Amount} value
    */
 
-  getInputValue(view: CoinView): Amount {
+  getInputValue(view: CoinView): bigint {
     let total = BigInt(0);
 
     for (const {prevout} of this.inputs) {
@@ -884,7 +894,7 @@ export class TX {
    * @returns {Amount} value
    */
 
-  getOutputValue(): Amount {
+  getOutputValue(): bigint {
     let total = BigInt(0);
 
     for (const output of this.outputs)
@@ -900,7 +910,7 @@ export class TX {
    * @returns {Array} [addrs, table]
    */
 
-  _getInputAddresses(view: CoinView): Array<any> {
+  _getInputAddresses(view: CoinView): [Address[] ,BufferSet] {
     const table = new BufferSet();
     const addrs = [];
 
@@ -931,9 +941,9 @@ export class TX {
    * @returns {Array} [addrs, table]
    */
 
-  _getOutputAddresses(): Array<any> {
+  _getOutputAddresses(): [any[],BufferSet] {
     const table = new BufferSet();
-    const addrs = [];
+    const addrs: Address[] = [];
 
     for (const output of this.outputs) {
       const addr = output.getAddress();
@@ -1013,7 +1023,7 @@ export class TX {
    * @returns {Hash[]} hashes
    */
 
-  getInputHashes(view: CoinView | null, enc): Hash[] {
+  getInputHashes(view: CoinView | null, enc): string[] {
     const [, table] = this._getInputAddresses(view);
 
     if (enc !== 'hex')
@@ -1027,7 +1037,7 @@ export class TX {
    * @returns {Hash[]} hashes
    */
 
-  getOutputHashes(enc): Hash[] {
+  getOutputHashes(enc): string[] {
     const [, table] = this._getOutputAddresses();
 
     if (enc !== 'hex')
@@ -1042,7 +1052,7 @@ export class TX {
    * @returns {Hash[]} hashes
    */
 
-  getHashes(view: CoinView | null, enc): Hash[] {
+  getHashes(view: CoinView | null, enc): string[] {
     const [, table] = this._getAddresses(view);
 
     if (enc !== 'hex')
@@ -1288,7 +1298,7 @@ export class TX {
       if (output.isEmpty() && !this.isCoinbase() && !this.isCoinstake())
         return [false, 'bad-txns-empty-user-outputs', 100]
 
-      if (output.value < 0)
+      if (output.value < 0n)
         return [false, 'bad-txns-vout-negative', 100];
 
       if (output.value > consensus.MAX_MONEY)
@@ -1640,7 +1650,7 @@ export class TX {
    * @returns {Amount} fee
    */
 
-  getMinFee(size: number | null, rate: Rate | null): Amount {
+  getMinFee(size?: number | null, rate?: bigint | null): bigint {
     if (size == null)
       size = this.getVirtualSize();
 
@@ -1657,7 +1667,7 @@ export class TX {
    * @returns {Amount} fee
    */
 
-  getRoundFee(size: number | null, rate: Rate | null): Amount {
+  getRoundFee(size: number | null, rate: bigint | null): bigint {
     if (size == null)
       size = this.getVirtualSize();
 
@@ -1672,11 +1682,11 @@ export class TX {
    * @returns {Rate}
    */
 
-  getRate(view: CoinView, size: number | null): Rate {
+  getRate(view: CoinView, size: number | null): bigint {
     const fee = this.getFee(view);
 
-    if (fee < 0)
-      return 0;
+    if (fee < 0n)
+      return 0n;
 
     if (size == null)
       size = this.getVirtualSize();
@@ -2002,7 +2012,7 @@ export class TX {
    * @param {Boolean} block
    */
 
-  fromReader(br: BufferReader, block: boolean) {
+  fromReader(br: BufferReader, block?: boolean) {
 
     const start = br.start();
 
@@ -2058,7 +2068,7 @@ export class TX {
    * @returns {BufferWriter}
    */
 
-  writeNormal(bw: BufferWriter): BufferWriter {
+  writeNormal(bw: BufferWriter|StaticWriter): BufferWriter|StaticWriter {
     if (this.inputs.length === 0 && this.outputs.length !== 0)
       throw new Error('Cannot serialize zero-input tx.');
 
@@ -2101,7 +2111,7 @@ export class TX {
 
     base += 4;
 
-    return new RawTX(base, 0);
+    return new RawTX(base);
   }
 
 

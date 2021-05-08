@@ -15,6 +15,8 @@ import { inspectSymbol } from '../utils';
 import { Script, ScriptOptions } from "../script/script";
 import { Coin } from "./coin";
 import { TX } from "./tx";
+import { Address } from "./address";
+import { Network } from "../protocol";
 
 export interface InputOptions {
   prevout: OutpointOptions;
@@ -192,7 +194,7 @@ export class Input {
    * @returns {Address?} addr
    */
 
-  getAddress(coin: { getAddress: () => any; }): Address | null {
+  getAddress(coin?: { getAddress: () => any; }): Address | null {
     if (this.isCoinbase())
       return null;
 
@@ -213,7 +215,7 @@ export class Input {
    * @returns {Hash} hash
    */
 
-  getHash(coin: any, enc: any): Hash {
+  getHash(coin: any, enc: any): string |Buffer {
     const addr = this.getAddress(coin);
 
     if (!addr)
@@ -297,7 +299,7 @@ export class Input {
    * @returns {Object}
    */
 
-  getJSON(network: undefined, coin: { getJSON: (arg0: any, arg1: boolean) => any; }): object {
+  getJSON(network: Network, coin: { getJSON: (arg0: any, arg1: boolean) => any; }): object {
     network = Network.get(network);
 
     let addr: { toString: (arg0: any) => any; };

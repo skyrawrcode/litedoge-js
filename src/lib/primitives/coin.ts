@@ -8,7 +8,7 @@
 'use strict';
 
 import assert from 'bsert';
-import bio from 'bufio';
+import bio, { BufferReader, BufferWriter, StaticWriter } from 'bufio';
 import {util} from '../utils';
 import {Amount} from '../btc/amount';
 import {Output} from './output';
@@ -16,7 +16,32 @@ import {Network} from '../protocol/network';
 import {consensus} from '../protocol';
 import {Outpoint} from './outpoint';
 import { inspectSymbol } from '../utils';
+import { TX } from './tx';
+import { Script } from '../script';
+import { Address } from './address';
 
+export interface CoinJson {
+  index: number;
+  hash: string;
+  script: string;
+  coinstake: boolean;
+  coinbase: boolean;
+  value: bigint|number;
+  height: number;
+  version: number;
+  address: Address;
+}
+
+export interface CoinOptions {
+  index?: number;
+  hash?: Buffer;
+  value?: number | bigint;
+  height?: number;
+  version?: number;
+  script?: Script;
+  coinstake?: boolean;
+  coinbase?: boolean;
+}
 /**
  * Coin
  * Represents an unspent output.
@@ -65,7 +90,7 @@ export class Coin extends Output {
    * @param {Object} options
    */
 
-  fromOptions(options: object) {
+  fromOptions(options: CoinOptions) {
     assert(options, 'Coin data is required.');
 
     if (options.version != null) {
@@ -199,7 +224,7 @@ export class Coin extends Output {
    * @returns {Hash}
    */
 
-  rhash(): Hash {
+  rhash(): string {
     return util.revHex(this.hash);
   }
 
@@ -208,7 +233,7 @@ export class Coin extends Output {
    * @returns {Hash}
    */
 
-  txid(): Hash {
+  txid(): string {
     return this.rhash();
   }
 
@@ -252,7 +277,7 @@ export class Coin extends Output {
    * @returns {Object}
    */
 
-  getJSON(network: Network = null, minimal: boolean=null): object {
+  getJSON(network: Network = null, minimal: boolean=null): CoinJson {
     let addr = this.getAddress();
 
     network = Network.get(network);
@@ -279,13 +304,12 @@ export class Coin extends Output {
    * @param {Object} json
    */
 
-  fromJSON(json: object) {
+  fromJSON(json: CoinJson) {
     assert(json, 'Coin data required.');
     assert((json.version >>> 0) === json.version, 'Version must be a uint32.');
     assert(json.height === -1 || (json.height >>> 0) === json.height,
       'Height must be a uint32.');
-    assert(Number.isSafeInteger(json.value) && json.value >= 0,
-      'Value must be a uint64.');
+    assert(BigInt(json.value) >= 0n,'Value must be a uint64.');
     assert(typeof json.coinbase === 'boolean', 'Coinbase must be a boolean.');
     assert(typeof json.coinstake === 'boolean', 'Coinstake must be a boolean.');
 
@@ -312,7 +336,7 @@ export class Coin extends Output {
    * @returns {Coin}
    */
 
-  static fromJSON(json: object): Coin {
+  static fromJSON(json: CoinJson): Coin {
     return new this().fromJSON(json);
   }
 
@@ -342,7 +366,7 @@ export class Coin extends Output {
    * @param {BufferWriter} bw
    */
 
-  toWriter(bw: BufferWriter) {
+  toWriter(bw: BufferWriter|StaticWriter) {
     let height = this.height;
 
     if (height === -1)
@@ -382,8 +406,8 @@ export class Coin extends Output {
     this.value = br.readI64BI();
     this.script.fromRaw(br.readVarBytes());
     const flags = br.readU8();
-    this.coinbase = flags & (1 << 0);
-    this.coinstake = flags & (1 << 1);
+    this.coinbase = !!(flags & (1 << 0));
+    this.coinstake = !!(flags & (1 << 1));
     if (this.height === 0x7fffffff)
       this.height = -1;
 
@@ -417,7 +441,7 @@ export class Coin extends Output {
    * @returns {Coin}
    */
 
-  static fromRaw(data: Buffer, enc: string | null): Coin {
+  static fromRaw(data: Buffer, enc?: 'hex' | null): Coin {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);

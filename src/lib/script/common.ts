@@ -11,7 +11,7 @@
 
 import assert from 'bsert';
 import secp256k1 from 'bcrypto/lib/secp256k1';
-import {ScriptNum} from './scriptnum';
+import { ScriptNum } from './scriptnum';
 
 /**
  * Script opcodes.
@@ -19,289 +19,149 @@ import {ScriptNum} from './scriptnum';
  * @default
  */
 
-exports.opcodes = {
+export enum opcodes {
   // Push
-  OP_0: 0x00,
+  OP_0 = 0x00,
 
-  OP_PUSHDATA1: 0x4c,
-  OP_PUSHDATA2: 0x4d,
-  OP_PUSHDATA4: 0x4e,
+  OP_PUSHDATA1 = 0x4c,
+  OP_PUSHDATA2 = 0x4d,
+  OP_PUSHDATA4 = 0x4e,
 
-  OP_1NEGATE: 0x4f,
+  OP_1NEGATE = 0x4f,
 
-  OP_RESERVED: 0x50,
+  OP_RESERVED = 0x50,
 
-  OP_1: 0x51,
-  OP_2: 0x52,
-  OP_3: 0x53,
-  OP_4: 0x54,
-  OP_5: 0x55,
-  OP_6: 0x56,
-  OP_7: 0x57,
-  OP_8: 0x58,
-  OP_9: 0x59,
-  OP_10: 0x5a,
-  OP_11: 0x5b,
-  OP_12: 0x5c,
-  OP_13: 0x5d,
-  OP_14: 0x5e,
-  OP_15: 0x5f,
-  OP_16: 0x60,
+  OP_1 = 0x51,
+  OP_2 = 0x52,
+  OP_3 = 0x53,
+  OP_4 = 0x54,
+  OP_5 = 0x55,
+  OP_6 = 0x56,
+  OP_7 = 0x57,
+  OP_8 = 0x58,
+  OP_9 = 0x59,
+  OP_10 = 0x5a,
+  OP_11 = 0x5b,
+  OP_12 = 0x5c,
+  OP_13 = 0x5d,
+  OP_14 = 0x5e,
+  OP_15 = 0x5f,
+  OP_16 = 0x60,
 
   // Control
-  OP_NOP: 0x61,
-  OP_VER: 0x62,
-  OP_IF: 0x63,
-  OP_NOTIF: 0x64,
-  OP_VERIF: 0x65,
-  OP_VERNOTIF: 0x66,
-  OP_ELSE: 0x67,
-  OP_ENDIF: 0x68,
-  OP_VERIFY: 0x69,
-  OP_RETURN: 0x6a,
+  OP_NOP = 0x61,
+  OP_VER = 0x62,
+  OP_IF = 0x63,
+  OP_NOTIF = 0x64,
+  OP_VERIF = 0x65,
+  OP_VERNOTIF = 0x66,
+  OP_ELSE = 0x67,
+  OP_ENDIF = 0x68,
+  OP_VERIFY = 0x69,
+  OP_RETURN = 0x6a,
 
   // Stack
-  OP_TOALTSTACK: 0x6b,
-  OP_FROMALTSTACK: 0x6c,
-  OP_2DROP: 0x6d,
-  OP_2DUP: 0x6e,
-  OP_3DUP: 0x6f,
-  OP_2OVER: 0x70,
-  OP_2ROT: 0x71,
-  OP_2SWAP: 0x72,
-  OP_IFDUP: 0x73,
-  OP_DEPTH: 0x74,
-  OP_DROP: 0x75,
-  OP_DUP: 0x76,
-  OP_NIP: 0x77,
-  OP_OVER: 0x78,
-  OP_PICK: 0x79,
-  OP_ROLL: 0x7a,
-  OP_ROT: 0x7b,
-  OP_SWAP: 0x7c,
-  OP_TUCK: 0x7d,
+  OP_TOALTSTACK = 0x6b,
+  OP_FROMALTSTACK = 0x6c,
+  OP_2DROP = 0x6d,
+  OP_2DUP = 0x6e,
+  OP_3DUP = 0x6f,
+  OP_2OVER = 0x70,
+  OP_2ROT = 0x71,
+  OP_2SWAP = 0x72,
+  OP_IFDUP = 0x73,
+  OP_DEPTH = 0x74,
+  OP_DROP = 0x75,
+  OP_DUP = 0x76,
+  OP_NIP = 0x77,
+  OP_OVER = 0x78,
+  OP_PICK = 0x79,
+  OP_ROLL = 0x7a,
+  OP_ROT = 0x7b,
+  OP_SWAP = 0x7c,
+  OP_TUCK = 0x7d,
 
   // Splice
-  OP_CAT: 0x7e,
-  OP_SUBSTR: 0x7f,
-  OP_LEFT: 0x80,
-  OP_RIGHT: 0x81,
-  OP_SIZE: 0x82,
+  OP_CAT = 0x7e,
+  OP_SUBSTR = 0x7f,
+  OP_LEFT = 0x80,
+  OP_RIGHT = 0x81,
+  OP_SIZE = 0x82,
 
   // Bit
-  OP_INVERT: 0x83,
-  OP_AND: 0x84,
-  OP_OR: 0x85,
-  OP_XOR: 0x86,
-  OP_EQUAL: 0x87,
-  OP_EQUALVERIFY: 0x88,
-  OP_RESERVED1: 0x89,
-  OP_RESERVED2: 0x8a,
+  OP_INVERT = 0x83,
+  OP_AND = 0x84,
+  OP_OR = 0x85,
+  OP_XOR = 0x86,
+  OP_EQUAL = 0x87,
+  OP_EQUALVERIFY = 0x88,
+  OP_RESERVED1 = 0x89,
+  OP_RESERVED2 = 0x8a,
 
   // Numeric
-  OP_1ADD: 0x8b,
-  OP_1SUB: 0x8c,
-  OP_2MUL: 0x8d,
-  OP_2DIV: 0x8e,
-  OP_NEGATE: 0x8f,
-  OP_ABS: 0x90,
-  OP_NOT: 0x91,
-  OP_0NOTEQUAL: 0x92,
-  OP_ADD: 0x93,
-  OP_SUB: 0x94,
-  OP_MUL: 0x95,
-  OP_DIV: 0x96,
-  OP_MOD: 0x97,
-  OP_LSHIFT: 0x98,
-  OP_RSHIFT: 0x99,
-  OP_BOOLAND: 0x9a,
-  OP_BOOLOR: 0x9b,
-  OP_NUMEQUAL: 0x9c,
-  OP_NUMEQUALVERIFY: 0x9d,
-  OP_NUMNOTEQUAL: 0x9e,
-  OP_LESSTHAN: 0x9f,
-  OP_GREATERTHAN: 0xa0,
-  OP_LESSTHANOREQUAL: 0xa1,
-  OP_GREATERTHANOREQUAL: 0xa2,
-  OP_MIN: 0xa3,
-  OP_MAX: 0xa4,
-  OP_WITHIN: 0xa5,
+  OP_1ADD = 0x8b,
+  OP_1SUB = 0x8c,
+  OP_2MUL = 0x8d,
+  OP_2DIV = 0x8e,
+  OP_NEGATE = 0x8f,
+  OP_ABS = 0x90,
+  OP_NOT = 0x91,
+  OP_0NOTEQUAL = 0x92,
+  OP_ADD = 0x93,
+  OP_SUB = 0x94,
+  OP_MUL = 0x95,
+  OP_DIV = 0x96,
+  OP_MOD = 0x97,
+  OP_LSHIFT = 0x98,
+  OP_RSHIFT = 0x99,
+  OP_BOOLAND = 0x9a,
+  OP_BOOLOR = 0x9b,
+  OP_NUMEQUAL = 0x9c,
+  OP_NUMEQUALVERIFY = 0x9d,
+  OP_NUMNOTEQUAL = 0x9e,
+  OP_LESSTHAN = 0x9f,
+  OP_GREATERTHAN = 0xa0,
+  OP_LESSTHANOREQUAL = 0xa1,
+  OP_GREATERTHANOREQUAL = 0xa2,
+  OP_MIN = 0xa3,
+  OP_MAX = 0xa4,
+  OP_WITHIN = 0xa5,
 
   // Crypto
-  OP_RIPEMD160: 0xa6,
-  OP_SHA1: 0xa7,
-  OP_SHA256: 0xa8,
-  OP_HASH160: 0xa9,
-  OP_HASH256: 0xaa,
-  OP_CODESEPARATOR: 0xab,
-  OP_CHECKSIG: 0xac,
-  OP_CHECKSIGVERIFY: 0xad,
-  OP_CHECKMULTISIG: 0xae,
-  OP_CHECKMULTISIGVERIFY: 0xaf,
+  OP_RIPEMD160 = 0xa6,
+  OP_SHA1 = 0xa7,
+  OP_SHA256 = 0xa8,
+  OP_HASH160 = 0xa9,
+  OP_HASH256 = 0xaa,
+  OP_CODESEPARATOR = 0xab,
+  OP_CHECKSIG = 0xac,
+  OP_CHECKSIGVERIFY = 0xad,
+  OP_CHECKMULTISIG = 0xae,
+  OP_CHECKMULTISIGVERIFY = 0xaf,
 
   // Expansion
-  OP_NOP1: 0xb0,
-  OP_CHECKLOCKTIMEVERIFY: 0xb1,
-  OP_CHECKSEQUENCEVERIFY: 0xb2,
-  OP_NOP4: 0xb3,
-  OP_NOP5: 0xb4,
-  OP_NOP6: 0xb5,
-  OP_NOP7: 0xb6,
-  OP_NOP8: 0xb7,
-  OP_NOP9: 0xb8,
-  OP_NOP10: 0xb9,
+  OP_NOP1 = 0xb0,
+  OP_CHECKLOCKTIMEVERIFY = 0xb1,
+  OP_CHECKSEQUENCEVERIFY = 0xb2,
+  OP_NOP4 = 0xb3,
+  OP_NOP5 = 0xb4,
+  OP_NOP6 = 0xb5,
+  OP_NOP7 = 0xb6,
+  OP_NOP8 = 0xb7,
+  OP_NOP9 = 0xb8,
+  OP_NOP10 = 0xb9,
 
   // Custom
-  OP_INVALIDOPCODE: 0xff
+  OP_INVALIDOPCODE = 0xff
 };
 
-/**
- * Opcodes by value.
- * @const {Object}
- */
-
-exports.opcodesByVal = {
-  // Push
-  0x00: 'OP_0',
-
-  0x4c: 'OP_PUSHDATA1',
-  0x4d: 'OP_PUSHDATA2',
-  0x4e: 'OP_PUSHDATA4',
-
-  0x4f: 'OP_1NEGATE',
-
-  0x50: 'OP_RESERVED',
-
-  0x51: 'OP_1',
-  0x52: 'OP_2',
-  0x53: 'OP_3',
-  0x54: 'OP_4',
-  0x55: 'OP_5',
-  0x56: 'OP_6',
-  0x57: 'OP_7',
-  0x58: 'OP_8',
-  0x59: 'OP_9',
-  0x5a: 'OP_10',
-  0x5b: 'OP_11',
-  0x5c: 'OP_12',
-  0x5d: 'OP_13',
-  0x5e: 'OP_14',
-  0x5f: 'OP_15',
-  0x60: 'OP_16',
-
-  // Control
-  0x61: 'OP_NOP',
-  0x62: 'OP_VER',
-  0x63: 'OP_IF',
-  0x64: 'OP_NOTIF',
-  0x65: 'OP_VERIF',
-  0x66: 'OP_VERNOTIF',
-  0x67: 'OP_ELSE',
-  0x68: 'OP_ENDIF',
-  0x69: 'OP_VERIFY',
-  0x6a: 'OP_RETURN',
-
-  // Stack
-  0x6b: 'OP_TOALTSTACK',
-  0x6c: 'OP_FROMALTSTACK',
-  0x6d: 'OP_2DROP',
-  0x6e: 'OP_2DUP',
-  0x6f: 'OP_3DUP',
-  0x70: 'OP_2OVER',
-  0x71: 'OP_2ROT',
-  0x72: 'OP_2SWAP',
-  0x73: 'OP_IFDUP',
-  0x74: 'OP_DEPTH',
-  0x75: 'OP_DROP',
-  0x76: 'OP_DUP',
-  0x77: 'OP_NIP',
-  0x78: 'OP_OVER',
-  0x79: 'OP_PICK',
-  0x7a: 'OP_ROLL',
-  0x7b: 'OP_ROT',
-  0x7c: 'OP_SWAP',
-  0x7d: 'OP_TUCK',
-
-  // Splice
-  0x7e: 'OP_CAT',
-  0x7f: 'OP_SUBSTR',
-  0x80: 'OP_LEFT',
-  0x81: 'OP_RIGHT',
-  0x82: 'OP_SIZE',
-
-  // Bit
-  0x83: 'OP_INVERT',
-  0x84: 'OP_AND',
-  0x85: 'OP_OR',
-  0x86: 'OP_XOR',
-  0x87: 'OP_EQUAL',
-  0x88: 'OP_EQUALVERIFY',
-  0x89: 'OP_RESERVED1',
-  0x8a: 'OP_RESERVED2',
-
-  // Numeric
-  0x8b: 'OP_1ADD',
-  0x8c: 'OP_1SUB',
-  0x8d: 'OP_2MUL',
-  0x8e: 'OP_2DIV',
-  0x8f: 'OP_NEGATE',
-  0x90: 'OP_ABS',
-  0x91: 'OP_NOT',
-  0x92: 'OP_0NOTEQUAL',
-  0x93: 'OP_ADD',
-  0x94: 'OP_SUB',
-  0x95: 'OP_MUL',
-  0x96: 'OP_DIV',
-  0x97: 'OP_MOD',
-  0x98: 'OP_LSHIFT',
-  0x99: 'OP_RSHIFT',
-  0x9a: 'OP_BOOLAND',
-  0x9b: 'OP_BOOLOR',
-  0x9c: 'OP_NUMEQUAL',
-  0x9d: 'OP_NUMEQUALVERIFY',
-  0x9e: 'OP_NUMNOTEQUAL',
-  0x9f: 'OP_LESSTHAN',
-  0xa0: 'OP_GREATERTHAN',
-  0xa1: 'OP_LESSTHANOREQUAL',
-  0xa2: 'OP_GREATERTHANOREQUAL',
-  0xa3: 'OP_MIN',
-  0xa4: 'OP_MAX',
-  0xa5: 'OP_WITHIN',
-
-  // Crypto
-  0xa6: 'OP_RIPEMD160',
-  0xa7: 'OP_SHA1',
-  0xa8: 'OP_SHA256',
-  0xa9: 'OP_HASH160',
-  0xaa: 'OP_HASH256',
-  0xab: 'OP_CODESEPARATOR',
-  0xac: 'OP_CHECKSIG',
-  0xad: 'OP_CHECKSIGVERIFY',
-  0xae: 'OP_CHECKMULTISIG',
-  0xaf: 'OP_CHECKMULTISIGVERIFY',
-
-  // Expansion
-  0xb0: 'OP_NOP1',
-  0xb1: 'OP_CHECKLOCKTIMEVERIFY',
-  0xb2: 'OP_CHECKSEQUENCEVERIFY',
-  0xb3: 'OP_NOP4',
-  0xb4: 'OP_NOP5',
-  0xb5: 'OP_NOP6',
-  0xb6: 'OP_NOP7',
-  0xb7: 'OP_NOP8',
-  0xb8: 'OP_NOP9',
-  0xb9: 'OP_NOP10',
-
-  // Custom
-  0xff: 'OP_INVALIDOPCODE'
-};
 
 /**
  * Small ints (1 indexed, 1==0).
  * @const {Buffer[]}
  */
 
-exports.small = [
+export const small: Buffer[] = [
   Buffer.from([0x81]),
   Buffer.from([]),
   Buffer.from([0x01]),
@@ -322,37 +182,54 @@ exports.small = [
   Buffer.from([0x10])
 ];
 
-export enum VerifyFlags  {
-  VERIFY_NONE= 0,
-  VERIFY_P2SH= 1 << 0,
-  VERIFY_STRICTENC= 1 << 1,
-  VERIFY_DERSIG= 1 << 2,
-  VERIFY_LOW_S= 1 << 3,
-  VERIFY_NULLDUMMY= 1 << 4,
-  VERIFY_SIGPUSHONLY= 1 << 5,
-  VERIFY_MINIMALDATA= 1 << 6,
-  VERIFY_DISCOURAGE_UPGRADABLE_NOPS= 1 << 7,
-  VERIFY_CLEANSTACK= 1 << 8,
-  VERIFY_CHECKLOCKTIMEVERIFY= 1 << 9,
-  VERIFY_CHECKSEQUENCEVERIFY= 1 << 10,
-  VERIFY_MINIMALIF= 1 << 13,
-  VERIFY_NULLFAIL= 1 << 14,
-  VERIFY_CONST_SCRIPTCODE= 1 << 16
-}
-/**
- * Script and locktime flags. See {@link VerifyFlags}.
- * @enum {Number}
- */
+export enum VerifyFlags {
+  VERIFY_NONE = 0,
+  VERIFY_P2SH = 1 << 0,
+  VERIFY_STRICTENC = 1 << 1,
+  VERIFY_DERSIG = 1 << 2,
+  VERIFY_LOW_S = 1 << 3,
+  VERIFY_NULLDUMMY = 1 << 4,
+  VERIFY_SIGPUSHONLY = 1 << 5,
+  VERIFY_MINIMALDATA = 1 << 6,
+  VERIFY_DISCOURAGE_UPGRADABLE_NOPS = 1 << 7,
+  VERIFY_CLEANSTACK = 1 << 8,
+  VERIFY_CHECKLOCKTIMEVERIFY = 1 << 9,
+  VERIFY_CHECKSEQUENCEVERIFY = 1 << 10,
+  VERIFY_MINIMALIF = 1 << 13,
+  VERIFY_NULLFAIL = 1 << 14,
+  VERIFY_CONST_SCRIPTCODE = 1 << 16,
 
-exports.flags = VerifyFlags;
-
-/**
+  /**
  * Consensus verify flags (used for block validation).
  * @const {VerifyFlags}
  * @default
  */
 
-exports.flags.MANDATORY_VERIFY_FLAGS = exports.flags.VERIFY_P2SH;
+
+  MANDATORY_VERIFY_FLAGS = VerifyFlags.VERIFY_P2SH,
+  STANDARD_VERIFY_FLAGS = 0
+  | VerifyFlags.MANDATORY_VERIFY_FLAGS
+  | VerifyFlags.VERIFY_DERSIG
+  | VerifyFlags.VERIFY_STRICTENC
+  | VerifyFlags.VERIFY_MINIMALDATA
+  | VerifyFlags.VERIFY_NULLDUMMY
+  | VerifyFlags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS
+  | VerifyFlags.VERIFY_CLEANSTACK
+  | VerifyFlags.VERIFY_MINIMALIF
+  | VerifyFlags.VERIFY_NULLFAIL
+  | VerifyFlags.VERIFY_CHECKLOCKTIMEVERIFY
+  | VerifyFlags.VERIFY_CHECKSEQUENCEVERIFY
+  | VerifyFlags.VERIFY_LOW_S
+  | VerifyFlags.VERIFY_CONST_SCRIPTCODE,
+
+}
+/**
+ * Script and locktime flags. See {@link VerifyFlags}.
+ * @enum {Number}
+ */
+export type flags = VerifyFlags;
+
+
 
 /**
  * Standard verify flags (used for mempool validation).
@@ -360,20 +237,7 @@ exports.flags.MANDATORY_VERIFY_FLAGS = exports.flags.VERIFY_P2SH;
  * @default
  */
 
-exports.flags.STANDARD_VERIFY_FLAGS = 0
-  | exports.flags.MANDATORY_VERIFY_FLAGS
-  | exports.flags.VERIFY_DERSIG
-  | exports.flags.VERIFY_STRICTENC
-  | exports.flags.VERIFY_MINIMALDATA
-  | exports.flags.VERIFY_NULLDUMMY
-  | exports.flags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS
-  | exports.flags.VERIFY_CLEANSTACK
-  | exports.flags.VERIFY_MINIMALIF
-  | exports.flags.VERIFY_NULLFAIL
-  | exports.flags.VERIFY_CHECKLOCKTIMEVERIFY
-  | exports.flags.VERIFY_CHECKSEQUENCEVERIFY
-  | exports.flags.VERIFY_LOW_S
-  | exports.flags.VERIFY_CONST_SCRIPTCODE;
+exports.flags.
 
 /**
  * Standard flags without mandatory bits.
@@ -390,70 +254,46 @@ exports.flags.ONLY_STANDARD_VERIFY_FLAGS =
  * @default
  */
 
-exports.hashType = {
+export enum SighashType  {
   /*
    * Sign all outputs.
    */
 
-  ALL: 1,
+  ALL = 1,
 
   /*
    * Do not sign outputs (zero sequences).
    */
 
-  NONE: 2,
+  NONE= 2,
 
   /*
    * Sign output at the same index (zero sequences).
    */
 
-  SINGLE: 3,
+  SINGLE= 3,
 
   /*
    * Sign only the current input (mask).
    */
 
-  ANYONECANPAY: 0x80
+  ANYONECANPAY= 0x80
 };
 
-/**
- * Sighash types by value.
- * @const {Object}
- */
 
-exports.hashTypeByVal = {
-  1: 'ALL',
-  2: 'NONE',
-  3: 'SINGLE',
-  0x80: 'ANYONECANPAY'
-};
 
 /**
  * Output script types.
  * @enum {Number}
  */
 
-exports.types = {
-  NONSTANDARD: 0,
-  PUBKEY: 1,
-  PUBKEYHASH: 2,
-  SCRIPTHASH: 3,
-  MULTISIG: 4,
-  NULLDATA: 5
-};
-
-/**
- * Output script types by value.
- * @const {Object}
- */
-
-exports.typesByVal = {
-  0: 'NONSTANDARD',
-  1: 'PUBKEY',
-  2: 'PUBKEYHASH',
-  3: 'SCRIPTHASH',
-  4: 'MULTISIG',
-  5: 'NULLDATA'
+export enum types {
+  NONSTANDARD = 0,
+  PUBKEY = 1,
+  PUBKEYHASH = 2,
+  SCRIPTHASH = 3,
+  MULTISIG = 4,
+  NULLDATA = 5
 };
 
 /**
@@ -462,7 +302,7 @@ exports.typesByVal = {
  * @returns {Boolean}
  */
 
-exports.isHashType = function isHashType(sig) {
+export function isHashType(sig) {
   assert(Buffer.isBuffer(sig));
 
   if (sig.length === 0)
@@ -482,7 +322,7 @@ exports.isHashType = function isHashType(sig) {
  * @returns {Boolean}
  */
 
-exports.isLowDER = function isLowDER(sig) {
+export function isLowDER(sig) {
   if (!exports.isSignatureEncoding(sig))
     return false;
 
@@ -495,7 +335,7 @@ exports.isLowDER = function isLowDER(sig) {
  * @returns {Boolean}
  */
 
-exports.isKeyEncoding = function isKeyEncoding(key) {
+export  function isKeyEncoding(key:Buffer):boolean {
   assert(Buffer.isBuffer(key));
 
   if (key.length < 33)
@@ -520,7 +360,7 @@ exports.isKeyEncoding = function isKeyEncoding(key) {
  * @returns {Boolean}
  */
 
-exports.isCompressedEncoding = function isCompressedEncoding(key) {
+export function isCompressedEncoding(key:Buffer):boolean {
   assert(Buffer.isBuffer(key));
 
   if (key.length !== 33)
@@ -539,7 +379,7 @@ exports.isCompressedEncoding = function isCompressedEncoding(key) {
  * @returns {Boolean}
  */
 
-exports.isSignatureEncoding = function isSignatureEncoding(sig) {
+export function isSignatureEncoding(sig) {
   assert(Buffer.isBuffer(sig));
 
   // Format:
@@ -630,7 +470,7 @@ exports.isSignatureEncoding = function isSignatureEncoding(sig) {
  * @returns {String} Human-readable string.
  */
 
-exports.toASM = function toASM(item, decode) {
+export function toASM(item:Buffer, decode?:boolean):string {
   if (item.length <= 4) {
     const num = ScriptNum.decode(item);
     return num.toString(10);

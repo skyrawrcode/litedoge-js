@@ -17,6 +17,7 @@ import hash256 from 'bcrypto/lib/hash256';
 import {Network} from '../protocol/network';
 import {consensus} from '../protocol';
 import {inspectSymbol} from '../utils';
+import { Script } from '../script';
 
 
 /**
@@ -104,7 +105,9 @@ export class Address {
    * @returns {Hash|Buffer}
    */
 
-  getHash(enc) {
+  getHash():Buffer
+  getHash(enc:'hex'):string
+  getHash(enc?:'hex'):Buffer|string {
     if (enc === 'hex')
       return this.hash.toString('hex');
     return this.hash;
@@ -386,7 +389,7 @@ export class Address {
    * @param {Script} script
    */
 
-  fromScript(script) {
+  fromScript(script:Script) {
     const pk = script.getPubkey();
 
     if (pk) {
@@ -476,7 +479,7 @@ export class Address {
    * @returns {Address|null}
    */
 
-  static fromScript(script) {
+  static fromScript(script:Script):Address {
     return new this().fromScript(script);
   }
 
@@ -606,7 +609,7 @@ export class Address {
    * @returns {Hash}
    */
 
-  static getHash(data, enc) {
+  static getHash(data: Buffer|Address, enc?:'hex'|null) {
     if (!data)
       throw new Error('Object is not an address.');
 

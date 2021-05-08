@@ -12,6 +12,8 @@ import bio from 'bufio';
 import * as util from '../utils/util';
 import {TX} from '../primitives/tx';
 import {consensus} from '../protocol';
+import { Block } from 'bcrypto/lib/js/ciphers/modes';
+import { AbstractBlock } from '../primitives';
 
 /**
  * Chain State
@@ -99,7 +101,7 @@ export class ChainState {
 
 export class BlockMeta {
   time: any;
-  hash: Buffer|string;
+  hash: Buffer;
   height: any;
   /**
    * Create block meta.
@@ -109,7 +111,7 @@ export class BlockMeta {
    * @param {Number} time
    */
 
-  constructor(hash?:Buffer|string, height?:number, time?:number) {
+  constructor(hash?:Buffer, height?:number, time?:number) {
     this.hash = hash || consensus.ZERO_HASH;
     this.height = height != null ? height : -1;
     this.time = time || 0;
@@ -153,7 +155,7 @@ export class BlockMeta {
    */
 
   fromJSON(json) {
-    this.hash = util.revHex(json.hash);
+    this.hash = Buffer.from(util.revHex(json.hash),'ascii');
     this.height = json.height;
     this.time = json.time;
     return this;
@@ -236,11 +238,11 @@ export class BlockMeta {
  */
 
 export class TXRecord {
-  tx: any;
-  hash: any;
-  mtime: any;
+  tx: TX;
+  hash: Buffer;
+  mtime: number;
   height: number;
-  block: any;
+  block: Buffer;
   index: number;
   time: number;
   /**
@@ -250,7 +252,7 @@ export class TXRecord {
    * @param {BlockMeta?} block
    */
 
-  constructor(tx, block) {
+  constructor(tx?:TX, block?:BlockMeta) {
     this.tx = null;
     this.hash = null;
     this.mtime = util.now();
@@ -271,7 +273,7 @@ export class TXRecord {
    * @returns {TXRecord}
    */
 
-  fromTX(tx, block) {
+  fromTX(tx:TX, block?:BlockMeta): TXRecord {
     this.tx = tx;
     this.hash = tx.hash();
 
@@ -288,8 +290,8 @@ export class TXRecord {
    * @returns {TXRecord}
    */
 
-  static fromTX(tx, block) {
-    return new this().fromTX(tx, block);
+  static fromTX(tx:TX, block) {
+    return new TXRecord().fromTX(tx, block);
   }
 
   /**

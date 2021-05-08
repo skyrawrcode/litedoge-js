@@ -7,10 +7,10 @@
 
 'use strict';
 
-const assert = require('bsert');
-const common = require('./common');
-const ScriptNum = require('./scriptnum');
-const {inspectSymbol} = require('../utils');
+import assert from 'bsert';
+import * as common from './common';
+import {ScriptNum} from './scriptnum';
+import { inspectSymbol } from '../utils';
 
 /**
  * Stack
@@ -21,13 +21,14 @@ const {inspectSymbol} = require('../utils');
  */
 
 export class Stack {
+  items: Buffer[];
   /**
    * Create a stack.
    * @constructor
    * @param {Buffer[]?} items - Stack items.
    */
 
-  constructor(items) {
+  constructor(items?:Buffer[]) {
     this.items = items || [];
   }
 
@@ -36,7 +37,7 @@ export class Stack {
    * @returns {Number}
    */
 
-  get length() {
+  get length():number {
     return this.items.length;
   }
 
@@ -45,7 +46,7 @@ export class Stack {
    * @param {Number} value
    */
 
-  set length(value) {
+  set length(value:number) {
     this.items.length = value;
   }
 
@@ -90,7 +91,7 @@ export class Stack {
    * @returns {String} Human-readable stack.
    */
 
-  toString() {
+  toString():string {
     const out = [];
 
     for (const item of this.items)
@@ -105,7 +106,7 @@ export class Stack {
    * @returns {String} Human-readable script.
    */
 
-  toASM(decode) {
+  toASM(decode:boolean):string {
     const out = [];
 
     for (const item of this.items)
@@ -119,8 +120,8 @@ export class Stack {
    * @returns {Stack} Cloned stack.
    */
 
-  clone() {
-    return new this.constructor(this.items.slice());
+  clone():Stack {
+    return new Stack(this.items.slice());
   }
 
   /**
@@ -128,7 +129,7 @@ export class Stack {
    * @returns {Stack}
    */
 
-  clear() {
+  clear():Stack {
     this.items.length = 0;
     return this;
   }
