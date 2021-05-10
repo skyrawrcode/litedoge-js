@@ -6,17 +6,17 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const sha256 = require('bcrypto/lib/sha256');
-const cleanse = require('bcrypto/lib/cleanse');
-const random = require('bcrypto/lib/random');
-const pbkdf2 = require('bcrypto/lib/pbkdf2');
-const sha512 = require('bcrypto/lib/sha512');
-const wordlist = require('./wordlist');
-const common = require('./common');
-const nfkd = require('./nfkd');
-const {inspectSymbol} = require('../utils');
+import assert from 'bsert';
+import bio from 'bufio';
+import sha256 from 'bcrypto/lib/sha256';
+import cleanse from 'bcrypto/lib/cleanse';
+import random from 'bcrypto/lib/random';
+import pbkdf2 from 'bcrypto/lib/pbkdf2';
+import sha512 from 'bcrypto/lib/sha512';
+import * as wordlist from './wordlist';
+import * as common from './common';
+import nfkd from './nfkd';
+import { inspectSymbol } from '../utils';
 
 /*
  * Constants
@@ -30,6 +30,10 @@ const wordlistCache = Object.create(null);
  */
 
 export class Mnemonic {
+  bits:number;
+  language:string;
+  entropy:Buffer;
+  phrase:string;
   /**
    * Create a mnemonic.
    * @constructor
@@ -44,7 +48,7 @@ export class Mnemonic {
    * @param {String?} options.language - Language.
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.bits = common.MIN_ENTROPY;
     this.language = 'english';
     this.entropy = null;
@@ -74,7 +78,7 @@ export class Mnemonic {
 
     if (options.language) {
       assert(typeof options.language === 'string');
-      assert(Mnemonic.languages.indexOf(options.language) !== -1);
+      assert(languages.indexOf(options.language) !== -1);
       this.language = options.language;
     }
 
@@ -153,7 +157,7 @@ export class Mnemonic {
    * @returns {String}
    */
 
-  getPhrase() {
+  getPhrase():string {
     if (this.phrase)
       return this.phrase;
 
@@ -190,15 +194,16 @@ export class Mnemonic {
       phrase.push(list.words[index]);
     }
 
+    let phraseStr:string;
     // Japanese likes double-width spaces.
     if (this.language === 'japanese')
-      phrase = phrase.join('\u3000');
+      phraseStr = phrase.join('\u3000');
     else
-      phrase = phrase.join(' ');
+      phraseStr = phrase.join(' ');
 
-    this.phrase = phrase;
+    this.phrase = phraseStr;
 
-    return phrase;
+    return phraseStr;
   }
 
   /**
@@ -290,12 +295,12 @@ export class Mnemonic {
    * @param {String?} lang
    */
 
-  fromEntropy(entropy, lang) {
+  fromEntropy(entropy, lang?:string) {
     assert(Buffer.isBuffer(entropy));
     assert(entropy.length * 8 >= common.MIN_ENTROPY);
     assert(entropy.length * 8 <= common.MAX_ENTROPY);
     assert((entropy.length * 8) % 32 === 0);
-    assert(!lang || Mnemonic.languages.indexOf(lang) !== -1);
+    assert(!lang || languages.indexOf(lang) !== -1);
 
     this.entropy = entropy;
     this.bits = entropy.length * 8;
@@ -325,7 +330,7 @@ export class Mnemonic {
    */
 
   static getLanguage(word) {
-    for (const lang of Mnemonic.languages) {
+    for (const lang of languages) {
       const list = Mnemonic.getWordlist(lang);
       if (list.map[word] != null)
         return lang;
@@ -421,7 +426,7 @@ export class Mnemonic {
    */
 
   toWriter(bw) {
-    const lang = Mnemonic.languages.indexOf(this.language);
+    const lang = languages.indexOf(this.language);
 
     assert(lang !== -1);
 
@@ -455,7 +460,7 @@ export class Mnemonic {
     assert(bits <= common.MAX_ENTROPY);
     assert(bits % 32 === 0);
 
-    const language = Mnemonic.languages[br.readU8()];
+    const language = languages[br.readU8()];
     assert(language);
 
     this.bits = bits;
@@ -530,7 +535,7 @@ export class Mnemonic {
  * @default
  */
 
-Mnemonic.languages = [
+export const languages = [
   'simplified chinese',
   'traditional chinese',
   'english',
@@ -546,6 +551,8 @@ Mnemonic.languages = [
  */
 
 class WordList {
+  words: string[];
+  map: {}
   /**
    * Create word list.
    * @constructor

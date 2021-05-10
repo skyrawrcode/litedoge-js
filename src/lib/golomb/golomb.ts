@@ -6,14 +6,14 @@
 
 'use strict';
 
-const assert = require('bsert');
-const {U64} = require('n64');
-const hash256 = require('bcrypto/lib/hash256');
-const {sipmod} = require('bcrypto/lib/siphash');
-const bio = require('bufio');
-const {BufferSet} = require('buffer-map');
-const BitWriter = require('./writer');
-const BitReader = require('./reader');
+import assert from 'bsert';
+import { U64 } from 'n64';
+import hash256 from 'bcrypto/lib/hash256';
+import { sipmod } from 'bcrypto/lib/siphash';
+import bio from 'bufio';
+import { BufferSet } from 'buffer-map';
+import {BitWriter} from './writer';
+  import {BitReader} from './reader';
 
 /*
  * Constants
@@ -34,6 +34,11 @@ const M = new U64(784931);
  */
 
 class Golomb {
+  m:U64;
+  n:number;
+  p:number;
+
+  data:Buffer;
   /**
    * Create a block filter.
    * @constructor
@@ -52,7 +57,9 @@ class Golomb {
    * @returns {Hash|Buffer} hash
    */
 
-  hash(enc) {
+  hash():Buffer
+  hash(enc:'hex'):string
+  hash(enc?:'hex'):string|Buffer {
     const h = hash256.digest(this.toNBytes());
     return enc === 'hex' ? h.toString('hex') : h;
   }

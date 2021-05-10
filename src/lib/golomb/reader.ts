@@ -6,22 +6,25 @@
 
 'use strict';
 
-const assert = require('bsert');
-const {U64} = require('n64');
+import assert from 'bsert';
+import { U64 } from 'n64';
 
 /**
  * Bit Reader - as specified by BIP 158 for Golomb Rice Coding
  * @see https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-rice-coding
  */
 
-class BitReader {
+export class BitReader {
+  pos: number;
+  stream: Buffer;
+  remain: number;
   /**
    * Create a bit reader.
    * @constructor
    * @ignore
    */
 
-  constructor(data) {
+  constructor(data:Buffer) {
     this.stream = data;
     this.pos = 0;
     this.remain = 8;
@@ -32,7 +35,7 @@ class BitReader {
    * @returns {Buffer} bit
    */
 
-  readBit() {
+  readBit():number {
     if (this.pos >= this.stream.length)
       throw new Error('EOF');
 
@@ -55,7 +58,7 @@ class BitReader {
    * @returns {Buffer} data
    */
 
-  readByte() {
+  readByte():number {
     if (this.pos >= this.stream.length)
       throw new Error('EOF');
 
@@ -118,7 +121,7 @@ class BitReader {
    * @returns {Buffer} data
    */
 
-  readBits64(count) {
+  readBits64(count:number):U64 {
     assert(count >= 0);
     assert(count <= 64);
 
@@ -134,9 +137,3 @@ class BitReader {
     return num;
   }
 }
-
-/*
- * Expose
- */
-
-module.exports = BitReader;

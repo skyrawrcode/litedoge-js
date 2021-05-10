@@ -6,8 +6,21 @@
 
 'use strict';
 
-const bdb = require('bdb');
+import bdb from 'bdb';
 
+interface layout {
+  V: bdb.Key;
+  O: bdb.Key;
+  h: bdb.Key;
+  R: bdb.Key;
+  
+  A?: bdb.Key;
+  C?: bdb.Key;
+  c?: bdb.Key;
+
+  t?: bdb.Key;
+  b?: bdb.Key;
+}
 /*
  * Index database layout:
  * To be extended by indexer implementations.
@@ -18,7 +31,7 @@ const bdb = require('bdb');
  *  R -> index sync height
  */
 
-export const layout = {
+export const layout:layout = {
   V: bdb.key('V'),
   O: bdb.key('O'),
   h: bdb.key('h', ['uint32']),

@@ -1111,7 +1111,7 @@ export class MTX extends TX {
    * @param {Amount} fee
    */
 
-  subtractIndex(index: number, fee: Amount) {
+  subtractIndex(index: number, fee: bigint) {
     assert(typeof index === 'number');
     assert(typeof fee === 'number');
 
@@ -1131,20 +1131,20 @@ export class MTX extends TX {
    * @param {Amount} fee
    */
 
-  subtractFee(fee: Amount) {
-    assert(typeof fee === 'number');
+  subtractFee(fee: bigint) {
+    assert(typeof fee === 'bigint');
 
-    let outputs = 0;
+    let outputs = 0n;
 
     for (const output of this.outputs) {
       // Ignore nulldatas and
       // other OP_RETURN scripts.
       if (output.script.isUnspendable())
         continue;
-      outputs += 1;
+      outputs += 1n;
     }
 
-    if (outputs === 0)
+    if (outputs === 0n)
       throw new Error('Could not subtract fee.');
 
     const left = fee % outputs;

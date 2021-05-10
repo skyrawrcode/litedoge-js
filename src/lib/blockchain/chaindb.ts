@@ -8,33 +8,57 @@
 'use strict';
 
 import assert from 'bsert';
-import bdb from 'bdb';
+import bdb, { DB } from 'bdb';
 import bio from 'bufio';
 import LRU from 'blru';
 import { BufferMap } from 'buffer-map';
 import {Amount} from '../btc/amount';
-import {Network} from '../protocol/network';
+import {Deployment, Network} from '../protocol/network';
 import {CoinView} from '../coins/coinview';
-import UndoCoins from '../coins/undocoins';
-import * as layout from './layout';
+import {UndoCoins} from '../coins/undocoins';
+import {layout} from './layout';
 import * as consensus from '../protocol/consensus';
 import {Block} from '../primitives/block';
 import {Outpoint} from '../primitives/outpoint';
-import {ChainEntry} from './chainentry';
+import {ChainEntry, ChainEntryOptions} from './chainentry';
 import {CoinEntry} from '../coins/coinentry';
+import Logger, { LoggerContext } from 'blgr/lib/logger';
+import { AbstractBlock, Coin, Output } from '../primitives';
+import { Batch } from 'bdb/lib/db';
+import { AbstractBlockStore } from '../blockstore';
 
+export interface ChainDBOptions {
+  forceFlags: any;
+  prune: boolean;
+  spv: boolean;
+  entryCache: number;
+  network:Network;
+  logger:LoggerContext|Logger;
+  blocks:undefined;
+}
 /**
  * ChainDB
  * @alias module:blockchain.ChainDB
  */
 
-class ChainDB {
+export class ChainDB {
+  options: ChainDBOptions;
+  state: ChainState;
+  stateCache: StateCache;
+  db: DB;
+  network: Network;
+  logger:LoggerContext;
+  blocks: AbstractBlockStore;
+  cacheHash: LRU;
+  cacheHeight: LRU;
+  current: Batch;
+  pending: ChainState;
   /**
    * Create a chaindb.
    * @constructor
    */
 
-  constructor(options) {
+  constructor(options:ChainDBOptions) {
     this.options = options;
     this.network = this.options.network;
     this.logger = this.options.logger.context('chaindb');
@@ -56,7 +80,7 @@ class ChainDB {
    * @returns {Promise}
    */
 
-  async open() {
+  async open():Promise<void> {
     this.logger.info('Opening ChainDB...');
 
     await this.db.open();
@@ -101,7 +125,7 @@ class ChainDB {
    * @returns {Promise}
    */
 
-  async close() {
+  async close():Promise<void> {
     return this.db.close();
   }
 
@@ -156,7 +180,6 @@ class ChainDB {
 
   /**
    * Drop current batch.
-   * @returns {Batch}
    */
 
   drop() {
@@ -333,13 +356,13 @@ class ChainDB {
    * @returns {Promise} - Returns {@link ChainEntry}.
    */
 
-  async getEntryByHash(hash) {
+  async getEntryByHash(hash:Buffer):Promise<ChainEntry> {
     assert(Buffer.isBuffer(hash));
 
     if (hash.equals(consensus.ZERO_HASH))
       return null;
 
-    const cache = this.cacheHash.get(hash);
+    const cache = this.cacheHash.get(hash.toString());
 
     if (cache)
       return cache;
@@ -354,7 +377,7 @@ class ChainDB {
     // There's no efficient way to check whether
     // this is in the main chain or not, so
     // don't add it to the height cache.
-    this.cacheHash.set(entry.hash, entry);
+    this.cacheHash.set(entry.hash.toString(), entry);
 
     return entry;
   }
@@ -365,7 +388,7 @@ class ChainDB {
    * @returns {Promise} - Returns {@link ChainEntry}.
    */
 
-  getEntry(block) {
+  getEntry(block:number|Buffer):Promise<ChainEntry> {
     if (typeof block === 'number')
       return this.getEntryByHeight(block);
     return this.getEntryByHash(block);
@@ -515,7 +538,7 @@ class ChainDB {
    * @returns {Promise} - Returns {@link ChainFlags}.
    */
 
-  async getFlags() {
+  async getFlags():Promise<ChainFlags> {
     const data = await this.db.get(layout.O.encode());
 
     if (!data)
@@ -530,7 +553,7 @@ class ChainDB {
    * @returns {Promise}
    */
 
-  async verifyFlags(state) {
+  async verifyFlags(state:ChainState):Promise<void> {
     const options = this.options;
     const flags = await this.getFlags();
 
@@ -560,12 +583,12 @@ class ChainDB {
       throw new Error('Cannot retroactively unprune.');
 
     if (needsSave) {
-      await this.logger.info('Rewriting chain flags.');
+      this.logger.info('Rewriting chain flags.');
       await this.saveFlags();
     }
 
     if (needsPrune) {
-      await this.logger.info('Retroactively pruning chain.');
+      this.logger.info('Retroactively pruning chain.');
       await this.prune(state.tip);
     }
   }
@@ -719,7 +742,9 @@ class ChainDB {
    * @returns {Promise}
    */
 
-  async prune() {
+  async prune(hash?:Buffer) {
+    
+    if (hash == null) hash = this.state.tip;
     const options = this.options;
     const keepBlocks = this.network.block.keepBlocks;
     const pruneAfter = this.network.block.pruneAfterHeight;
@@ -729,7 +754,8 @@ class ChainDB {
     if (flags.prune)
       throw new Error('Chain is already pruned.');
 
-    const height = await this.getHeight(this.state.tip);
+
+    const height = await this.getHeight(hash);
 
     if (height <= pruneAfter + keepBlocks)
       return false;
@@ -778,7 +804,7 @@ class ChainDB {
    * @returns {Promise} - Returns Boolean.
    */
 
-  async isMainHash(hash) {
+  async isMainHash(hash:Buffer):Promise<boolean> {
     assert(Buffer.isBuffer(hash));
 
     if (hash.equals(consensus.ZERO_HASH))
@@ -790,7 +816,7 @@ class ChainDB {
     if (hash.equals(this.state.tip))
       return true;
 
-    const cacheHash = this.cacheHash.get(hash);
+    const cacheHash = this.cacheHash.get(hash.toString());
 
     if (cacheHash) {
       const cacheHeight = this.cacheHeight.get(cacheHash.height);
@@ -971,7 +997,7 @@ class ChainDB {
    * @returns {Promise} - Returns {@link Block}.
    */
 
-  async getBlock(hash) {
+  async getBlock(hash:Buffer):Promise<Block> {
     const data = await this.getRawBlock(hash);
 
     if (!data)
@@ -1125,7 +1151,7 @@ class ChainDB {
    * @returns {Promise}
    */
 
-  async save(entry, block, view) {
+  async save(entry:ChainEntry, block:AbstractBlock, view?:CoinView):Promise<void> {
     this.start();
     try {
       await this._save(entry, block, view);
@@ -1375,7 +1401,7 @@ class ChainDB {
 
       // Update caches _after_ successful commit.
       this.cacheHeight.remove(tip.height);
-      this.cacheHash.remove(tip.hash);
+      this.cacheHash.remove(tip.hash.toString());
 
       tip = await this.getPrevious(tip);
       assert(tip);
@@ -1435,7 +1461,7 @@ class ChainDB {
 
       // Queue up hash to be removed
       // on successful write.
-      this.cacheHash.unpush(tip.hash);
+      this.cacheHash.unpush(tip.hash.toString());
 
       tip = await this.getPrevious(tip);
       assert(tip);
@@ -1451,7 +1477,7 @@ class ChainDB {
    * @returns {Promise} - Returns {@link Block}.
    */
 
-  async saveBlock(entry, block, view) {
+  async saveBlock(entry:ChainEntry, block:AbstractBlock, view?:CoinView) {
     const hash = block.hash();
 
     if (this.options.spv)
@@ -1561,7 +1587,7 @@ class ChainDB {
    * @returns {Promise} - Returns {@link CoinView}.
    */
 
-  async disconnectBlock(entry, block) {
+  async disconnectBlock(entry:ChainEntry, block:Block):Promise<CoinView> {
     const view = new CoinView();
 
     if (this.options.spv)
@@ -1614,7 +1640,7 @@ class ChainDB {
    * @returns {Promise}
    */
 
-  async pruneBlock(entry) {
+  async pruneBlock(entry:ChainEntry) {
     if (this.options.spv)
       return;
 
@@ -1640,7 +1666,7 @@ class ChainDB {
    * @returns {Promise}
    */
 
-  saveFlags() {
+  saveFlags(): Promise<any> {
     const flags = ChainFlags.fromOptions(this.options);
     const b = this.db.batch();
     b.put(layout.O.encode(), flags.toRaw());
@@ -1648,18 +1674,28 @@ class ChainDB {
   }
 }
 
+interface ChainFlagsOptions {
+  prune: any;
+  spv: any;
+  network:Network;
+
+}
 /**
  * ChainFlags
  */
 
 class ChainFlags {
+  network:Network;
+  spv:boolean;
+  prune:boolean;
+
   /**
    * Create chain flags.
    * @alias module:blockchain.ChainFlags
    * @constructor
    */
 
-  constructor(options) {
+  constructor(options?:ChainFlagsOptions) {
     this.network = Network.primary;
     this.spv = false;
     this.prune = false;
@@ -1668,7 +1704,7 @@ class ChainFlags {
       this.fromOptions(options);
   }
 
-  fromOptions(options) {
+  fromOptions(options : ChainFlagsOptions) {
     this.network = Network.get(options.network);
 
     if (options.spv != null) {
@@ -1708,7 +1744,7 @@ class ChainFlags {
     return bw.render();
   }
 
-  fromRaw(data) {
+  fromRaw(data:string) {
     const br = bio.read(data);
 
     this.network = Network.fromMagic(br.readU32());
@@ -1730,7 +1766,12 @@ class ChainFlags {
  * Chain State
  */
 
-class ChainState {
+export class ChainState {
+  tip:Buffer;
+  tx:bigint;
+  coin:number;
+  value:bigint;
+  committed:boolean;
   /**
    * Create chain state.
    * @alias module:blockchain.ChainState
@@ -1754,20 +1795,20 @@ class ChainState {
     return state;
   }
 
-  connect(block) {
+  connect(block:Block) {
     this.tx += BigInt(block.txs.length);
   }
 
-  disconnect(block) {
+  disconnect(block:Block) {
     this.tx -= BigInt(block.txs.length);
   }
 
-  add(coin) {
+  add(coin:Coin) {
     this.coin += 1;
     this.value += coin.value;
   }
 
-  spend(coin) {
+  spend(coin:Output) {
     this.coin -= 1;
     this.value -= coin.value;
   }
@@ -1803,6 +1844,9 @@ class ChainState {
  */
 
 class StateCache {
+  network:Network;
+  bits: null|BufferMap<any>[];
+  updates: CacheUpdate[];
   /**
    * Create state cache.
    * @alias module:blockchain.StateCache
@@ -1875,7 +1919,10 @@ class StateCache {
  * Cache Update
  */
 
-class CacheUpdate {
+export class CacheUpdate {
+  bit: number;
+  hash: Buffer;
+  state: number;
   /**
    * Create cache update.
    * @constructor
@@ -1899,15 +1946,9 @@ class CacheUpdate {
  * Helpers
  */
 
-function fromU32(num) {
+function fromU32(num:number) {
   const data = Buffer.allocUnsafe(4);
-  data.writeUInt32LE(num, 0, true);
+  data.writeUInt32LE(num, 0);
   return data;
 }
 
-
-/*
- * Expose
- */
-
-module.exports = ChainDB;

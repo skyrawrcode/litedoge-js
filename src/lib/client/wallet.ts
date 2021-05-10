@@ -6,9 +6,9 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const {Client} = require('bcurl');
+import assert from 'bsert';
+import EventEmitter from 'events';
+import { Client } from 'bcurl';
 
 /**
  * Wallet Client
@@ -16,6 +16,7 @@ const {Client} = require('bcurl');
  */
 
 export class WalletClient extends Client {
+  wallets:Map<number, Wallet>;
   /**
    * Create a wallet client.
    * @param {Object?} options
@@ -69,7 +70,7 @@ export class WalletClient extends Client {
    * @private
    */
 
-  dispatch(id, event, ...args) {
+  dispatch(id:number, event, ...args) {
     const wallet = this.wallets.get(id);
 
     if (wallet)
@@ -653,6 +654,10 @@ export class WalletClient extends Client {
  */
 
 class Wallet extends EventEmitter {
+  parent: WalletClient;
+  client: WalletClient;
+  id:number;
+  token:string;
   /**
    * Create a wallet client.
    * @param {Object?} options

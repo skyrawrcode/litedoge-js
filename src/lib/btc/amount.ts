@@ -6,9 +6,9 @@
 
 'use strict';
 
-const assert = require('bsert');
-const fixed = require('../utils/fixed');
-const {inspectSymbol} = require('../utils');
+import assert from 'bsert';
+import * as fixed from '../utils/fixed';
+import { inspectSymbol } from '../utils';
 
 /**
  * Amount
@@ -18,6 +18,7 @@ const {inspectSymbol} = require('../utils');
  */
 
 export class Amount {
+  value:bigint;
   /**
    * Create an amount.
    * @constructor
@@ -25,7 +26,7 @@ export class Amount {
    * @param {String?} unit
    */
 
-  constructor(value, unit) {
+  constructor(value?:any, unit?:string) {
     this.value = BigInt(0);
 
     if (value != null)
@@ -98,7 +99,7 @@ export class Amount {
    * @returns {String|Amount}
    */
 
-  toBTC(num) {
+  toBTC(num?:boolean): string | number {
     return Amount.encode(this.value, 8, num);
   }
 
@@ -321,8 +322,8 @@ export class Amount {
    * @throws on parse error
    */
 
-  static value(str) {
-    if (typeof str === 'number')
+  static value(str):bigint {
+    if (typeof str === 'bigint')
       return str;
 
     return Amount.decode(str, 8);
@@ -336,7 +337,8 @@ export class Amount {
    * @returns {String|Number}
    */
 
-  static encode(value, exp, num) {
+  static encode(value:bigint, exp:number, num:boolean) :number|string {
+  
     if (num)
       return fixed.toFloat(value, exp);
     return fixed.encode(value, exp);
@@ -350,7 +352,7 @@ export class Amount {
    * @throws on parse error
    */
 
-  static decode(value, exp) {
+  static decode(value, exp):bigint {
     if (typeof value === 'number')
       return fixed.fromFloat(value, exp);
     return fixed.decode(value, exp);

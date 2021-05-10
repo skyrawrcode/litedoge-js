@@ -618,7 +618,7 @@ export class WalletDB extends EventEmitter {
    * @returns {Promise}
    */
 
-  async wipe() {
+  async wipe():Promise<void> {
     this.logger.warning('Wiping WalletDB TXDB...');
     this.logger.warning('I hope you know what you\'re doing.');
 

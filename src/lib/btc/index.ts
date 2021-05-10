@@ -10,5 +10,5 @@
  * @module btc
  */
 
-exports.Amount = require('./amount');
-exports.URI = require('./uri');
+export * from './amount';
+export * as URI from './uri'

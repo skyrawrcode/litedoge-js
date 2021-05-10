@@ -316,12 +316,14 @@ declare module "blgr/lib/logger" {
     }
 }
 declare module "blgr/lib/blgr" {
-    const _exports: typeof import("blgr/lib/logger");
-    export = _exports;
+    import Logger from 'blgr/lib/logger';
+    export * from "blgr/lib/logger";
+    export default Logger;
 }
 declare module "blgr" {
   import Logger from 'blgr/lib/logger';
-  export = Logger;
+  export * from "blgr/lib/logger";
+  export default Logger;
 }
 declare module "blgr/lib/fs-browser" {
     export var unsupported: boolean;

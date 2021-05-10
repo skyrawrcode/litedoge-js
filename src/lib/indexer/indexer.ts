@@ -18,6 +18,10 @@ import {layout} from './layout';
 import {CoinView} from '../coins/coinview';
 import {Block} from '../primitives/block';
 import  {consensus} from '../protocol';
+import { LoggerContext } from 'blgr/lib/logger';
+import { AbstractBlockStore } from '../blockstore';
+import { Chain } from '../blockchain';
+import DB, { Batch } from 'bdb/lib/db';
 const {ZERO_HASH} = consensus;
 /**
  * Indexer
@@ -30,6 +34,17 @@ const {ZERO_HASH} = consensus;
  */
 
 export class Indexer extends EventEmitter {
+  options: IndexOptions;
+  network:Network;
+  logger:LoggerContext;
+  blocks: AbstractBlockStore;
+  chain: Chain;
+  closing:boolean;
+  batch:Batch;
+  db:DB;
+  height: number;
+  syncing: boolean;
+  bound: any[];
   /**
    * Create an indexer.
    * @constructor
@@ -486,7 +501,7 @@ export class Indexer extends EventEmitter {
    * @returns {Promise}
    */
 
-  async pruneBlock(meta: BlockMeta, block: Block, view: CoinView): Promise<any> {
+  async pruneBlock(meta: BlockMeta, block?: Block, view?: CoinView): Promise<any> {
     ;
   }
 
@@ -579,7 +594,7 @@ export class Indexer extends EventEmitter {
    * @param {Boolean} reverse
    */
 
-  logStatus(start: Array<any>, block: Block, meta: BlockMeta, reverse: boolean) {
+  logStatus(start:  [number,number], block: Block, meta: BlockMeta, reverse?: boolean) {
     if (!this.isSlow())
       return;
 
@@ -618,6 +633,17 @@ class BlockMeta {
  */
 
 class IndexOptions {
+  memory: any;
+  prefix: any;
+  module: string;
+  network: Network;
+  logger: Logger;
+  blocks: AbstractBlockStore;
+  chain: Chain;
+  location: any;
+  maxFiles: number;
+  cacheSize: number;
+  compression: boolean;
   /**
    * Create index options.
    * @constructor
@@ -625,7 +651,7 @@ class IndexOptions {
    * @param {Object} options
    */
 
-  constructor(module: string, options: object) {
+  constructor(module?: string, options?:any) {
     this.module = module;
     this.network = Network.primary;
     this.logger = Logger.global;
@@ -650,7 +676,7 @@ class IndexOptions {
    * @returns {IndexOptions}
    */
 
-  fromOptions(options: object): IndexOptions {
+  fromOptions(options: any): IndexOptions {
     assert(options.blocks && typeof options.blocks === 'object',
       'Indexer requires a blockstore.');
     assert(options.chain && typeof options.chain === 'object',

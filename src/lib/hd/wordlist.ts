@@ -6,7 +6,7 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-export  async function get(name:string): Promise<string[]> {
+export async function get(name:string): Promise<string[]> {
   switch (name) {
     case 'simplified chinese':
       return await import('./words/chinese-simplified.js');

@@ -42,6 +42,7 @@ const PRI_SPACING = 2n;
  */
 
 class ConfirmStats {
+  logger: any;
   /**
    * Create confirmation stats.
    * @constructor

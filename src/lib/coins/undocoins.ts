@@ -8,7 +8,9 @@
 
 import assert from 'bsert';
 import bio from 'bufio';
+import { Outpoint } from '../primitives';
 import {CoinEntry} from './coinentry';
+import { CoinView } from './coinview';
 
 /**
  * Undo Coins
@@ -20,7 +22,7 @@ import {CoinEntry} from './coinentry';
  * @property {UndoCoin[]} items
  */
 
-class UndoCoins {
+export class UndoCoins {
   items:CoinEntry[];
   /**
    * Create undo coins.
@@ -106,7 +108,7 @@ class UndoCoins {
    * @returns {Boolean}
    */
 
-  isEmpty() {
+  isEmpty():boolean {
     return this.items.length === 0;
   }
 
@@ -115,7 +117,7 @@ class UndoCoins {
    * @returns {Buffer}
    */
 
-  commit() {
+  commit():Buffer {
     const raw = this.toRaw();
     this.items.length = 0;
     return raw;
@@ -127,7 +129,7 @@ class UndoCoins {
    * @param {Outpoint} prevout
    */
 
-  apply(view, prevout) {
+  apply(view:CoinView, prevout:Outpoint) {
     const undo = this.items.pop();
 
     assert(undo);
@@ -135,9 +137,3 @@ class UndoCoins {
     view.addEntry(prevout, undo);
   }
 }
-
-/*
- * Expose
- */
-
-module.exports = UndoCoins;

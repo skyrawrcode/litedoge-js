@@ -3,6 +3,8 @@ declare module "n64" {
 
 
   export class N64 {
+    hi: number;
+    lo:number;
     constructor(sign: any);
 
     abs(): any;
@@ -357,7 +359,7 @@ declare module "n64" {
   }
 
   export class U64 extends N64 {
-    constructor(num: any, base: any);
+    constructor(num?: any, base?: any);
 
     static readonly ULONG_MAX: number;
 

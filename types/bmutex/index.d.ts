@@ -8,11 +8,11 @@ declare module 'bmutex' {
 
         destroy(...args: any[]): void;
 
-        has(...args: any[]): void;
+        has(...args: any[]): Promise<boolean>;
 
         lock(...args: any[]): Promise;
 
-        pending(...args: any[]): void;
+        pending(...args: any[]): Promise<boolean>;
 
         unlock(...args: any[]): void;
 

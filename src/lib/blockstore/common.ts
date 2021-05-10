@@ -4,8 +4,9 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
-
+import Logger from 'blgr';
+import { LoggerContext } from 'blgr/lib/logger';
+import { Network } from '../protocol';
 /**
  * @module blockstore/common
  */
@@ -15,11 +16,11 @@
  * @enum {Number}
  */
 
-exports.types = {
-  BLOCK: 1,
-  UNDO: 2,
-  FILTER: 3,
-  MERKLE: 4
+export enum  BlockStoreTypes {
+  BLOCK=  1,
+  UNDO = 2,
+  FILTER=  3,
+  MERKLE=  4
 };
 
 /**
@@ -27,9 +28,17 @@ exports.types = {
  * @enum {String}
  */
 
-exports.prefixes = {
+export const BlockStorePrefixes = {
   1: 'blk',
   2: 'blu',
   3: 'blf',
   4: 'blm'
 };
+
+export interface BlockStoreOptions {
+  prefix?:string;
+  cacheSize?: number;
+  network?: Network;
+  memory?: boolean;
+  logger?:Logger|LoggerContext;
+}

@@ -6,18 +6,17 @@
 
 'use strict';
 
-const {isAbsolute, resolve, join} = require('path');
-const bdb = require('bdb');
-const assert = require('bsert');
-const fs = require('bfile');
-const bio = require('bufio');
-const hash256 = require('bcrypto/lib/hash256');
-const Network = require('../protocol/network');
-const AbstractBlockStore = require('./abstract');
-const {BlockRecord, FileRecord} = require('./records');
-const layout = require('./layout');
-const {types, prefixes} = require('./common');
-
+import { isAbsolute, resolve, join } from 'path';
+import bdb from 'bdb';
+import assert from 'bsert';
+import fs from 'bfile';
+import bio from 'bufio';
+import hash256 from 'bcrypto/lib/hash256';
+import {Network} from '../protocol/network';
+import {AbstractBlockStore} from './abstract';
+import { BlockRecord, FileRecord } from './records';
+import {layout} from './layout';
+import { BlockStorePrefixes, BlockStoreTypes } from './common';
 /**
  * File Block Store
  *
@@ -25,7 +24,13 @@ const {types, prefixes} = require('./common');
  * @abstract
  */
 
-class FileBlockStore extends AbstractBlockStore {
+export class FileBlockStore extends AbstractBlockStore {
+  location: string;
+  indexLocation: string;
+  db: bdb.DB;
+  maxFileLength: number;
+  network: Network;
+  writing: any;
   /**
    * Create a blockstore that stores blocks in files.
    * @constructor
@@ -66,8 +71,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async check(type) {
-    const prefix = prefixes[type];
+  async check(type:number) {
+    const prefix = BlockStorePrefixes[type];
     const regexp = new RegExp(`^${prefix}(\\d{5})\\.dat$`);
     const all = await fs.readdir(this.location);
     const dats = all.filter(f => regexp.test(f));
@@ -95,7 +100,7 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async _index(type) {
+  async _index(type:number) {
     const {missing, filenos} = await this.check(type);
 
     if (!missing)
@@ -128,7 +133,7 @@ class FileBlockStore extends AbstractBlockStore {
         try {
           length = reader.readU32();
 
-          if (type === types.BLOCK || type === types.MERKLE) {
+          if (type === BlockStoreTypes.BLOCK || type === BlockStoreTypes.MERKLE) {
             position = reader.offset;
             hash = hash256.digest(reader.readBytes(80, true));
             reader.seek(length - 80);
@@ -176,10 +181,10 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async index() {
-    await this._index(types.BLOCK);
-    await this._index(types.MERKLE);
-    await this._index(types.UNDO);
+  async index():Promise<void> {
+    await this._index(BlockStoreTypes.BLOCK);
+    await this._index(BlockStoreTypes.MERKLE);
+    await this._index(BlockStoreTypes.UNDO);
   }
 
   /**
@@ -241,7 +246,7 @@ class FileBlockStore extends AbstractBlockStore {
 
     let filepath = null;
 
-    const prefix = prefixes[type];
+    const prefix = BlockStorePrefixes[type];
 
     if (!prefix)
       throw new Error('Unknown file prefix.');
@@ -315,8 +320,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async writeMerkle(hash, data) {
-    return this._write(types.MERKLE, hash, data);
+  async writeMerkle(hash:Buffer, data:Buffer):Promise<boolean> {
+    return this._write(BlockStoreTypes.MERKLE, hash, data);
   }
 
   /**
@@ -326,8 +331,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async writeUndo(hash, data) {
-    return this._write(types.UNDO, hash, data);
+  async writeUndo(hash:Buffer, data:Buffer):Promise<boolean> {
+    return this._write(BlockStoreTypes.UNDO, hash, data);
   }
 
   /**
@@ -337,8 +342,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async write(hash, data) {
-    return this._write(types.BLOCK, hash, data);
+  async write(hash:Buffer, data:Buffer) :Promise<boolean> {
+    return this._write(BlockStoreTypes.BLOCK, hash, data);
   }
 
   /**
@@ -348,8 +353,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async writeFilter(hash, data) {
-    return this._write(types.FILTER, hash, data);
+  async writeFilter(hash:Buffer, data:Buffer):Promise<boolean> {
+    return this._write(BlockStoreTypes.FILTER, hash, data);
   }
 
   /**
@@ -363,7 +368,7 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async _write(type, hash, data) {
+  async _write(type:number, hash:Buffer, data:Buffer):Promise<boolean> {
     if (this.writing[type])
       throw new Error('Already writing.');
 
@@ -379,7 +384,7 @@ class FileBlockStore extends AbstractBlockStore {
     // Hash for a block is not stored with
     // the magic prefix as it's read from the header
     // of the block data.
-    if (type !== types.BLOCK && type !== types.MERKLE)
+    if (type !== BlockStoreTypes.BLOCK && type !== BlockStoreTypes.MERKLE)
       mlength += 32;
 
     const blength = data.length;
@@ -390,7 +395,7 @@ class FileBlockStore extends AbstractBlockStore {
     bwm.writeU32(this.network.magic);
     bwm.writeU32(blength);
 
-    if (type !== types.BLOCK && type !== types.MERKLE)
+    if (type !== BlockStoreTypes.BLOCK && type !== BlockStoreTypes.MERKLE)
       bwm.writeHash(hash);
 
     const magic = bwm.render();
@@ -456,8 +461,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async readMerkle(hash) {
-    return this._read(types.MERKLE, hash);
+  async readMerkle(hash:Buffer):Promise<Buffer> {
+    return this._read(BlockStoreTypes.MERKLE, hash);
   }
 
   /**
@@ -467,7 +472,7 @@ class FileBlockStore extends AbstractBlockStore {
    */
 
   async readUndo(hash) {
-    return this._read(types.UNDO, hash);
+    return this._read(BlockStoreTypes.UNDO, hash);
   }
 
   /**
@@ -481,7 +486,7 @@ class FileBlockStore extends AbstractBlockStore {
    */
 
   async read(hash, offset, length) {
-    return this._read(types.BLOCK, hash, offset, length);
+    return this._read(BlockStoreTypes.BLOCK, hash, offset, length);
   }
 
   /**
@@ -491,7 +496,7 @@ class FileBlockStore extends AbstractBlockStore {
    */
 
   async readFilter(hash) {
-    return this._read(types.FILTER, hash);
+    return this._read(BlockStoreTypes.FILTER, hash);
   }
 
   /**
@@ -500,8 +505,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async readFilterHeader(hash) {
-    return this._read(types.FILTER, hash, 0, 32);
+  async readFilterHeader(hash) :Promise<Buffer> {
+    return this._read(BlockStoreTypes.FILTER, hash, 0, 32);
   }
 
   /**
@@ -515,7 +520,7 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async _read(type, hash, offset, length) {
+  async _read(type:number, hash:Buffer, offset?:number, length?:number):Promise<Buffer> {
     const raw = await this.db.get(layout.b.encode(type, hash));
     if (!raw)
       return null;
@@ -561,8 +566,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async pruneMerkle(hash) {
-    return this._prune(types.MERKLE, hash);
+  async pruneMerkle(hash:Buffer):Promise<boolean> {
+    return this._prune(BlockStoreTypes.MERKLE, hash);
   }
 
   /**
@@ -571,8 +576,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async pruneUndo(hash) {
-    return this._prune(types.UNDO, hash);
+  async pruneUndo(hash:Buffer):Promise<boolean> {
+    return this._prune(BlockStoreTypes.UNDO, hash);
   }
 
   /**
@@ -581,8 +586,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async prune(hash) {
-    return this._prune(types.BLOCK, hash);
+  async prune(hash:Buffer):Promise<boolean> {
+    return this._prune(BlockStoreTypes.BLOCK, hash);
   }
 
   /**
@@ -591,8 +596,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async pruneFilter(hash) {
-    return this._prune(types.FILTER, hash);
+  async pruneFilter(hash:Buffer):Promise<boolean> {
+    return this._prune(BlockStoreTypes.FILTER, hash);
   }
 
   /**
@@ -605,7 +610,7 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async _prune(type, hash) {
+  async _prune(type:number, hash:Buffer):Promise<boolean> {
     const braw = await this.db.get(layout.b.encode(type, hash));
     if (!braw)
       return false;
@@ -645,7 +650,7 @@ class FileBlockStore extends AbstractBlockStore {
    */
 
   async hasMerkle(hash) {
-    return await this.db.has(layout.b.encode(types.MERKLE, hash));
+    return await this.db.has(layout.b.encode(BlockStoreTypes.MERKLE, hash));
   }
 
   /**
@@ -656,7 +661,7 @@ class FileBlockStore extends AbstractBlockStore {
    */
 
   async hasUndo(hash) {
-    return await this.db.has(layout.b.encode(types.UNDO, hash));
+    return await this.db.has(layout.b.encode(BlockStoreTypes.UNDO, hash));
   }
 
   /**
@@ -667,7 +672,7 @@ class FileBlockStore extends AbstractBlockStore {
    */
 
   async hasFilter(hash) {
-    return await this.db.has(layout.b.encode(types.FILTER, hash));
+    return await this.db.has(layout.b.encode(BlockStoreTypes.FILTER, hash));
   }
 
   /**
@@ -676,13 +681,8 @@ class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async has(hash) {
-    return await this.db.has(layout.b.encode(types.BLOCK, hash));
+  async has(hash:Buffer):Promise<boolean> {
+    return await this.db.has(layout.b.encode(BlockStoreTypes.BLOCK, hash));
   }
 }
 
-/*
- * Expose
- */
-
-module.exports = FileBlockStore;

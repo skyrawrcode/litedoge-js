@@ -6,9 +6,9 @@
 
 'use strict';
 
-const words = require('./words');
+import * as words from './words';
 
-exports.get = function get(name) {
+export function get(name) {
   switch (name) {
     case 'simplified chinese':
       return words.chinese.simplified;

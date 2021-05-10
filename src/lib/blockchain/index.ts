@@ -11,7 +11,7 @@
  */
 
 export {ChainDB} from "./chaindb";
-exports.ChainEntry = require('./chainentry');
-exports.Chain = require('./chain');
+export {ChainEntry} from './chainentry'
+export {Chain} from './chain'
 export * as common from './common';
-exports.layout = require('./layout');
+export {layout} from './layout';

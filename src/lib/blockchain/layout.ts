@@ -6,7 +6,7 @@
 
 'use strict';
 
-const bdb = require('bdb');
+import bdb from 'bdb';
 
 /*
  * Database Layout:
@@ -28,7 +28,25 @@ const bdb = require('bdb');
  *   C[addr-hash][hash][index] -> dummy (coin by address) (deprecated)
  */
 
-const layout = {
+interface layout {
+  V: bdb.Key
+  O: bdb.Key
+  R: bdb.Key
+  D: bdb.Key
+  e: bdb.Key
+  h: bdb.Key
+  H: bdb.Key
+  n: bdb.Key
+  p: bdb.Key
+  b: bdb.Key
+  t: bdb.Key
+  c: bdb.Key
+  u: bdb.Key
+  v: bdb.Key
+  T: bdb.Key
+  C: bdb.Key
+}
+export const layout: layout = {
   V: bdb.key('V'),
   O: bdb.key('O'),
   R: bdb.key('R'),
@@ -47,8 +65,3 @@ const layout = {
   C: bdb.key('C', ['hash', 'hash256', 'uint32'])
 };
 
-/*
- * Expose
- */
-
-module.exports = layout;

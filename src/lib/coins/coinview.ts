@@ -8,7 +8,7 @@
 
 import { BufferMap } from 'buffer-map';
 import {Coins} from './coins';
-import UndoCoins from './undocoins';
+import {UndoCoins} from './undocoins';
 import {CoinEntry} from './coinentry';
 
 /**
@@ -21,7 +21,7 @@ import {CoinEntry} from './coinentry';
  */
 
 export class CoinView {
-  map: BufferMap;
+  map: BufferMap<Coins>;
   undo: any;
   /**
    * Create a coin view.
@@ -71,7 +71,7 @@ export class CoinView {
    * @returns {Coins}
    */
 
-  ensure(hash) {
+  ensure(hash:Buffer) {
     const coins = this.map.get(hash);
 
     if (coins)
@@ -86,7 +86,7 @@ export class CoinView {
    * @returns {Coins|null}
    */
 
-  remove(hash) {
+  remove(hash:Buffer) {
     const coins = this.map.get(hash);
 
     if (!coins)

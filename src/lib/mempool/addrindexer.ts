@@ -7,9 +7,12 @@
 
 'use strict';
 
-const assert = require('bsert');
-const {BufferMap} = require('buffer-map');
-const TXMeta = require('../primitives/txmeta');
+import assert from 'bsert';
+import { BufferMap } from 'buffer-map';
+import { Address } from 'node:cluster';
+import { ChainEntry } from '..';
+import {TXMeta} from '../primitives/txmeta';
+import { Network } from '../protocol';
 
 /**
  * Address Indexer
@@ -17,6 +20,9 @@ const TXMeta = require('../primitives/txmeta');
  */
 
 class AddrIndexer {
+  network:Network;
+  index: BufferMap<ChainEntry>;
+  map: BufferMap<Address>;
   /**
    * Create TX address index.
    * @constructor
@@ -107,7 +113,7 @@ class AddrIndexer {
    * @param {Buffer} options.after
    */
 
-  getEntries(addr, options = {}) {
+  getEntries(addr, options: {limit?:any, reverse?:any, after?:any} = {}) {
     const {limit, reverse, after} = options;
     const key = this.getKey(addr);
 

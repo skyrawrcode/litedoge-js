@@ -6,8 +6,8 @@
 
 'use strict';
 
-const assert = require('bsert');
-const {Client} = require('bcurl');
+import assert from 'bsert';
+import { Client } from 'bcurl';
 
 /**
  * Node Client
@@ -29,7 +29,7 @@ export class NodeClient extends Client {
    * @returns {Promise}
    */
 
-  async auth() {
+  async auth():Promise<void> {
     await this.call('auth', this.password);
     await this.watchChain();
     await this.watchMempool();

@@ -6,12 +6,13 @@
 
 'use strict';
 
-const assert = require('assert');
-const bdb = require('bdb');
-const bio = require('bufio');
-const layout = require('./layout');
-const Address = require('../primitives/address');
-const Indexer = require('./indexer');
+import assert from 'assert';
+import bdb, { DB } from 'bdb';
+import bio from 'bufio';
+import {layout} from './layout';
+import {Address} from '../primitives/address';
+import {Indexer} from './indexer';
+import { Network } from '../protocol';
 
 /*
  * AddrIndexer Database Layout:
@@ -47,6 +48,8 @@ Object.assign(layout, {
  */
 
 class Count {
+  height:number;
+  index:number;
   /**
    * Create count record.
    * @constructor
@@ -54,7 +57,7 @@ class Count {
    * @param {Number} index
    */
 
-  constructor(height, index) {
+  constructor(height?:number, index?:number) {
     this.height = height || 0;
     this.index = index || 0;
 
@@ -109,13 +112,18 @@ class Count {
  */
 
 export class AddrIndexer extends Indexer {
+  db:DB;
+  options: any;
+  maxTxs:number;
+  network:Network;
+
   /**
    * Create a indexer
    * @constructor
    * @param {Object} options
    */
 
-  constructor(options) {
+  constructor(options:any) {
     super('addr', options);
 
     this.db = bdb.create(this.options);
@@ -210,7 +218,7 @@ export class AddrIndexer extends Indexer {
    * @returns {Promise} - Returns {@link Hash}[].
    */
 
-  async getHashesByAddress(addr, options = {}) {
+  async getHashesByAddress(addr:Address, options: any = {}) {
     const {after, reverse} = options;
     let {limit} = options;
 
@@ -223,7 +231,7 @@ export class AddrIndexer extends Indexer {
     const hash = Address.getHash(addr);
     const prefix = addr.getPrefix(this.network);
 
-    const opts = {
+    const opts: any = {
       limit,
       reverse,
       parse: (key) => {

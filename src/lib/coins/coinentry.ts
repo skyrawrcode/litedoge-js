@@ -11,7 +11,7 @@ import { Output } from "../primitives";
 import assert from 'bsert';
 import bio from 'bufio';
 import {Coin} from '../primitives/coin';
-import {compress} from './compress';
+import * as compress from './compress';
 const {encoding} = bio;
 
 /*
@@ -175,7 +175,7 @@ export class CoinEntry {
     let size = 0;
     size += encoding.sizeVarint(this.version);
     size += 4;
-    size += compress.size(this.output);
+    size += compress.sizeOutput(this.output);
 
     return size;
   }
@@ -204,7 +204,7 @@ export class CoinEntry {
 
     bw.writeVarint(this.version);
     bw.writeU32(field);
-    compress.pack(this.output, bw);
+    compress.compressOutput(this.output, bw);
 
     return bw;
   }
@@ -247,7 +247,7 @@ export class CoinEntry {
     this.coinbase = (field & 1) !== 0;
     this.height = height;
 
-    compress.unpack(this.output, br);
+    compress.decompressOutput(this.output, br);
 
     return this;
   }

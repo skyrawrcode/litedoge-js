@@ -52,7 +52,7 @@
 
 'use strict';
 
-const udata = require('./udata.json');
+import udata from './udata.json';
 const DEFAULT_FEATURE = [null, 0, {}];
 const CACHE_THRESHOLD = 10;
 const SBase = 0xac00;
@@ -71,9 +71,10 @@ const cacheCounter = [];
 for (let i = 0; i <= 0xff; i++)
   cacheCounter[i] = 0;
 
-let fromCharCode = null;
 
 class UChar {
+  codepoint:number;
+  feature:number[] | number[];
   constructor(cp, feature) {
     this.codepoint = cp;
     this.feature = feature;
@@ -195,7 +196,7 @@ function fromRuleBasedJamo(next, cp, needFeature) {
   return new UChar(cp, feature);
 }
 
-function fromCpFilter(next, cp, needFeature) {
+function fromCpFilter(next, cp?, needFeature?) {
   return cp < 60 || 13311 < cp && cp < 42607
     ? new UChar(cp, DEFAULT_FEATURE)
     : next(cp, needFeature);
@@ -209,18 +210,20 @@ const strategies = [
   fromData
 ];
 
-fromCharCode = strategies.reduceRight((next, strategy) => {
+export const fromCharCode = strategies.reduceRight((next, strategy) => {
   return (cp, needFeature) => {
     return strategy(next, cp, needFeature);
   };
 }, null);
 
 class UCharIterator {
-  constructor(str) {
+  str:string 
+  cursor:number;
+  constructor(str:string) {
     this.str = str;
     this.cursor = 0;
   }
-  next() {
+  next():UChar {
     if (this.str && this.cursor < this.str.length) {
       let cp = this.str.charCodeAt(this.cursor++);
 
@@ -241,15 +244,18 @@ class UCharIterator {
 }
 
 class RecursDecompIterator {
-  constructor(it, cano) {
+  it:UCharIterator;
+  canonical:boolean;
+  resBuf:UChar[];
+  constructor(it:UCharIterator, cano) {
     this.it = it;
     this.canonical = cano;
     this.resBuf = [];
   }
 
-  recursiveDecomp(uchar) {
+  recursiveDecomp(uchar:UChar) {
     const cano = this.canonical;
-    const decomp = uchar.getDecomp();
+    const decomp:any = uchar.getDecomp() ;
 
     if (decomp && !(cano && uchar.isCompatibility())) {
       let ret = [];
@@ -263,7 +269,7 @@ class RecursDecompIterator {
     return [uchar];
   }
 
-  next() {
+  next():UChar {
     if (this.resBuf.length === 0) {
       const uchar = this.it.next();
 
@@ -278,12 +284,14 @@ class RecursDecompIterator {
 }
 
 class DecompIterator {
-  constructor(it) {
+  it:RecursDecompIterator;
+  resBuf:UChar[];
+  constructor(it:RecursDecompIterator) {
     this.it = it;
     this.resBuf = [];
   }
 
-  next() {
+  next():UChar {
     if (this.resBuf.length === 0) {
       for (;;) {
         const uchar = this.it.next();
@@ -317,7 +325,11 @@ class DecompIterator {
 }
 
 class CompIterator {
-  constructor(it) {
+  it: DecompIterator;
+  procBuf: any[];
+  resBuf: any[];
+  lastClass: any;
+  constructor(it:DecompIterator) {
     this.it = it;
     this.procBuf = [];
     this.resBuf = [];
@@ -408,23 +420,19 @@ function normalize(mode, str) {
   return ret;
 };
 
-function nfd(str) {
+export function nfd(str:string) {
   return normalize('NFD', str);
 }
 
-function nfkd(str) {
+export function nfkd(str) {
   return normalize('NFKD', str);
 }
 
-function nfc(str) {
+export function nfc(str) {
   return normalize('NFC', str);
 }
 
-function nfkc(str) {
+export function nfkc(str) {
   return normalize('NFKC', str);
 }
 
-exports.nfc = nfc;
-exports.nfd = nfd;
-exports.nfkc = nfkc;
-exports.nfkd = nfkd;

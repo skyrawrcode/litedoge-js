@@ -11,9 +11,9 @@
  * @module protocol/errors
  */
 
-import * as bsert from 'bsert';
-import { TX } from '../primitives';
-const {assert} = bsert;
+import assert from 'bsert';
+import { AbstractBlock, Block, Headers, TX } from '../primitives';
+
 /**
  * Verify Error
  * An error thrown during verification. Can be either
@@ -47,12 +47,12 @@ export class VerifyError extends Error {
    * @param {Boolean?} malleated
    */
 
-  constructor(msg:TX, code:string, reason:string, score:number, malleated?:boolean) {
+  constructor(msg:TX|AbstractBlock, code:string, reason:string, score:number, malleated?:boolean) {
     super();
 
-    bsert.assert(typeof code === 'string');
-    bsert.assert(typeof reason === 'string');
-    bsert.assert(score >= 0);
+    assert(typeof code === 'string');
+    assert(typeof reason === 'string');
+    assert(score >= 0);
 
     this.type = 'VerifyError';
     this.message = '';

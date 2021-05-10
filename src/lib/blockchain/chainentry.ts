@@ -371,7 +371,7 @@ export class ChainEntry {
    * @returns {ChainEntry}
    */
 
-  static fromRaw(data) {
+  static fromRaw(data:Buffer):ChainEntry {
     return new this().fromRaw(data);
   }
 
@@ -451,7 +451,7 @@ export class ChainEntry {
    * @returns {Headers}
    */
 
-  toHeaders() {
+  toHeaders():Headers {
     return Headers.fromEntry(this);
   }
 
@@ -508,7 +508,7 @@ export class ChainEntry {
 
   [inspectSymbol]() {
     const json = this.toJSON();
-    json.version = json.version.toString(16);
+    json.version = Number(json.version.toString(16));
     return json;
   }
 
@@ -518,7 +518,7 @@ export class ChainEntry {
    * @returns {Boolean}
    */
 
-  static isChainEntry(obj) {
+  static isChainEntry(obj:any):boolean {
     return obj instanceof ChainEntry;
   }
 

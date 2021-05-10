@@ -6,17 +6,18 @@
 
 'use strict';
 
-const {join} = require('path');
+import { join } from 'path';
 
-const AbstractBlockStore = require('./abstract');
-const LevelBlockStore = require('./level');
-const FileBlockStore = require('./file');
+import {AbstractBlockStore, } from './abstract';
+import {LevelBlockStore} from './level';
+import {FileBlockStore} from './file';
+import * as common from './common';
 
 /**
  * @module blockstore
  */
 
-exports.create = (options) => {
+export function create(options:common.BlockStoreOptions) {
   if (options.memory) {
     return new LevelBlockStore({
       network: options.network,
@@ -36,6 +37,4 @@ exports.create = (options) => {
   });
 };
 
-exports.AbstractBlockStore = AbstractBlockStore;
-exports.FileBlockStore = FileBlockStore;
-exports.LevelBlockStore = LevelBlockStore;
+export {AbstractBlockStore, FileBlockStore, LevelBlockStore}

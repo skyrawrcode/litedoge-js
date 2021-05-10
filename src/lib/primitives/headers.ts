@@ -7,10 +7,12 @@
 
 'use strict';
 
-const bio = require('bufio');
-const util = require('../utils/util');
-const AbstractBlock = require('./abstractblock');
-const {inspectSymbol} = require('../utils');
+import bio from 'bufio';
+import * as util from '../utils/util';
+import {AbstractBlock} from './abstractblock';
+import { inspectSymbol } from '../utils';
+import { Network } from '../protocol';
+import { CoinView } from '../coins/coinview';
 
 /**
  * Headers
@@ -27,7 +29,7 @@ export class Headers extends AbstractBlock {
    * @param {Object} options
    */
 
-  constructor(options) {
+  constructor(options?) {
     super();
 
     if (options)
@@ -198,7 +200,7 @@ export class Headers extends AbstractBlock {
    * @returns {Object}
    */
 
-  getJSON(network, view, height) {
+  getJSON(network?:Network, view?:CoinView, height?:number) {
     return {
       hash: this.rhash(),
       height: height,
@@ -250,7 +252,7 @@ export class Headers extends AbstractBlock {
    * @returns {Object}
    */
 
-  format(view, height) {
+  format(view?:CoinView, height?:number) {
     return {
       hash: this.rhash(),
       height: height != null ? height : -1,

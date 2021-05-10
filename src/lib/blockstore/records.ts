@@ -6,8 +6,8 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
+import assert from 'bsert';
+import bio from 'bufio';
 
 /**
  * @module blockstore/records
@@ -17,13 +17,16 @@ const bio = require('bufio');
  * Block Record
  */
 
-class BlockRecord {
+export class BlockRecord {
+  file: number;
+  position: number;
+  length: number;
   /**
    * Create a block record.
    * @constructor
    */
 
-  constructor(options = {}) {
+  constructor(options: {file?:number, position?:number, length?:number} = {} ) {
     this.file = options.file || 0;
     this.position = options.position || 0;
     this.length = options.length || 0;
@@ -39,7 +42,7 @@ class BlockRecord {
    * @param {Buffer} data
    */
 
-  fromRaw(data) {
+  fromRaw(data:Buffer):BlockRecord {
     const br = bio.read(data);
 
     this.file = br.readU32();
@@ -56,7 +59,7 @@ class BlockRecord {
    * @returns {BlockRecord}
    */
 
-  static fromRaw(data) {
+  static fromRaw(data:Buffer):BlockRecord {
     return new this().fromRaw(data);
   }
 
@@ -65,7 +68,7 @@ class BlockRecord {
    * @returns {Buffer}
    */
 
-  toRaw() {
+  toRaw():Buffer {
     const bw = bio.write(12);
 
     bw.writeU32(this.file);
@@ -80,13 +83,16 @@ class BlockRecord {
  * File Record
  */
 
-class FileRecord {
+export class FileRecord {
+  blocks:number;
+  used:number;
+  length:number;
   /**
    * Create a file record.
    * @constructor
    */
 
-  constructor(options = {}) {
+  constructor(options:{blocks?:number, used?:number ,length?:number} = {}) {
     this.blocks = options.blocks || 0;
     this.used = options.used || 0;
     this.length = options.length || 0;
@@ -139,11 +145,3 @@ class FileRecord {
   }
 }
 
-/*
- * Expose
- */
-
-exports.BlockRecord = BlockRecord;
-exports.FileRecord = FileRecord;
-
-module.exports = exports;

@@ -6,10 +6,16 @@
 
 'use strict';
 
-const assert = require('bsert');
-const Address = require('../primitives/address');
-const Amount = require('./amount');
-const {inspectSymbol} = require('../utils');
+import assert from 'bsert';
+import {Address} from '../primitives/address';
+import {Amount} from './amount';
+import { inspectSymbol } from '../utils';
+import { Network } from '../protocol';
+
+
+interface URIOptions {
+
+}
 
 /**
  * URI
@@ -23,6 +29,11 @@ const {inspectSymbol} = require('../utils');
  */
 
 export class URI {
+  address:Address;
+  amount:bigint;
+  label:string;
+  message:string;
+  request:string;
   /**
    * Create a bitcoin URI.
    * @alias module:btc.URI
@@ -30,9 +41,9 @@ export class URI {
    * @param {Object|String} options
    */
 
-  constructor(options) {
+  constructor(options?:string) {
     this.address = new Address();
-    this.amount = -1;
+    this.amount = -1n;
     this.label = null;
     this.message = null;
     this.request = null;
@@ -97,7 +108,7 @@ export class URI {
    * @returns {URI}
    */
 
-  fromString(str, network) {
+  fromString(str:string, network?:Network):URI {
     assert(typeof str === 'string');
     assert(str.length > 8, 'Not a bitcoin URI.');
 
@@ -165,7 +176,7 @@ export class URI {
 
     const query = [];
 
-    if (this.amount !== -1)
+    if (this.amount !== -1n)
       query.push(`amount=${Amount.btc(this.amount)}`);
 
     if (this.label)
@@ -198,6 +209,10 @@ export class URI {
  */
 
 class BitcoinQuery {
+  amount:string;
+  label:string;
+  message:string;
+  r: any;
   constructor() {
     this.amount = null;
     this.label = null;
@@ -206,7 +221,7 @@ class BitcoinQuery {
   }
 }
 
-function parsePairs(str) {
+function parsePairs(str:string):BitcoinQuery {
   const parts = str.split('&');
   const data = new BitcoinQuery();
 

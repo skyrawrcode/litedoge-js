@@ -56,7 +56,7 @@ export class HDPrivateKey {
   privateKey: Buffer;
   publicKey: Buffer;
   fingerPrint: number;
-  _hdPublicKey: Buffer;
+  _hdPublicKey: HDPublicKey;
   /**
    * Create an hd private key.
    * @constructor
@@ -114,7 +114,7 @@ export class HDPrivateKey {
    * @returns {HDPrivateKey}
    */
 
-  static fromOptions(options: object): HDPrivateKey {
+  static fromOptions(options: HDPrivateKeyOptions): HDPrivateKey {
     return new HDPrivateKey().fromOptions(options);
   }
 
@@ -144,7 +144,7 @@ export class HDPrivateKey {
    * @returns {Base58String}
    */
 
-  xprivkey(network): Base58String {
+  xprivkey(network:Network): string {
     return this.toBase58(network);
   }
 
@@ -153,7 +153,7 @@ export class HDPrivateKey {
    * @returns {Base58String}
    */
 
-  xpubkey(network): Base58String {
+  xpubkey(network:Network): string {
     return this.toPublic().xpubkey(network);
   }
 
@@ -187,7 +187,7 @@ export class HDPrivateKey {
    * @returns {HDPrivateKey}
    */
 
-  derive(index: number, hardened: boolean | null): HDPrivateKey {
+  derive(index: number, hardened?: boolean | null): HDPrivateKey {
     assert(typeof index === 'number');
 
     if ((index >>> 0) !== index)
@@ -236,7 +236,7 @@ export class HDPrivateKey {
       this.fingerPrint = fp.readUInt32BE(0, true);
     }
 
-    const child = new this.constructor();
+    const child = new HDPrivateKey();
     child.depth = this.depth + 1;
     child.parentFingerPrint = this.fingerPrint;
     child.childIndex = index;
@@ -337,7 +337,7 @@ export class HDPrivateKey {
     if (data.length < 4)
       return false;
 
-    const version = data.readUInt32BE(0, true);
+    const version = data.readUInt32BE(0);
 
     try {
       Network.fromPrivate(version, network);
@@ -372,7 +372,7 @@ export class HDPrivateKey {
   derivePath(path: string): HDPrivateKey {
     const indexes = common.parsePath(path, true);
 
-    let key = this;
+    let key:HDPrivateKey = this;
 
     for (const index of indexes)
       key = key.derive(index);
@@ -386,7 +386,7 @@ export class HDPrivateKey {
    * @returns {Boolean}
    */
 
-  equals(obj: object): boolean {
+  equals(obj: any): boolean {
     assert(HDPrivateKey.isHDPrivateKey(obj));
 
     return this.depth === obj.depth
@@ -402,7 +402,7 @@ export class HDPrivateKey {
    * @returns {Boolean}
    */
 
-  compare(key): boolean {
+  compare(key:HDPrivateKey):number {
     assert(HDPrivateKey.isHDPrivateKey(key));
 
     let cmp = this.depth - key.depth;
@@ -482,7 +482,7 @@ export class HDPrivateKey {
    * @param {String?} passphrase
    */
 
-  fromMnemonic(mnemonic: Mnemonic, passphrase: string | null) {
+  fromMnemonic(mnemonic: Mnemonic, passphrase?: string | null) {
     assert(mnemonic instanceof Mnemonic);
     return this.fromSeed(mnemonic.toSeed(passphrase));
   }

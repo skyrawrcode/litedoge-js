@@ -7,13 +7,13 @@
 
 'use strict';
 
-const assert = require('bsert');
-const hash256 = require('bcrypto/lib/hash256');
-const scrypt = require('bcrypto/lib/scrypt')
-const bio = require('bufio');
-const util = require('../utils/util');
-const InvItem = require('./invitem');
-const consensus = require('../protocol/consensus');
+import assert from 'bsert';
+import hash256 from 'bcrypto/lib/hash256';
+import scrypt from 'bcrypto/lib/scrypt';
+import bio, { BufferReader } from 'bufio';
+import * as util from '../utils/util';
+import {InvItem} from './invitem';
+import * as consensus from '../protocol/consensus';
 
 export interface BlockOptions {
   version:number;
@@ -24,6 +24,8 @@ export interface BlockOptions {
   bits:number;
   nonce:number;
   height: number;
+  mutable?: boolean;
+  vchBlockSig?: any;
 }
 
 
@@ -76,7 +78,7 @@ export class AbstractBlock {
    * @param {Object} options
    */
 
-  parseOptions(options) {
+  parseOptions(options:BlockOptions) {
     assert(options, 'Block data is required.');
     assert((options.version >>> 0) === options.version);
     assert(Buffer.isBuffer(options.prevBlock));
@@ -127,7 +129,7 @@ export class AbstractBlock {
    * @returns {Boolean}
    */
 
-  isMemory() {
+  isMemory() : boolean {
     return false;
   }
 
@@ -154,7 +156,9 @@ export class AbstractBlock {
    * @returns {Hash|Buffer} hash
    */
 
-  hash(enc?: 'hex'|null) {
+  hash(enc?:null):Buffer 
+  hash(enc:'hex'):string
+  hash(enc?: 'hex'|null):string|Buffer {
 
     let h = this._hash;
 
@@ -185,7 +189,7 @@ export class AbstractBlock {
    * @returns {Buffer}
    */
 
-  toHead() {
+  toHead():Buffer {
     return this.writeHead(bio.write(80)).render();
   }
 
@@ -195,7 +199,7 @@ export class AbstractBlock {
    * @param {Buffer} data
    */
 
-  fromHead(data) {
+  fromHead(data:Buffer) {
     return this.readHead(bio.read(data));
   }
 
@@ -219,7 +223,7 @@ export class AbstractBlock {
    * @param {BufferReader} br
    */
 
-  readHead(br) {
+  readHead(br:BufferReader) {
 
     this.version = br.readU32();
     this.prevBlock = br.readHash();
@@ -235,7 +239,7 @@ export class AbstractBlock {
    * @returns {Boolean}
    */
 
-  verify() {
+  verify():boolean {
     if (this.isProofOfWork() && !this.verifyPOW()) {
       return false;
     }
@@ -271,7 +275,7 @@ export class AbstractBlock {
    * @returns {Boolean}
    */
 
-  verifyBody() {
+  verifyBody():boolean {
     throw new Error('Abstract method.');
   }
 
@@ -280,7 +284,7 @@ export class AbstractBlock {
    * @returns {Hash}
    */
 
-  rhash() {
+  rhash():string {
     return util.revHex(this.hash());
   }
 
@@ -289,7 +293,7 @@ export class AbstractBlock {
    * @returns {InvItem}
    */
 
-  toInv() {
+  toInv():InvItem {
     return new InvItem(InvItem.types.BLOCK, this.hash());
   }
 
@@ -307,7 +311,7 @@ export class AbstractBlock {
    * @returns {boolean}
    */
   isProofOfWork():boolean {
-    throw new Error('Abstract method AbstractBlock.prototype.isProofOfWork()')
+    throw new Error('Abstract method AbstractBlock.isProofOfWork()')
   }
 
   /**
@@ -315,7 +319,11 @@ export class AbstractBlock {
    * @returns {boolean}
    */
   isProofOfStake():boolean {
-    throw new Error('Abstract method AbstractBlock.prototype.isProofOfStake().');
+    throw new Error('Abstract method AbstractBlock.isProofOfStake().');
+  }
+
+  toRaw(): Buffer {
+    throw new Error("Abstract method AbstractBlock.toRaw()")
   }
 }
 

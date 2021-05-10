@@ -6,17 +6,11 @@
 
 'use strict';
 
-const unorm = require('./unorm');
+import * as unorm from './unorm';
 
-function nfkd(str) {
+export default function nfkd(str) {
   if (str.normalize)
     return str.normalize('NFKD');
 
   return unorm.nfkd(str);
 }
-
-/*
- * Expose
- */
-
-module.exports = nfkd;

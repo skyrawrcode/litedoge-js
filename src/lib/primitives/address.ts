@@ -31,7 +31,9 @@ export enum AddressTypes {
 };
 
 export interface AddressOptions {
-
+  hash: undefined;
+  type: undefined;
+  version:undefined;
 }
 
 /*
@@ -78,7 +80,7 @@ export class Address {
    * @param {Object} options
    */
 
-  fromOptions(options, network) {
+  fromOptions(options: string | AddressOptions, network?:Network) {
     if (typeof options === 'string')
       return this.fromString(options, network);
 

@@ -189,7 +189,7 @@ export class Output {
    * @returns {Hash} hash
    */
 
-  getHash(enc) {
+  getHash(enc?:'hex') {
     const addr = this.getAddress();
 
     if (!addr)
@@ -251,7 +251,7 @@ export class Output {
    * @returns {Number}
    */
 
-  getDustThreshold(rate:bigint):bigint {
+  getDustThreshold(rate?:bigint):bigint {
 
     if (this.script.isUnspendable())
       return 0n;

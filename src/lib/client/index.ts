@@ -4,11 +4,5 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
-
-/**
- * @module client
- */
-
-exports.NodeClient = require('./node');
-exports.WalletClient = require('./wallet');
+export * from "./node";
+export * from "./wallet"

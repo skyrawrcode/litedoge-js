@@ -6,17 +6,17 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const base58 = require('bcrypto/lib/encoding/base58');
-const sha512 = require('bcrypto/lib/sha512');
-const hash160 = require('bcrypto/lib/hash160');
-const hash256 = require('bcrypto/lib/hash256');
-const cleanse = require('bcrypto/lib/cleanse');
-const secp256k1 = require('bcrypto/lib/secp256k1');
-const Network = require('../protocol/network');
-const consensus = require('../protocol/consensus');
-const common = require('./common');
+import assert from 'bsert';
+import bio from 'bufio';
+import base58 from 'bcrypto/lib/encoding/base58';
+import sha512 from 'bcrypto/lib/sha512';
+import hash160 from 'bcrypto/lib/hash160';
+import hash256 from 'bcrypto/lib/hash256';
+import cleanse from 'bcrypto/lib/cleanse';
+import secp256k1 from 'bcrypto/lib/secp256k1';
+import {Network} from '../protocol/network';
+import * as consensus from '../protocol/consensus';
+import * as common from './common';
 
 /**
  * HDPublicKey
@@ -410,7 +410,7 @@ export class HDPublicKey {
       return false;
 
 
-    const version = data.readUInt32BE(0, true);
+    const version = data.readUInt32BE(0);
 
     try {
       Network.fromPublic(version, network);

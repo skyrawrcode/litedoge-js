@@ -10,6 +10,6 @@
  * @module indexer
  */
 
-exports.Indexer = require('./indexer');
-exports.TXIndexer = require('./txindexer');
-exports.AddrIndexer = require('./addrindexer');
+export {Indexer} from "./indexer";
+export {TXIndexer} from "./txindexer";
+export {AddrIndexer} from "./addrindexer";

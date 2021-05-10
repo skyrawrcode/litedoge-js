@@ -6,14 +6,17 @@
 
 'use strict';
 
-const assert = require('bsert');
+import assert from 'bsert';
+import { U64 } from 'n64';
 
 /**
  * Bit Writer - as specified by BIP 158 for Golomb Rice Coding
  * @see https://github.com/bitcoin/bips/blob/master/bip-0158.mediawiki#golomb-rice-coding
  */
 
-class BitWriter {
+export class BitWriter {
+  stream:number[];
+  remain:number;
   /**
    * Create a bit writer.
    * @constructor
@@ -30,7 +33,7 @@ class BitWriter {
    * @param {Buffer} bit
    */
 
-  writeBit(bit) {
+  writeBit(bit:number) {
     if (this.remain === 0) {
       this.stream.push(0);
       this.remain = 8;
@@ -49,7 +52,7 @@ class BitWriter {
    * @param {Buffer} ch
    */
 
-  writeByte(ch) {
+  writeByte(ch:number) {
     if (this.remain === 0) {
       this.stream.push(0);
       this.remain = 8;
@@ -68,7 +71,7 @@ class BitWriter {
    * @param {Number} count
    */
 
-  writeBits(num, count) {
+  writeBits(num:number, count:number) {
     assert(count >= 0);
     assert(count <= 32);
 
@@ -95,7 +98,7 @@ class BitWriter {
    * @param {Number} count
    */
 
-  writeBits64(num, count) {
+  writeBits64(num:U64, count:number) {
     assert(count >= 0);
     assert(count <= 64);
 
@@ -112,7 +115,7 @@ class BitWriter {
    * @returns {Buffer} Rendered buffer.
    */
 
-  render() {
+  render():Buffer {
     const data = Buffer.allocUnsafe(this.stream.length);
 
     for (let i = 0; i < this.stream.length; i++)

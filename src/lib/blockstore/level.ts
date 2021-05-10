@@ -6,11 +6,11 @@
 
 'use strict';
 
-const bdb = require('bdb');
-const fs = require('bfile');
-const AbstractBlockStore = require('./abstract');
-const layout = require('./layout');
-const {types} = require('./common');
+import bdb, { DB } from 'bdb';
+import fs from 'bfile';
+import {AbstractBlockStore} from './abstract';
+import {layout} from './layout';
+import { BlockStoreTypes } from './common';
 
 /**
  * LevelDB Block Store
@@ -19,7 +19,9 @@ const {types} = require('./common');
  * @abstract
  */
 
-class LevelBlockStore extends AbstractBlockStore {
+export class LevelBlockStore extends AbstractBlockStore {
+  location: string;
+  db: DB;
   /**
    * Create a blockstore that stores blocks in LevelDB.
    * @constructor
@@ -78,7 +80,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async writeMerkle(hash, data) {
-    return this.db.put(layout.b.encode(types.MERKLE, hash), data);
+    return this.db.put(layout.b.encode(BlockStoreTypes.MERKLE, hash), data);
   }
 
   /**
@@ -89,7 +91,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async writeUndo(hash, data) {
-    return this.db.put(layout.b.encode(types.UNDO, hash), data);
+    return this.db.put(layout.b.encode(BlockStoreTypes.UNDO, hash), data);
   }
 
   /**
@@ -100,7 +102,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async write(hash, data) {
-    return this.db.put(layout.b.encode(types.BLOCK, hash), data);
+    return this.db.put(layout.b.encode(BlockStoreTypes.BLOCK, hash), data);
   }
 
   /**
@@ -111,7 +113,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async writeFilter(hash, data) {
-    return this.db.put(layout.b.encode(types.FILTER, hash), data);
+    return this.db.put(layout.b.encode(BlockStoreTypes.FILTER, hash), data);
   }
 
   /**
@@ -121,7 +123,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async readMerkle(hash) {
-    return this.db.get(layout.b.encode(types.MERKLE, hash));
+    return this.db.get(layout.b.encode(BlockStoreTypes.MERKLE, hash));
   }
 
   /**
@@ -131,7 +133,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async readUndo(hash) {
-    return this.db.get(layout.b.encode(types.UNDO, hash));
+    return this.db.get(layout.b.encode(BlockStoreTypes.UNDO, hash));
   }
 
   /**
@@ -141,7 +143,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async readFilter(hash) {
-    return this.db.get(layout.b.encode(types.FILTER, hash));
+    return this.db.get(layout.b.encode(BlockStoreTypes.FILTER, hash));
   }
 
   /**
@@ -151,7 +153,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async readFilterHeader(hash) {
-    const data = await this.db.get(layout.b.encode(types.FILTER, hash));
+    const data = await this.db.get(layout.b.encode(BlockStoreTypes.FILTER, hash));
 
     if (!data)
       return null;
@@ -171,7 +173,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async read(hash, offset, length) {
-    let raw = await this.db.get(layout.b.encode(types.BLOCK, hash));
+    let raw = await this.db.get(layout.b.encode(BlockStoreTypes.BLOCK, hash));
 
     if (offset) {
       if (offset + length > raw.length)
@@ -195,7 +197,7 @@ class LevelBlockStore extends AbstractBlockStore {
     if (!await this.hasMerkle(hash))
       return false;
 
-    await this.db.del(layout.b.encode(types.MERKLE, hash));
+    await this.db.del(layout.b.encode(BlockStoreTypes.MERKLE, hash));
 
     return true;
   }
@@ -212,7 +214,7 @@ class LevelBlockStore extends AbstractBlockStore {
     if (!await this.hasUndo(hash))
       return false;
 
-    await this.db.del(layout.b.encode(types.UNDO, hash));
+    await this.db.del(layout.b.encode(BlockStoreTypes.UNDO, hash));
 
     return true;
   }
@@ -227,7 +229,7 @@ class LevelBlockStore extends AbstractBlockStore {
     if (!await this.hasFilter(hash))
       return false;
 
-    await this.db.del(layout.b.encode(types.FILTER, hash));
+    await this.db.del(layout.b.encode(BlockStoreTypes.FILTER, hash));
 
     return true;
   }
@@ -244,7 +246,7 @@ class LevelBlockStore extends AbstractBlockStore {
     if (!await this.has(hash))
       return false;
 
-    await this.db.del(layout.b.encode(types.BLOCK, hash));
+    await this.db.del(layout.b.encode(BlockStoreTypes.BLOCK, hash));
 
     return true;
   }
@@ -257,7 +259,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async hasMerkle(hash) {
-    return this.db.has(layout.b.encode(types.MERKLE, hash));
+    return this.db.has(layout.b.encode(BlockStoreTypes.MERKLE, hash));
   }
 
   /**
@@ -268,7 +270,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async hasUndo(hash) {
-    return this.db.has(layout.b.encode(types.UNDO, hash));
+    return this.db.has(layout.b.encode(BlockStoreTypes.UNDO, hash));
   }
 
   /**
@@ -279,7 +281,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async hasFilter(hash) {
-    return this.db.has(layout.b.encode(types.FILTER, hash));
+    return this.db.has(layout.b.encode(BlockStoreTypes.FILTER, hash));
   }
 
   /**
@@ -289,12 +291,7 @@ class LevelBlockStore extends AbstractBlockStore {
    */
 
   async has(hash) {
-    return this.db.has(layout.b.encode(types.BLOCK, hash));
+    return this.db.has(layout.b.encode(BlockStoreTypes.BLOCK, hash));
   }
 }
 
-/*
- * Expose
- */
-
-module.exports = LevelBlockStore;

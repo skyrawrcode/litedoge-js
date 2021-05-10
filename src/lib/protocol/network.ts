@@ -15,7 +15,16 @@ import { TimeData } from './timedata';
 import { inspectSymbol } from '../utils';
 import { NetworkOptions } from './networkoptions';
 import { NetworkType } from '../types'
+import { AbstractBlock } from '../primitives';
 const MODIFIER_INTERVAL_RATIO = 3;
+
+export interface NetworkPOS {
+  limit: BN;
+  bits: number;
+  stakeMinAge: number;
+  modifierInterval: number;
+  coinbaseMaturity: number;
+}
 
 /**
  * Network
@@ -27,7 +36,7 @@ const MODIFIER_INTERVAL_RATIO = 3;
 export class Network {
   static main: Network;
   static primary: Network;
-  genesis: { hash: any; height: any; time: any; };
+  genesis: AbstractBlock;
   feeRate: any;
   type: string;
   seeds: string[];
@@ -40,13 +49,13 @@ export class Network {
   halvingInterval: number;
   genesisBlock: string;
   pow: { limit: BN; bits: number; chaintrust: BN; targetTimespan: number; targetSpacing: number; retargetInterval: number; targetReset: boolean; noRetargeting: boolean; };
-  pos: { limit: BN; bits: number; stakeMinAge: number; modifierInterval: number; coinbaseMaturity: number; };
+  pos: NetworkPOS;
   block: { pruneAfterHeight: number; keepBlocks: number; maxTipAge: number; slowHeight: number; };
   bip30: {};
   activationThreshold: number;
   minerWindow: number;
   deployments: any;
-  deploys: any[];
+  deploys: Deployment[];
   keyPrefix: { privkey: number; xpubkey: number; xprivkey: number; xpubkey58: string; xprivkey58: string; coinType: number; };
   addressPrefix: { pubkeyhash: number; scripthash: number; bech32: string; };
   requireStandard: boolean;
@@ -141,7 +150,7 @@ export class Network {
    * @returns {Object}
    */
 
-  byBit(bit: number): object {
+  byBit(bit: number): Deployment {
     const index = binary.search(this.deploys, bit, cmpBit);
 
     if (index === -1)
@@ -348,7 +357,7 @@ export class Network {
    * @returns {Network}
    */
 
-  static fromMagic(value: number, network: Network | null): Network {
+  static fromMagic(value: number, network?: Network | null): Network {
     return Network.by(value, cmpMagic, network, 'magic number');
   }
 
@@ -522,6 +531,15 @@ Network.regtest = null;
  */
 
 Network.set(process.env.LDOGEJS_NETWORK as NetworkType || 'main');
+
+export interface Deployment {
+  bit: number;
+  window: number;
+  threshold: number;
+  timeout: number;
+  startTime: number;
+  
+}
 
 /*
  * Helpers

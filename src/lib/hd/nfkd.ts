@@ -13,12 +13,6 @@
  * @returns {String}
  */
 
-function nfkd(str) {
+export default function nfkd(str:string):string {
   return str.normalize('NFKD');
 }
-
-/*
- * Expose
- */
-
-module.exports = nfkd;

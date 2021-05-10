@@ -15,8 +15,9 @@ import assert from 'bsert';
  * @param {Array} time
  * @returns {Array} [seconds, nanoseconds]
  */
-
-export  function bench(time) {
+export function bench(time:[number,number]): number
+export function bench(): [number,number]
+export  function bench(time?:[number, number]): number| [number, number]  {
   if (!process.hrtime) {
     const now = Date.now();
 

@@ -7,22 +7,23 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const {BufferSet} = require('buffer-map');
-const hash256 = require('bcrypto/lib/hash256');
-const merkle = require('bcrypto/lib/merkle');
-const consensus = require('../protocol/consensus');
-const AbstractBlock = require('./abstractblock');
-const TX = require('./tx');
-const MerkleBlock = require('./merkleblock');
-const Headers = require('./headers');
-const Network = require('../protocol/network');
-const util = require('../utils/util');
+import assert from 'bsert';
+import bio from 'bufio';
+import { BufferSet } from 'buffer-map';
+import hash256 from 'bcrypto/lib/hash256';
+import merkle from 'bcrypto/lib/merkle';
+import * as consensus from '../protocol/consensus';
+import {AbstractBlock} from './abstractblock';
+  import {TX} from './tx';
+import {MerkleBlock} from './merkleblock';
+import {Headers} from './headers';
+import {Network} from '../protocol/network';
+import * as  util from '../utils/util';
 const {encoding} = bio;
-const {inspectSymbol} = require('../utils');
-const GCSFilter = require('../golomb/golomb');
-const {opcodes} = require('../script/common');
+import { inspectSymbol } from '../utils';
+import {GCSFilter} from '../golomb/golomb';
+import { opcodes } from '../script/common';
+import { CoinView } from '../coins/coinview';
 
 /**
  * Block
@@ -33,13 +34,16 @@ const {opcodes} = require('../script/common');
  */
 
 export class Block extends AbstractBlock {
+  txs: TX[];
+  _raw:Buffer;
+  _size:number;
   /**
    * Create a block.
    * @constructor
    * @param {Object} options
    */
 
-  constructor(options) {
+  constructor(options?:undefined) {
     super();
 
     this.txs = [];
@@ -77,7 +81,7 @@ export class Block extends AbstractBlock {
    * @returns {Block}
    */
 
-  static fromOptions(options) {
+  static fromOptions(options):Block {
     return new this().fromOptions(options);
   }
 
@@ -86,7 +90,7 @@ export class Block extends AbstractBlock {
    * @param {Boolean?} all - Clear transactions.
    */
 
-  refresh(all) {
+  refresh(all?:boolean):Block {
     this._refresh();
 
     this._raw = null;
@@ -106,7 +110,7 @@ export class Block extends AbstractBlock {
    * @returns {Buffer}
    */
 
-  toRaw() {
+  toRaw():Buffer {
     return this.frame().data;
   }
 
@@ -156,7 +160,7 @@ export class Block extends AbstractBlock {
    * @returns {RawBlock}
    */
 
-  frame() {
+  frame(): RawBlock {
     if (this._raw) {
       assert(this._size >= 0);
       const raw = new RawBlock(this._size);
@@ -252,7 +256,7 @@ export class Block extends AbstractBlock {
    * @returns {Hash|null}
    */
 
-  createMerkleRoot(enc) {
+  createMerkleRoot(enc?:'hex'|null) {
     const leaves = [];
 
     for (const tx of this.txs)
@@ -438,7 +442,7 @@ export class Block extends AbstractBlock {
    * @returns {Object}
    */
 
-  format(view, height) {
+  format(view?:CoinView, height?:number) {
     return {
       hash: this.rhash(),
       height: height != null ? height : -1, //height maybe should be 0
@@ -480,7 +484,7 @@ export class Block extends AbstractBlock {
    * @returns {Object}
    */
 
-  getJSON(network, view, height, depth) {
+  getJSON(network?:Network, view?:CoinView, height?:number, depth?:number) {
     network = Network.get(network);
     return {
       hash: this.rhash(),
@@ -581,7 +585,7 @@ export class Block extends AbstractBlock {
    * @returns {Block}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data:string|Buffer, enc?:'hex'|null ):Block {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -668,7 +672,7 @@ export class Block extends AbstractBlock {
       size += tx.getBaseSize();
 
     size += 32 //vchBlockSig
-    return new RawBlock(size, 0);
+    return new RawBlock(size);
   }
 
 
@@ -729,7 +733,9 @@ export class Block extends AbstractBlock {
  */
 
 class RawBlock {
-  constructor(size) {
+  data:Buffer;
+  size:number;
+  constructor(size:number) {
     this.data = null;
     this.size = size;
   }

@@ -368,7 +368,7 @@ export  function verifyPOS(block) {
  * @returns {Amount}
  */
 
-export function getProofOfWorkReward(height) {
+export function getProofOfWorkReward(height:number) {
   assert(height >= 0, 'Bad height for reward.');
 
   if (height < 30) {

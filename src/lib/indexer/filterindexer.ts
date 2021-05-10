@@ -6,11 +6,11 @@
 
 'use strict';
 
-const bdb = require('bdb');
-const assert = require('bsert');
-const Indexer = require('./indexer');
-const consensus = require('../protocol/consensus');
-const Filter = require('../primitives/filter');
+import bdb, { DB } from 'bdb';
+import assert from 'bsert';
+import {Indexer} from './indexer';
+import * as consensus from '../protocol/consensus';
+import {Filter} from '../primitives/filter';
 
 /**
  * FilterIndexer
@@ -19,13 +19,15 @@ const Filter = require('../primitives/filter');
  */
 
 export class FilterIndexer extends Indexer {
+  db:DB
+  options: any;
   /**
    * Create a indexer
    * @constructor
    * @param {Object} options
    */
 
-  constructor(options) {
+  constructor(options:any) {
     super('filter', options);
 
     this.db = bdb.create(this.options);

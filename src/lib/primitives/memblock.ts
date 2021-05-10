@@ -7,11 +7,11 @@
 
 'use strict';
 
-const bio = require('bufio');
-const AbstractBlock = require('./abstractblock');
-const Block = require('./block');
-const Headers = require('./headers');
-const Script = require('../script/script');
+import bio from 'bufio';
+import {AbstractBlock} from './abstractblock';
+import {Block} from './block';
+import {Headers} from './headers';
+import {Script} from '../script/script';
 const DUMMY = Buffer.alloc(0);
 
 /**
@@ -36,6 +36,7 @@ const DUMMY = Buffer.alloc(0);
  */
 
 export class MemBlock extends AbstractBlock {
+  _raw:Buffer;
   /**
    * Create a mem block.
    * @constructor

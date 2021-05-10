@@ -6,7 +6,11 @@
 
 'use strict';
 
-const Logger = require('blgr');
+import Logger from 'blgr';
+import { LoggerContext } from 'blgr/lib/logger';
+import { BlockStoreOptions } from './common';
+
+
 
 /**
  * Abstract Block Store
@@ -15,13 +19,15 @@ const Logger = require('blgr');
  * @abstract
  */
 
-class AbstractBlockStore {
+export class AbstractBlockStore {
+  options: BlockStoreOptions;
+  logger: Logger.LoggerContext;
   /**
    * Create an abstract blockstore.
    * @constructor
    */
 
-  constructor(options) {
+  constructor(options?:BlockStoreOptions) {
     this.options = options || {};
 
     if (this.options.logger != null)
@@ -66,7 +72,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async writeMerkle(hash, data) {
+  async writeMerkle(hash, data) :Promise<boolean>{
     throw new Error('Abstract method.');
   }
 
@@ -75,7 +81,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async writeUndo(hash, data) {
+  async writeUndo(hash, data):Promise<boolean> {
     throw new Error('Abstract method.');
   }
 
@@ -84,7 +90,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async writeFilter(hash, data) {
+  async writeFilter(hash:Buffer, data:Buffer):Promise<any> {
     throw new Error('Abstract method.');
   }
 
@@ -93,7 +99,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async write(hash, data) {
+  async write(hash:Buffer, data:Buffer):Promise<boolean> {
     throw new Error('Abstract method.');
   }
 
@@ -102,7 +108,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async readMerkle(hash) {
+  async readMerkle(hash:Buffer):Promise<Buffer> {
     throw new Error('Abstract method.');
   }
 
@@ -111,7 +117,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async readFilter(hash) {
+  async readFilter(hash:Buffer):Promise<Buffer> {
     throw new Error('Abstract method.');
   }
 
@@ -120,7 +126,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async readFilterHeader(hash) {
+  async readFilterHeader(hash:Buffer):Promise<Buffer> {
     throw new Error('Abstract method.');
   }
 
@@ -129,7 +135,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async readUndo(hash) {
+  async readUndo(hash):Promise<Buffer> {
     throw new Error('Abstract method.');
   }
 
@@ -139,7 +145,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async read(hash, offset, size) {
+  async read(hash, offset?:number, size?:number) :Promise<Buffer>{
     throw new Error('Abstract method.');
   }
 
@@ -148,7 +154,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async pruneMerkle(hash) {
+  async pruneMerkle(hash):Promise<boolean> {
     throw new Error('Abstract method.');
   }
 
@@ -157,7 +163,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async pruneUndo(hash) {
+  async pruneUndo(hash:Buffer):Promise<boolean>{
     throw new Error('Abstract method.');
   }
 
@@ -166,7 +172,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async pruneFilter(hash) {
+  async pruneFilter(hash):Promise<boolean> {
     throw new Error('Abstract method.');
   }
 
@@ -175,7 +181,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async prune(hash) {
+  async prune(hash:Buffer):Promise<boolean> {
     throw new Error('Abstract method.');
   }
 
@@ -214,13 +220,7 @@ class AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async has(hash) {
+  async has(hash):Promise<boolean> {
     throw new Error('Abstract method.');
   }
 }
-
-/*
- * Expose
- */
-
-module.exports = AbstractBlockStore;

@@ -27,13 +27,16 @@ export const EMPTY_BUFFER = Buffer.alloc(0);
  */
 
 export class Filter {
+  filter:Buffer;
+  header:Buffer;
+
   /**
    * Create an filter.
    * @constructor
    * @param {Object?} options
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.header = consensus.ZERO_HASH;
     this.filter = EMPTY_BUFFER;
 

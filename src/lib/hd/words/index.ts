@@ -11,8 +11,8 @@ export const chinese = {
   traditional: import('./chinese-traditional.js')
 };
 
-exports.english = import('./english.js');
-exports.french = import('./french.js');
-exports.italian = import('./italian.js');
-exports.japanese = import('./japanese.js');
-exports.spanish = import('./spanish.js');
+export const english = import('./english.js');
+export const french =  import('./french.js');
+export const italian =  import('./italian.js');
+export const japanese = import('./japanese.js');
+export const spanish =  import('./spanish.js');

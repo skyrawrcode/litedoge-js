@@ -12,9 +12,10 @@
  */
 
 import assert from 'bsert';
-import { encoding } from 'bufio';
+import { BufferReader, BufferWriter, encoding } from 'bufio';
 import secp256k1 from 'bcrypto/lib/secp256k1';
 import {consensus} from '../protocol';
+import { Output } from '../primitives';
 
 /*
  * Constants
@@ -29,7 +30,7 @@ const EMPTY_BUFFER = Buffer.alloc(0);
  * @param {BufferWriter} bw
  */
 
-function compressScript(script, bw) {
+export function compressScript(script, bw) {
   // Attempt to compress the output scripts.
   // We can _only_ ever compress them if
   // they are serialized as minimaldata, as
@@ -154,7 +155,7 @@ function sizeScript(script) {
  * @param {BufferWriter} bw
  */
 
-function compressOutput(output, bw) {
+export function compressOutput(output:Output, bw:BufferWriter) {
   bw.writeVarintBI(output.value);
   compressScript(output.script, bw);
   return bw;
@@ -166,7 +167,7 @@ function compressOutput(output, bw) {
  * @param {BufferReader} br
  */
 
-function decompressOutput(output, br) {
+export function decompressOutput(output:Output, br:BufferReader) {
   output.value = br.readVarintBI();
   decompressScript(output.script, br);
   return output;
@@ -177,7 +178,7 @@ function decompressOutput(output, br) {
  * @returns {Number}
  */
 
-function sizeOutput(output) {
+export function sizeOutput(output:Output):number {
   let size = 0;
   size += encoding.sizeVarintBI(output.value);
   size += sizeScript(output.script);
@@ -338,10 +339,3 @@ function decompressKey(key) {
 compressValue;
 decompressValue;
 
-/*
- * Expose
- */
-
-exports.pack = compressOutput;
-exports.unpack = decompressOutput;
-exports.size = sizeOutput;
