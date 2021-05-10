@@ -10,8 +10,8 @@
  * @module blockchain
  */
 
-exports.ChainDB = require('./chaindb');
+export {ChainDB} from "./chaindb";
 exports.ChainEntry = require('./chainentry');
 exports.Chain = require('./chain');
-exports.common = require('./common');
+export * as common from './common';
 exports.layout = require('./layout');

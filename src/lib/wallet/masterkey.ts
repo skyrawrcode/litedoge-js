@@ -9,9 +9,6 @@
 import assert from 'bsert';
 import bio, { StaticWriter } from 'bufio';
 import { Lock } from 'bmutex';
-import { random } from 'bcrypto';
-import { cleanse } from 'bcrypto';
-import { aes } from 'bcrypto';
 import sha256 from 'bcrypto/lib/sha256';
 import hash256 from 'bcrypto/lib/hash256';
 import secp256k1 from 'bcrypto/lib/secp256k1';
@@ -24,6 +21,7 @@ const { encoding } = bio;
 import { inspectSymbol } from '../utils';
 import { BufferWriter } from 'bufio';
 import { Network } from '../protocol';
+import { aes, cleanse } from 'bcrypto/lib/bcrypto';
 
 /**
  * Key derivation algorithms.

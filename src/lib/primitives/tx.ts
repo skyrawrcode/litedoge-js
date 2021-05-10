@@ -25,17 +25,21 @@ import {ScriptError} from '../script/scripterror';
 const {encoding} = bio;
 const {hashType} = Script;
 import { inspectSymbol } from '../utils';
-import { Input } from './input';
-import { Output } from './output';
+import { Input, InputJson, InputOptions } from './input';
+import { Output, OutputJson, OutputOptions } from './output';
 import { CoinView } from '../coins/coinview';
 import { SighashType, VerifyFlags } from '../script/common';
 import { Coin } from './coin';
 import { WorkerPool } from '../workers';
 import { Address } from './address';
 
+import { Verify } from 'node:crypto';
+import { ChainEntry } from '../blockchain/chainentry';
+import { BloomFilter } from 'bfilter/lib/bfilter';
+
 
 export interface TXOptions {
-  locktime: any;
+  locktime: number;
   outputs: any;
   inputs: any;
   time: any;
@@ -170,9 +174,9 @@ export class TX {
    * @returns {TX}
    */
 
-  inject(tx: TX): TX {
+  inject(tx: {version:number, inputs:Input[], outputs:Output[], locktime:number} ): TX {
     this.version = tx.version;
-
+    
     for (const input of tx.inputs)
       this.inputs.push(input.clone());
 
@@ -642,7 +646,8 @@ export class TX {
    * @throws {ScriptError} on invalid inputs
    */
 
-  check(view: CoinView, flags: VerifyFlags | null) {
+  check(view: CoinView|VerifyFlags, flags?: VerifyFlags | null):void {
+    view = view as CoinView;
     if (this.inputs.length === 0)
       throw new ScriptError('UNKNOWN_ERROR', 'No inputs.');
 
@@ -697,7 +702,8 @@ export class TX {
    * @returns {Promise}
    */
 
-  async checkAsync(view: CoinView, flags: VerifyFlags | null, pool: WorkerPool | null): Promise<any> {
+  async checkAsync(view: CoinView|VerifyFlags, flags: VerifyFlags | null, pool: WorkerPool | null): Promise<void> {
+    
     if (this.inputs.length === 0)
       throw new ScriptError('UNKNOWN_ERROR', 'No inputs.');
 
@@ -746,7 +752,9 @@ export class TX {
    * @returns {Boolean} Whether the inputs are valid.
    */
 
-  verify(view: CoinView, flags: VerifyFlags | null): boolean {
+  verify(flags:VerifyFlags) :boolean
+  verify(view:CoinView, flags?:VerifyFlags|null):boolean 
+  verify(view: CoinView|VerifyFlags, flags?: VerifyFlags | null): boolean {
     try {
       this.check(view, flags);
     } catch (e) {
@@ -786,7 +794,7 @@ export class TX {
    * @returns {Promise}
    */
 
-  async verifyAsync(view: CoinView, flags: VerifyFlags | null, pool: WorkerPool | null): Promise<any> {
+  async verifyAsync(view: CoinView, flags: VerifyFlags | null, pool: WorkerPool | null): Promise<boolean> {
     try {
       await this.checkAsync(view, flags, pool);
     } catch (e) {
@@ -1023,21 +1031,25 @@ export class TX {
    * @returns {Hash[]} hashes
    */
 
-  getInputHashes(view: CoinView | null, enc): string[] {
+  getInputHashes(view: CoinView | null, enc:'hex'): string[] 
+  getInputHashes(view: CoinView | null, enc?:'hex'|null): Buffer[]
+  getInputHashes(view: CoinView | null, enc?:'hex'|null): Buffer[]|string[]
+  {
     const [, table] = this._getInputAddresses(view);
-
-    if (enc !== 'hex')
+    if (enc === 'hex') {
+      return table.toArray().map(h => h.toString('hex'));
+    }
+    
       return table.toArray();
-
-    return table.toArray().map(h => h.toString('hex'));
-  }
+   }
 
   /**
    * Get all output address hashes.
    * @returns {Hash[]} hashes
    */
-
-  getOutputHashes(enc): string[] {
+   getOutputHashes():Buffer[]
+   getOutputHashes(enc:'hex'):string[]
+   getOutputHashes(enc?:'hex'):Buffer[]|string[] {
     const [, table] = this._getOutputAddresses();
 
     if (enc !== 'hex')
@@ -1052,7 +1064,7 @@ export class TX {
    * @returns {Hash[]} hashes
    */
 
-  getHashes(view: CoinView | null, enc): string[] {
+  getHashes(view: CoinView | null, enc?:'hex'|null): string[] | Buffer {
     const [, table] = this._getAddresses(view);
 
     if (enc !== 'hex')
@@ -1240,7 +1252,7 @@ export class TX {
    * @returns {Number} sigop weight
    */
 
-  getSigopsCost(view: CoinView, flags: VerifyFlags | null): number {
+  getSigopsCost(view: CoinView, flags?: VerifyFlags | null): number {
     if (flags == null)
       flags = Script.flags.STANDARD_VERIFY_FLAGS;
 
@@ -1682,7 +1694,7 @@ export class TX {
    * @returns {Rate}
    */
 
-  getRate(view: CoinView, size: number | null): bigint {
+  getRate(view: CoinView, size?: number | null): bigint {
     const fee = this.getFee(view);
 
     if (fee < 0n)
@@ -1699,7 +1711,7 @@ export class TX {
    * @returns {Hash[]} Outpoint hashes.
    */
 
-  getPrevout(): Hash[] {
+  getPrevout(): Buffer[] {
     if (this.isCoinbase())
       return [];
 
@@ -1774,7 +1786,7 @@ export class TX {
    * @returns {Hash}
    */
 
-  rhash(): Hash {
+  rhash(): string {
     return util.revHex(this.hash());
   }
 
@@ -1784,7 +1796,7 @@ export class TX {
    * @returns {Hash}
    */
 
-  txid(): Hash {
+  txid(): string {
     return this.rhash();
   }
 
@@ -1804,7 +1816,7 @@ export class TX {
    * @returns {Object}
    */
 
-  [inspectSymbol]() {
+  [inspectSymbol]():FormattedTX {
     return this.format();
   }
 
@@ -1817,7 +1829,7 @@ export class TX {
    * @returns {Object}
    */
 
-  format(view: CoinView, entry: ChainEntry, index: number): object {
+  format(view?: CoinView, entry?: ChainEntry, index?: number): FormattedTX {
     let rate = 0n;
     let fee = 0n;
     let height = -1;
@@ -1828,10 +1840,6 @@ export class TX {
     if (view) {
       fee = this.getFee(view);
       rate = this.getRate(view);
-
-      // Rate can exceed 53 bits in testing.
-      if (!Number.isSafeInteger(rate))
-        rate = 0;
     }
 
     if (entry) {
@@ -1873,7 +1881,7 @@ export class TX {
    * @returns {Object}
    */
 
-  toJSON(): object {
+  toJSON(): TXJson {
     return this.getJSON();
   }
 
@@ -1886,19 +1894,20 @@ export class TX {
    * @param {CoinView} view
    * @param {ChainEntry} entry
    * @param {Number} index
-   * @returns {Object}
+   * @returns {TXJson}
    */
 
-  getJSON(network: Network, view: CoinView, entry: ChainEntry, index: number): object {
-    let rate, fee, height, block, time, date;
+  getJSON(network?: Network, view?: CoinView, entry?: ChainEntry, index?: number): TXJson {
+    let rate:bigint,
+        fee:bigint,
+        height:number,
+        block:string,
+        time:number,
+        date:string;
 
     if (view) {
       fee = this.getFee(view);
       rate = this.getRate(view);
-
-      // Rate can exceed 53 bits in testing.
-      if (!Number.isSafeInteger(rate))
-        rate = 0n;
     }
 
     if (entry) {
@@ -1939,7 +1948,7 @@ export class TX {
    * @param {Object} json
    */
 
-  fromJSON(json: object) {
+  fromJSON(json: TXJson) {
     assert(json, 'TX data is required.');
     assert((json.version >>> 0) === json.version, 'Version must be a uint32.');
     assert(Array.isArray(json.inputs), 'Inputs must be an array.');
@@ -1967,7 +1976,7 @@ export class TX {
    * @returns {TX}
    */
 
-  static fromJSON(json: object): TX {
+  static fromJSON(json: TXJson): TX {
     return new this().fromJSON(json);
   }
 
@@ -2124,6 +2133,26 @@ export class TX {
   static isTX(obj: object): boolean {
     return obj instanceof TX;
   }
+}
+export interface TXJson{
+  hash:string;
+  fee:string;
+  rate:string;
+  mtime:number;
+  height:number;
+  block:string;
+  time: number;
+  date:string;
+  index:number;
+  version:number;
+  inputs:InputJson[]
+  outputs:OutputJson[];
+  locktime: number;
+  confirmations?: number;
+  hex:string;
+}
+export interface FormattedTX{
+
 }
 
 /*

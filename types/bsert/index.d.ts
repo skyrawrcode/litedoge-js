@@ -42,7 +42,7 @@ declare module "bsert/lib/assert" {
         expected: any;
         operator: string;
     }
-    function equal(actual: any, expected: any, message: any): void;
+    function equal(actual: any, expected: any, message?: any): void;
     function notEqual(actual: any, expected: any, message: any): void;
     function fail(message: any): void;
     function throws(func: any, expected: any, message: any): void;

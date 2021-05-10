@@ -1,3 +1,5 @@
+import EventEmitter from "node:events";
+
 declare module "btcp" {
     const _exports: typeof import("btcp/lib/btcp");
     export = _exports;
@@ -9,7 +11,7 @@ declare module "btcp/lib/tcp" {
      * Server
      * @extends EventEmitter
      */
-    export class Server {
+    export class Server extends EventEmitter {
         /**
          * Create a TCP server.
          * @constructor
@@ -79,7 +81,7 @@ declare module "btcp/lib/tcp-browser" {
      * Server
      * @extends EventEmitter
      */
-    export class Server {
+    export class Server  extends EventEmitter{
         /**
          * Create a TCP server.
          * @constructor

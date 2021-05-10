@@ -77,7 +77,7 @@ export function sortCoins(coins) {
  * @returns {TX[]}
  */
 
-export function sortDeps(txs) {
+export function sortDeps(txs:TX[]) {
   const map = new BufferMap<TX>();
 
   for (const tx of txs) {

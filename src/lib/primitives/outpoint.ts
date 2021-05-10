@@ -18,6 +18,11 @@ export interface OutpointOptions {
 
 }
 
+export interface OutpointJson{
+  hash:string;
+  index:number;
+}
+
 /**
  * Outpoint
  * Represents a COutPoint.
@@ -252,7 +257,7 @@ export class Outpoint {
    * @params {Object} json
    */
 
-  fromJSON(json) {
+  fromJSON(json :OutpointJson) {
     assert(json, 'Outpoint data is required.');
     assert(typeof json.hash === 'string', 'Hash must be a string.');
     assert((json.index >>> 0) === json.index, 'Index must be a uint32.');
@@ -269,7 +274,7 @@ export class Outpoint {
    * @returns {Object}
    */
 
-  toJSON() {
+  toJSON():OutpointJson {
     return {
       hash: util.revHex(this.hash),
       index: this.index

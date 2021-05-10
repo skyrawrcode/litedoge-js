@@ -26,7 +26,7 @@ export interface CoinJson {
   script: string;
   coinstake: boolean;
   coinbase: boolean;
-  value: bigint|number;
+  value: string;
   height: number;
   version: number;
   address: Address;
@@ -276,8 +276,7 @@ export class Coin extends Output {
    * @param {Boolean} minimal
    * @returns {Object}
    */
-
-  getJSON(network: Network = null, minimal: boolean=null): CoinJson {
+  getJSON(network: Network = null, minimal?: boolean): CoinJson {
     let addr = this.getAddress();
 
     network = Network.get(network);
@@ -288,7 +287,7 @@ export class Coin extends Output {
     return {
       version: this.version,
       height: this.height,
-      value: Number(this.value),
+      value: this.value.toString(),
       script: this.script.toJSON(),
       address: addr,
       coinbase: this.coinbase,

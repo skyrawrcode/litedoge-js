@@ -29,7 +29,7 @@ const {assert} = bsert;
  * @param {Boolean} malleated
  */
 
-class VerifyError extends Error {
+export class VerifyError extends Error {
   type: string;
   code: string;
   reason: string;
@@ -74,4 +74,4 @@ class VerifyError extends Error {
  * Expose
  */
 
-exports.VerifyError = VerifyError;
+export default VerifyError;

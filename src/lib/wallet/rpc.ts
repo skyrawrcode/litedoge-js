@@ -599,7 +599,7 @@ export class RPC extends RPCBase {
     return Amount.btc(total, true);
   }
 
-  async _toWalletTX(wtx) {
+  async _toWalletTX(wtx, watchOnly?:boolean) {
     const wallet = this.wallet;
     const details = await wallet.toDetails(wtx);
 

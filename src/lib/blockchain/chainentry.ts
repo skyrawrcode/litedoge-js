@@ -7,19 +7,19 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const BN = require('bcrypto/lib/bn.js');
-const consensus = require('../protocol/consensus');
-const hash256 = require('bcrypto/lib/hash256');
-const scrypt = require('bcrypto/lib/scrypt')
-const util = require('../utils/util');
-const Headers = require('../primitives/headers');
-const InvItem = require('../primitives/invitem');
-const Outpoint = require('../primitives/outpoint')
-const {inspectSymbol} = require('../utils');
-const Block = require('../primitives/block');
-const {Network} = require('../protocol')
+import assert from 'bsert';
+import bio from 'bufio';
+import BN from 'bcrypto/lib/bn.js';
+import * as consensus from '../protocol/consensus';
+import hash256 from 'bcrypto/lib/hash256';
+import scrypt from 'bcrypto/lib/scrypt';
+import * as util from '../utils/util';
+import {Headers} from '../primitives/headers';
+import {InvItem} from '../primitives/invitem';
+import {Outpoint} from '../primitives/outpoint';
+import { inspectSymbol } from '../utils';
+import {Block} from '../primitives/block';
+import { Network } from '../protocol';
 /*
  * Constants
  */
@@ -29,6 +29,29 @@ const ZERO = new BN(0);
 const BLOCK_PROOF_OF_STAKE = (1 << 0);
 const BLOCK_STAKE_ENTROPY = (1 << 1);
 const BLOCK_STAKE_MODIFIER = (1 << 2);
+
+export interface ChainEntryOptions {
+
+ 
+ 
+  hash: Buffer;
+  version: number;
+  prevBlock:Buffer
+  merkleRoot: Buffer;
+  time: number;
+  bits:number;
+  nonce:number;
+  vchBlockSig:Buffer;
+  height:number;
+  chaintrust:BN;
+  flags?:number;
+
+  prevoutStake: Outpoint;
+  stakeTime: number;
+  stakeModifier: BN;
+  
+  proofHash: any;
+}
 
 /**
  * Chain Entry
@@ -57,13 +80,28 @@ const BLOCK_STAKE_MODIFIER = (1 << 2);
  */
 
 export class ChainEntry {
+  hash: Buffer;
+  version: number;
+  prevBlock: Buffer;
+  merkleRoot: Buffer;
+  time: number;
+  bits: number;
+  nonce: number;
+  vchBlockSig: Buffer;
+  height: number;
+  flags: number;
+  chaintrust: BN;
+  prevoutStake: Outpoint;
+  stakeTime: number;
+  stakeModifier: BN;
+  proofHash: Buffer;
   /**
    * Create a chain entry.
    * @constructor
    * @param {Object?} options
    */
 
-  constructor(options) {
+  constructor(options?:ChainEntryOptions) {
     this.hash = consensus.ZERO_HASH;
     this.version = 1;
     this.prevBlock = consensus.ZERO_HASH;
@@ -90,7 +128,7 @@ export class ChainEntry {
    * @param {Object} options
    */
 
-  fromOptions(options) {
+  fromOptions(options: ChainEntryOptions) {
     assert(options, 'Block data is required.');
     assert(Buffer.isBuffer(options.hash));
     assert((options.version >>> 0) === options.version);
@@ -130,8 +168,8 @@ export class ChainEntry {
    * @returns {ChainEntry}
    */
 
-  static fromOptions(options, prev) {
-    return new this().fromOptions(options, prev);
+  static fromOptions(options:ChainEntryOptions, prev?:ChainEntry):ChainEntry {
+    return new this().fromOptions(options);
   }
 
   /**
@@ -145,7 +183,7 @@ export class ChainEntry {
     if (target.isNeg() || target.isZero())
       return new BN(0);
 
-    return ChainEntry.MAX_CHAINTRUST.div(target.iaddn(1));
+    return MAX_CHAINTRUST.div(target.iaddn(1));
   }
 
   /**
@@ -525,5 +563,5 @@ export class ChainEntry {
  * The max trust (1 << 256).
  * @const {BN}
  */
-ChainEntry.MAX_CHAINTRUST = new BN(1).ushln(256);
+export const MAX_CHAINTRUST = new BN(1).ushln(256);
 

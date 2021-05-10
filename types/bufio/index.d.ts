@@ -1,6 +1,7 @@
 declare module "bufio" {
-    const _exports: typeof import("bufio/lib/bufio");
-    export = _exports;
+    export * from "bufio/lib/bufio";
+    // const _exports: typeof import("bufio/lib/bufio");
+    // export = _exports;
 }
 declare module "bufio/lib/custom" {
     export var custom: any;
@@ -1062,7 +1063,7 @@ declare module "bufio/lib/writer" {
          * @param {String}
          * @param {String?} enc - Any buffer-supported encoding.
          */
-        writeVarString(value: any, enc: string | null): BufferWriter;
+        writeVarString(value: any, enc?: string | null): BufferWriter;
         /**
          * Write a null-terminated string.
          * @param {String|Buffer}
@@ -1504,7 +1505,7 @@ declare module "bufio/lib/staticwriter" {
          * @param {String}
          * @param {String?} enc - Any buffer-supported encoding.
          */
-        writeVarString(value: any, enc: string | null): StaticWriter;
+        writeVarString(value: any, enc?: string | null): StaticWriter;
         /**
          * Write a null-terminated string.
          * @param {String|Buffer}

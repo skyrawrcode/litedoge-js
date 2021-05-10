@@ -9,7 +9,7 @@
 
 import assert from 'bsert';
 import base58 from 'bcrypto/lib/encoding/base58';
-import bio from 'bufio';
+import bio, { BufferReader, BufferWriter, StaticWriter } from 'bufio';
 import hash160 from 'bcrypto/lib/hash160';
 import hash256 from 'bcrypto/lib/hash256';
 import {Network} from '../protocol/network';
@@ -34,6 +34,10 @@ export interface KeyRingOptions {
   script: Script;
   compressed?: boolean;
 
+}
+
+export interface KeyRingJson {
+  
 }
 
 /**
@@ -466,7 +470,8 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Address|AddressString}
    */
 
-  getScriptAddress(enc, network) {
+  getScriptAddress(enc, network) 
+  getScriptAddress(enc: 'base58'|'string', network:Network) {
     if (!this.script)
       return null;
 
@@ -506,7 +511,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Address|AddressString}
    */
 
-  getKeyAddress(enc?: 'base58' | null, network?) {
+  getKeyAddress(enc?: 'base58'|string|null | null, network?:Network) {
     if (!this._keyAddress) {
       const hash = this.getKeyHash();
       this._keyAddress = Address.fromPubkeyhash(hash);
@@ -540,8 +545,9 @@ export class KeyRing implements KeyRingOptions {
    * @param {String?} enc - `"base58"` or `null`.
    * @returns {Address|AddressString}
    */
-
-  getAddress(enc, network) {
+  getAddress(): Address
+  getAddress(enc?:'base58'|'string', network?:Network):string
+  getAddress(enc?:'base58'|'string'|null, network?:Network):string|Address{
 
     if (this.script)
       return this.getScriptAddress(enc, network);
@@ -671,7 +677,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Object}
    */
 
-  toJSON(network?) {
+  toJSON(network?):KeyRingJson {
     return {
       publicKey: this.publicKey.toString('hex'),
       script: this.script ? this.script.toRaw().toString('hex') : null,
@@ -694,7 +700,8 @@ export class KeyRing implements KeyRingOptions {
     this.publicKey = Buffer.from(json.publicKey, 'hex');
 
     if (json.script)
-      this.script = Buffer.from(json.script, 'hex');
+    
+      this.script = Script.fromJSON(json.script);
 
     return this;
   }
@@ -705,7 +712,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {KeyRing}
    */
 
-  static fromJSON(json) {
+  static fromJSON(json):KeyRing {
     return new this().fromJSON(json);
   }
 
@@ -714,7 +721,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Number}
    */
 
-  getSize() {
+  getSize():number {
     let size = 0;
     size += 1;
     if (this.privateKey) {
@@ -732,7 +739,7 @@ export class KeyRing implements KeyRingOptions {
    * @param {BufferWriter} bw
    */
 
-  toWriter(bw) {
+  toWriter(bw:BufferWriter|StaticWriter):BufferWriter|StaticWriter  {
     let field = 0;
 
     bw.writeU8(field);
@@ -757,7 +764,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Buffer}
    */
 
-  toRaw() {
+  toRaw(): Buffer {
     const size = this.getSize();
     return this.toWriter(bio.write(size)).render();
   }
@@ -768,7 +775,7 @@ export class KeyRing implements KeyRingOptions {
    * @param {BufferReader} br
    */
 
-  fromReader(br) {
+  fromReader(br:BufferReader):KeyRing {
     const field = br.readU8();
 
     const key = br.readVarBytes();
@@ -796,7 +803,7 @@ export class KeyRing implements KeyRingOptions {
    * @param {Buffer} data
    */
 
-  fromRaw(data) {
+  fromRaw(data:Buffer)  {
     return this.fromReader(bio.read(data));
   }
 
@@ -806,7 +813,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {KeyRing}
    */
 
-  static fromReader(br) {
+  static fromReader(br:BufferReader):KeyRing {
     return new this().fromReader(br);
   }
 
@@ -816,7 +823,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {KeyRing}
    */
 
-  static fromRaw(data) {
+  static fromRaw(data: Buffer): KeyRing {
     return new this().fromRaw(data);
   }
 
@@ -826,7 +833,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Boolean}
    */
 
-  static isKeyRing(obj) {
+  static isKeyRing(obj: object): boolean {
     return obj instanceof KeyRing;
   }
 }

@@ -10,29 +10,37 @@
 import assert from 'bsert';
 import { encoding } from 'bufio';
 import { BufferMap } from 'buffer-map';
-import {TX} from './tx';
-import {Input} from './input';
-import {Output} from './output';
+import {TX, TXJson} from './tx';
+import {Input, InputOptions} from './input';
+import {Output, OutputOptions} from './output';
 import {Coin} from './coin';
 import {Outpoint} from './outpoint';
 import {CoinView} from '../coins/coinview';
 import {Address} from './address';
-import {consensus} from '../protocol';
+import {consensus, Network} from '../protocol';
 import {policy} from '../protocol';
 import {Amount} from '../btc/amount';
 import {Stack} from '../script/stack';
 import {util} from '../utils';
 import { inspectSymbol } from '../utils';
 import { Script } from '../script';
-import { VerifyFlags } from '../script/common';
+import { SighashType, VerifyFlags } from '../script/common';
+import BufferReader from "bufio/lib/reader";
+import {WorkerPool} from "../workers";
+import { Verify } from 'node:crypto';
+import { KeyRing } from './keyring';
 
 export interface MTXOptions {
-  changeIndex: any;
-  locktime: number;
-  outputs: Output[];
-  inputs: Input[];
-  time: number;
-  version: number;
+  changeIndex?: any;
+  locktime?: number;
+  outputs?: OutputOptions[];
+  inputs?: Input[];
+  time?: number;
+  version?: number;
+
+}
+
+export interface MTXJson extends TXJson {
 
 }
 
@@ -132,7 +140,7 @@ export class MTX extends TX {
    * @returns {MTX}
    */
 
-  clone(): TX {
+  clone(): MTX {
     const mtx = new MTX();
     mtx.inject(this);
     mtx.changeIndex = this.changeIndex;
@@ -149,7 +157,7 @@ export class MTX extends TX {
    * mtx.addInput(new Input());
    */
 
-  addInput(options: Input | object): Input {
+  addInput(options: InputOptions ): Input {
     const input = Input.fromOptions(options);
     this.inputs.push(input);
     return input;
@@ -206,7 +214,7 @@ export class MTX extends TX {
    * mtx.addTX(tx, 0);
    */
 
-  addTX(tx: TX, index: number, height: number | null): Input {
+  addTX(tx: TX, index: number, height?: number | null): Input {
     assert(tx instanceof TX, 'Cannot add non-transaction.');
 
     if (height == null)
@@ -234,13 +242,13 @@ export class MTX extends TX {
    * mtx.addOutput(script, 100000);
    */
 
-  addOutput(script: Address | Script | Output | object, value: Amount | null = null): Output {
-    let output;
+  addOutput(script: Address | Script | Output | object, value: bigint | null = null): Output {
+    let output:Output;
 
     if (value != null)
-      output = Output.fromScript(script, value);
+      output = Output.fromScript(script as Script | Address, value);
     else
-      output = Output.fromOptions(script);
+      output = Output.fromOptions(script as Output);
 
     this.outputs.push(output);
 
@@ -250,12 +258,12 @@ export class MTX extends TX {
   /**
    * Verify all transaction inputs.
    * @param {VerifyFlags} [flags=STANDARD_VERIFY_FLAGS]
-   * @returns {Boolean} Whether the inputs are valid.
    * @throws {ScriptError} on invalid inputs
    */
 
-  check(flags: VerifyFlags): boolean {
-    return super.check(this.view, flags);
+  check(flags:VerifyFlags):void
+  check(flags?: VerifyFlags| CoinView): void {
+    super.check(this.view, flags as VerifyFlags);
   }
 
   /**
@@ -266,8 +274,8 @@ export class MTX extends TX {
    * @returns {Promise}
    */
 
-  checkAsync(flags: VerifyFlags | null, pool: WorkerPool | null): Promise<any> {
-    return super.checkAsync(this.view, flags, pool);
+  checkAsync(flags?:VerifyFlags|CoinView, pool ?: VerifyFlags|WorkerPool): Promise<void> {
+    return super.checkAsync(this.view, flags as VerifyFlags, pool as WorkerPool);
   }
 
   /**
@@ -276,9 +284,10 @@ export class MTX extends TX {
    * @returns {Boolean} Whether the inputs are valid.
    */
 
-  verify(flags: VerifyFlags): boolean {
+  verify(flags?: VerifyFlags|any): boolean
+  {
     try {
-      this.check(flags);
+      this.check(flags as VerifyFlags);
     } catch (e) {
       if (e.type === 'ScriptError')
         return false;
@@ -295,7 +304,7 @@ export class MTX extends TX {
    * @returns {Promise}
    */
 
-  async verifyAsync(flags: VerifyFlags | null, pool: WorkerPool | null): Promise<any> {
+  async verifyAsync(flags: VerifyFlags | any, pool: WorkerPool | null): Promise<any> {
     try {
       await this.checkAsync(flags, pool);
     } catch (e) {
@@ -347,7 +356,13 @@ export class MTX extends TX {
    * @returns {Hash[]} hashes
    */
 
-  getInputHashes(enc): Hash[] {
+  getInputHashes(enc:'hex'): string[] 
+  getInputHashes(enc?:'hex'|null): Buffer[] 
+  getInputHashes(enc?:'hex'|null): Buffer[]|string[] 
+  getInputHashes(view: CoinView | null|'hex', enc?:'hex'): string[] 
+  getInputHashes(view: CoinView | null|'hex', enc?:'hex'|null): Buffer[]
+  getInputHashes(view: CoinView | null|'hex', enc?:'hex'|null): Buffer[]|string[]
+  {
     return super.getInputHashes(this.view, enc);
   }
 
@@ -356,7 +371,7 @@ export class MTX extends TX {
    * @returns {Hash[]} hashes
    */
 
-  getHashes(enc): Hash[] {
+  getHashes(enc?:'hex'|null): string[]|Buffer[] {
     return super.getHashes(this.view, enc);
   }
 
@@ -498,7 +513,7 @@ export class MTX extends TX {
    * @return {Stack}
    */
 
-  scriptVector(prev: Script, ring: Buffer): Stack {
+  scriptVector(prev: Script, ring: KeyRing): Stack {
     // P2PK
     const pk = prev.getPubkey();
     if (pk) {
@@ -564,7 +579,7 @@ export class MTX extends TX {
     if (!pool)
       return this.signInput(index, coin, ring, type);
 
-    return await pool.signInput(this, index, coin, ring, type, pool);
+    return await pool.signInput(this, index, coin, ring, type);
   }
 
   /**
@@ -638,7 +653,7 @@ export class MTX extends TX {
    * @return {Boolean}
    */
 
-  signVector(prev: Script, vector: Stack, sig: Buffer, ring: KeyRing): boolean {
+  signVector(prev: Script, vector: Stack, sig: Buffer, ring: KeyRing): Stack {
     // P2PK
     const pk = prev.getPubkey();
     if (pk) {
@@ -1168,7 +1183,7 @@ export class MTX extends TX {
    * @returns {CoinSelector}
    */
 
-  async fund(coins: Coin[], options: object): CoinSelector {
+  async fund(coins: Coin[], options: object): Promise<CoinSelector> {
     assert(options, 'Options are required.');
     assert(options.changeAddress, 'Change address is required.');
     assert(this.inputs.length === 0, 'TX is already funded.');
@@ -1324,7 +1339,7 @@ export class MTX extends TX {
    * @returns {Object}
    */
 
-  getJSON(network: Network): object {
+  getJSON(network: Network): MTXJson {
     return super.getJSON(network, this.view);
   }
 
@@ -1333,7 +1348,7 @@ export class MTX extends TX {
    * @param {Object} json
    */
 
-  fromJSON(json: object) {
+  fromJSON(json: MTXJson) {
     super.fromJSON(json);
 
     for (let i = 0; i < json.inputs.length; i++) {
@@ -1382,7 +1397,7 @@ export class MTX extends TX {
    * @returns {MTX}
    */
 
-  static fromRaw(data: Buffer, enc: string | null): MTX {
+  static fromRaw(data: Buffer, enc?: 'hex' | null): MTX {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -1429,29 +1444,50 @@ export class MTX extends TX {
 
 }
 
+export interface CoinSelectorOptions {
+  subtractIndex: any;
+  height: any;
+  confirmations: any;
+  depth: number;
+  hardFee: bigint;
+  rate: any;
+  maxFee: bigint;
+  
+  estimate: any;
+  inputs: any;
+  selection: string;
+  
+  changeAddress: Address | string;
+  subtractFee: boolean | number; //todo:: better type this
+  round: boolean;
+  
+}
 /**
  * Coin Selector
  * @alias module:primitives.CoinSelector
  */
 
 export class CoinSelector {
-  tx: TX;
+  static MIN_FEE: bigint;
+  static MAX_FEE: bigint;
+  static FEE_RATE: bigint;
+  
+  tx: MTX;
   coins: any[];
-  outputValue: number;
+  outputValue: bigint;
   index: number;
   chosen: any[];
-  change: number;
+  change: bigint;
   fee: any;
-  static MIN_FEE: any;
   selection: string;
   subtractFee: boolean;
   subtractIndex: number;
   height: number;
   depth: number;
-  hardFee: number;
+  hardFee: bigint;
   rate: any;
-  static FEE_RATE: any;
-  maxFee: number;
+  
+  maxFee: bigint;
   round: boolean;
   changeAddress: any;
   inputs: any;
@@ -1463,13 +1499,13 @@ export class CoinSelector {
    * @param {Object?} options
    */
 
-  constructor(tx: TX, options: object | null) {
+  constructor(tx: MTX, options?: CoinSelectorOptions | null) {
     this.tx = tx.clone();
     this.coins = [];
-    this.outputValue = 0;
+    this.outputValue = 0n;
     this.index = 0;
     this.chosen = [];
-    this.change = 0;
+    this.change = 0n;
     this.fee = CoinSelector.MIN_FEE;
 
     this.selection = 'value';
@@ -1477,9 +1513,9 @@ export class CoinSelector {
     this.subtractIndex = -1;
     this.height = -1;
     this.depth = -1;
-    this.hardFee = -1;
+    this.hardFee = -1n;
     this.rate = CoinSelector.FEE_RATE;
-    this.maxFee = -1;
+    this.maxFee = -1n;
     this.round = false;
     this.changeAddress = null;
     this.inputs = new BufferMap();
@@ -1499,7 +1535,7 @@ export class CoinSelector {
    * @private
    */
 
-  fromOptions(options: object) {
+  fromOptions(options: CoinSelectorOptions) {
     if (options.selection) {
       assert(typeof options.selection === 'string');
       this.selection = options.selection;
@@ -1544,19 +1580,17 @@ export class CoinSelector {
 
     if (options.hardFee != null) {
       assert(Number.isSafeInteger(options.hardFee));
-      assert(options.hardFee >= -1);
+      assert(options.hardFee >= -1n);
       this.hardFee = options.hardFee;
     }
 
     if (options.rate != null) {
-      assert(Number.isSafeInteger(options.rate));
-      assert(options.rate >= 0);
+      assert(options.rate >= 0n);
       this.rate = options.rate;
     }
 
     if (options.maxFee != null) {
-      assert(Number.isSafeInteger(options.maxFee));
-      assert(options.maxFee >= -1);
+      assert(options.maxFee >= -1n);
       this.maxFee = options.maxFee;
     }
 
@@ -1619,7 +1653,7 @@ export class CoinSelector {
     this.outputValue = this.tx.getOutputValue();
     this.index = 0;
     this.chosen = [];
-    this.change = 0;
+    this.change = 0n;
     this.fee = CoinSelector.MIN_FEE;
     this.tx.inputs.length = 0;
 
@@ -1644,7 +1678,7 @@ export class CoinSelector {
    * @returns {Amount}
    */
 
-  total(): Amount {
+  total(): bigint {
     if (this.subtractFee)
       return this.outputValue;
     return this.outputValue + this.fee;
@@ -1701,22 +1735,19 @@ export class CoinSelector {
    * @returns {Amount}
    */
 
-  getFee(size: number): Amount {
+  getFee(size: number): bigint {
     // This is mostly here for testing.
     // i.e. A fee rounded to the nearest
     // kb is easier to predict ahead of time.
     if (this.round) {
       const fee = policy.getRoundFee(size, this.rate);
-      return Math.min(fee, CoinSelector.MAX_FEE);
+      return fee < CoinSelector.MAX_FEE?fee:CoinSelector.MAX_FEE;
     }
 
     const fee = policy.getMinFee(size, this.rate);
-    return Math.min(fee, CoinSelector.MAX_FEE);
+    return fee <  CoinSelector.MAX_FEE?fee:CoinSelector.MAX_FEE;
   }
 
-  static MAX_FEE(fee: any, MAX_FEE: any): bigint {
-    throw new Error('Method not implemented.');
-  }
 
   /**
    * Fund the transaction with more
@@ -1775,10 +1806,10 @@ export class CoinSelector {
    * @returns {CoinSelector}
    */
 
-  async select(coins: Coin[]): CoinSelector {
+  async select(coins: Coin[]): Promise<CoinSelector> {
     this.init(coins);
 
-    if (this.hardFee !== -1) {
+    if (this.hardFee !== -1n) {
       this.selectHard();
     } else {
       // This is potentially asynchronous:
@@ -1847,7 +1878,7 @@ export class CoinSelector {
    */
 
   selectHard() {
-    this.fee = Math.min(this.hardFee, CoinSelector.MAX_FEE);
+    this.fee = this.hardFee<  CoinSelector.MAX_FEE?this.hardFee:CoinSelector.MAX_FEE;
     this.fund();
   }
 }
@@ -1859,7 +1890,7 @@ export class CoinSelector {
  * @default
  */
 
-CoinSelector.FEE_RATE = 10000;
+CoinSelector.FEE_RATE = 10000n;
 
 /**
  * Minimum fee to start with
@@ -1868,7 +1899,7 @@ CoinSelector.FEE_RATE = 10000;
  * @default
  */
 
-CoinSelector.MIN_FEE = 10000;
+CoinSelector.MIN_FEE = 10000n;
 
 /**
  * Maximum fee to allow
@@ -1890,20 +1921,21 @@ CoinSelector.MAX_FEE = consensus.COIN / 10n;
  */
 
 export class FundingError extends Error {
-  requiredFunds: number;
   type: string;
-  availableFunds: number;
+  availableFunds: bigint;
+  requiredFunds: bigint;
+  
   /**
    * Create a funding error.
    */
 
-  constructor(msg: string, available: number, required: number) {
+  constructor(msg: string, available?: bigint, required?: bigint) {
     super();
 
     this.type = 'FundingError';
     this.message = msg;
-    this.availableFunds = -1;
-    this.requiredFunds = -1;
+    this.availableFunds = -1n;
+    this.requiredFunds = -1n;
 
     if (available != null) {
       this.message += ` (available=${Amount.btc(available)},`;

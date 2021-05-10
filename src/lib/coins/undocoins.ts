@@ -6,9 +6,9 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const CoinEntry = require('./coinentry');
+import assert from 'bsert';
+import bio from 'bufio';
+import {CoinEntry} from './coinentry';
 
 /**
  * Undo Coins
@@ -21,6 +21,7 @@ const CoinEntry = require('./coinentry');
  */
 
 class UndoCoins {
+  items:CoinEntry[];
   /**
    * Create undo coins.
    * @constructor
@@ -36,7 +37,7 @@ class UndoCoins {
    * @returns {Number}
    */
 
-  push(coin) {
+  push(coin:CoinEntry) :number{
     return this.items.push(coin);
   }
 

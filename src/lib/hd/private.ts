@@ -6,20 +6,23 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const base58 = require('bcrypto/lib/encoding/base58');
-const sha512 = require('bcrypto/lib/sha512');
-const hash160 = require('bcrypto/lib/hash160');
-const hash256 = require('bcrypto/lib/hash256');
-const cleanse = require('bcrypto/lib/cleanse');
-const random = require('bcrypto/lib/random');
-const secp256k1 = require('bcrypto/lib/secp256k1');
-const Network = require('../protocol/network');
-const consensus = require('../protocol/consensus');
-const common = require('./common');
-const Mnemonic = require('./mnemonic');
-const HDPublicKey = require('./public');
+import { BufferReader, BufferWriter } from "bufio";
+import { NetworkType } from "../types";
+
+import assert from 'bsert';
+import bio from 'bufio';
+import base58 from 'bcrypto/lib/encoding/base58';
+import sha512 from 'bcrypto/lib/sha512';
+import hash160 from 'bcrypto/lib/hash160';
+import hash256 from 'bcrypto/lib/hash256';
+import cleanse from 'bcrypto/lib/cleanse';
+import random from 'bcrypto/lib/random';
+import secp256k1 from 'bcrypto/lib/secp256k1';
+import { Network } from '../protocol/network';
+import * as consensus from '../protocol/consensus';
+import * as common from './common';
+import { Mnemonic } from './mnemonic';
+import { HDPublicKey } from './public';
 
 /*
  * Constants
@@ -31,8 +34,8 @@ export interface HDPrivateKeyOptions {
   depth: number;
   parentFingerPrint: number;
   childIndex: number;
-  chainCode:Buffer;
-  privateKey:Buffer;
+  chainCode: Buffer;
+  privateKey: Buffer;
 
 }
 /**
@@ -663,7 +666,7 @@ export class HDPrivateKey {
    * @returns {HDPrivateKey}
    */
 
-  static fromBase58(xkey: Base58String, network: Network | null): HDPrivateKey {
+  static fromBase58(xkey: string, network: Network | null): HDPrivateKey {
     return new this().fromBase58(xkey, network);
   }
 

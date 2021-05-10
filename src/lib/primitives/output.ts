@@ -8,7 +8,7 @@
 'use strict';
 
 import bsert from 'bsert';
-import { Network } from '../protocol';
+import {Network} from '../protocol';
 
 const {assert} = bsert;
 import bio from 'bufio';
@@ -17,10 +17,14 @@ import {Address} from './address';
 import {Script} from '../script';
 
 import {policy} from '../protocol';
-import { inspectSymbol } from '../utils';
-
+import {inspectSymbol} from '../utils';
+export interface OutputJson{
+  value?:string;
+  script?:string;
+  address?:Address;
+}
 export interface OutputOptions {
-  address?: string|Address;
+  address?: string | Address;
   script?: Script;
   value?: bigint;
 
@@ -43,7 +47,7 @@ export class Output {
    * @param {OutputOptions?} options
    */
 
-  constructor(options:OutputOptions = null) {
+  constructor(options: OutputOptions = null) {
     this.value = BigInt(0);
     this.script = new Script();
 
@@ -57,11 +61,11 @@ export class Output {
    * @param {Object} options
    */
 
-  fromOptions(options:OutputOptions) {
+  fromOptions(options: OutputOptions) {
     assert(options, 'Output data is required.');
 
     if (options.value) {
-      assert( options.value >= 0n, 'Value must be a uint64.');
+      assert(options.value >= 0n, 'Value must be a uint64.');
       this.value = options.value;
     }
 
@@ -80,7 +84,7 @@ export class Output {
    * @returns {Output}
    */
 
-  static fromOptions(options:OutputOptions):Output {
+  static fromOptions(options: OutputOptions): Output {
     return new Output().fromOptions(options);
   }
 
@@ -92,7 +96,7 @@ export class Output {
    * @returns {Output}
    */
 
-  fromScript(script:string|Script|Address, value:bigint):Output {
+  fromScript(script: string | Script | Address, value: bigint): Output {
     if (typeof script === 'string')
       script = Address.fromString(script);
 
@@ -116,7 +120,7 @@ export class Output {
    * @returns {Output}
    */
 
-  static fromScript(script, value) {
+  static fromScript(script: Script | Address, value: bigint): Output {
     return new this().fromScript(script, value);
   }
 
@@ -214,7 +218,7 @@ export class Output {
    * @returns {Object}
    */
 
-  toJSON():any {
+  toJSON(): any {
     return this.getJSON();
   }
 
@@ -225,7 +229,7 @@ export class Output {
    * @returns {Object}
    */
 
-  getJSON(network?:Network) {
+  getJSON(network?: Network): OutputJson {
     let addr = this.getAddress();
 
     network = Network.get(network);
@@ -247,10 +251,10 @@ export class Output {
    * @returns {Number}
    */
 
-  getDustThreshold(rate) {
+  getDustThreshold(rate:bigint):bigint {
 
     if (this.script.isUnspendable())
-      return 0;
+      return 0n;
 
     let size = this.getSize();
     size += 32 + 4 + 1 + 107 + 4;
@@ -273,7 +277,7 @@ export class Output {
    * @returns {Boolean}
    */
 
-  isDust(rate) {
+  isDust(rate?:bigint):boolean {
     return this.value < this.getDustThreshold(rate);
   }
 

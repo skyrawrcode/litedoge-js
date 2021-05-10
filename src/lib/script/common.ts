@@ -287,7 +287,7 @@ export enum SighashType  {
  * @enum {Number}
  */
 
-export enum types {
+export enum ScriptTypes {
   NONSTANDARD = 0,
   PUBKEY = 1,
   PUBKEYHASH = 2,

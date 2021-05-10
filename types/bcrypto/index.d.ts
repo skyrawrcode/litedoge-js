@@ -1235,11 +1235,11 @@ declare module "bcrypto/lib/internal/custom" {
     export var custom: any;
 }
 declare module "bcrypto/lib/native/bn" {
-    export = BN;
+    export default BN;
     /**
      * BN
      */
-    class BN {
+    export class BN {
         static min(...args: any[]): any;
         static max(...args: any[]): any;
         static cmp(a: any, b: any): any;
@@ -1269,7 +1269,7 @@ declare module "bcrypto/lib/native/bn" {
         static from(num: any, base: any, endian: any): BN;
         static cast(num: any, base: any, endian: any): any;
         static isBN(obj: any): boolean;
-        constructor(num: any, base: any, endian: any);
+        constructor(num: any, base?: any, endian?: any);
         n: bigint;
         red: any;
         set negative(arg: 1 | 0);
@@ -1514,16 +1514,14 @@ declare module "bcrypto/lib/native/bn" {
         decode(data: any, endian: any): BN;
         from(num: any, base: any, endian: any): BN;
     }
-    namespace BN {
-        export { BN };
-        export const wordSize: number;
-        export const native: number;
-        export { Red };
-    }
+
+    export const wordSize: number;
+    export const native: number;
+    
     /**
      * Reduction Engine
      */
-    class Red {
+    export class Red {
         constructor(m: any);
         m: any;
         n: any;
@@ -1585,11 +1583,12 @@ declare module "bcrypto/lib/native/bn" {
     }
 }
 declare module "bcrypto/lib/js/bn" {
-    export = BN;
+     
+    export default BN;
     /**
      * BN
      */
-    class BN {
+    export class BN {
         static min(...args: any[]): any;
         static max(...args: any[]): any;
         static cmp(a: any, b: any): any;
@@ -1619,7 +1618,7 @@ declare module "bcrypto/lib/js/bn" {
         static from(num: any, base: any, endian: any): BN;
         static cast(num: any, base: any, endian: any): any;
         static isBN(obj: any): boolean;
-        constructor(num: any, base: any, endian: any);
+        constructor(num: any, base?: any, endian?: any);
         words: number[];
         length: number;
         negative: number;
@@ -1885,16 +1884,12 @@ declare module "bcrypto/lib/js/bn" {
         decode(data: any, endian: any): BN;
         from(num: any, base: any, endian: any): BN;
     }
-    namespace BN {
-        export { BN };
         export const wordSize: number;
         export const native: number;
-        export { Red };
-    }
     /**
      * Reduction Engine
      */
-    class Red {
+    export class Red {
         constructor(m: any);
         m: any;
         prime: any;
@@ -1990,9 +1985,10 @@ declare module "bcrypto/lib/js/bn" {
     }
 }
 declare module "bcrypto/lib/bn" {
-    const _exports: typeof import("bcrypto/lib/native/bn") | typeof import("bcrypto/lib/js/bn");
-    export = _exports;
+    import BN from "bcrypto/lib/native/bn"
+    export = BN;
 }
+
 declare module "bcrypto/lib/js/salsa20" {
     export = Salsa20;
     /**
@@ -2191,13 +2187,13 @@ declare module "bcrypto/lib/js/elliptic" {
         clamp(scalar: any): any;
         splitHash(bytes: any): any[];
         encodeField(x: any): any;
-        decodeField(bytes: any): import("bcrypto/lib/native/bn") | import("bcrypto/lib/js/bn");
+        decodeField(bytes: any): typeof import("bcrypto/lib/native/bn") | typeof import("bcrypto/lib/js/bn");
         encodeAdjusted(x: any): any;
-        decodeAdjusted(bytes: any): import("bcrypto/lib/native/bn") | import("bcrypto/lib/js/bn");
+        decodeAdjusted(bytes: any): typeof import("bcrypto/lib/native/bn") |typeof import("bcrypto/lib/js/bn");
         encodeScalar(k: any): any;
-        decodeScalar(bytes: any): import("bcrypto/lib/native/bn") | import("bcrypto/lib/js/bn");
+        decodeScalar(bytes: any): typeof import("bcrypto/lib/native/bn") | typeof import("bcrypto/lib/js/bn");
         encodeClamped(k: any): any;
-        decodeClamped(bytes: any): import("bcrypto/lib/native/bn") | import("bcrypto/lib/js/bn");
+        decodeClamped(bytes: any): typeof import("bcrypto/lib/native/bn") |typeof  import("bcrypto/lib/js/bn");
         encodeUniform(x: any, bits: any): any;
         decodeUniform(bytes: any): any;
         encodePoint(point: any, compact: any): any;
@@ -2282,7 +2278,7 @@ declare module "bcrypto/lib/js/elliptic" {
         eqR(x: any): void;
         isSmall(): any;
         hasTorsion(): boolean;
-        order(): import("bcrypto/lib/native/bn") | import("bcrypto/lib/js/bn");
+        order(): typeof import("bcrypto/lib/native/bn") | typeof import("bcrypto/lib/js/bn");
         mul(k: any): any;
         muln(k: any): any;
         mulBlind(k: any, rng: any): any;
@@ -2707,7 +2703,7 @@ declare module "bcrypto/lib/js/elliptic" {
      */
     class ED448 extends EdwardsCurve {
     }
-    export {};
+    export { };
 }
 declare module "bcrypto/lib/js/ecdh" {
     export = ECDH;
@@ -3043,7 +3039,7 @@ declare module "bcrypto/lib/js/cipher" {
         setAuthTag(tag: any): CipherBase;
     }
     import modes = require("bcrypto/lib/js/ciphers/modes");
-    export {};
+    export { };
 }
 declare module "bcrypto/lib/native/cipher" {
     export var native: number;
@@ -3082,7 +3078,7 @@ declare module "bcrypto/lib/native/cipher" {
         getAuthTag(): any;
         setAuthTag(tag: any): CipherBase;
     }
-    export {};
+    export { };
 }
 declare module "bcrypto/lib/cipher" {
     const _exports: typeof import("bcrypto/lib/js/cipher") | typeof import("bcrypto/lib/native/cipher");
@@ -3912,7 +3908,7 @@ declare module "bcrypto/lib/js/eddsa" {
         publicKeyToUniform(key: any, hint?: number): any;
         publicKeyFromHash(bytes: any, pake?: boolean): any;
         publicKeyToHash(key: any, subgroup?: number): any;
-        publicKeyVerify(key: any): boolean;
+        static publicKeyVerify(key: any): boolean;
         publicKeyIsInfinity(key: any): any;
         publicKeyIsSmall(key: any): any;
         publicKeyHasTorsion(key: any): any;
@@ -3982,7 +3978,7 @@ declare module "bcrypto/lib/native/eddsa" {
         publicKeyToUniform(key: any, hint?: any): any;
         publicKeyFromHash(bytes: any, pake?: boolean): any;
         publicKeyToHash(key: any, subgroup?: any): any;
-        publicKeyVerify(key: any): any;
+        static publicKeyVerify(key: any): any;
         publicKeyIsInfinity(key: any): any;
         publicKeyIsSmall(key: any): any;
         publicKeyHasTorsion(key: any): any;
@@ -4983,7 +4979,7 @@ declare module "bcrypto/lib/js/ecdsa" {
         publicKeyToUniform(key: any, hint?: number): any;
         publicKeyFromHash(bytes: any, compress: any): any;
         publicKeyToHash(key: any): any;
-        publicKeyVerify(key: any): boolean;
+        static publicKeyVerify(key: any): boolean;
         publicKeyExport(key: any): {
             x: any;
             y: any;
@@ -5042,53 +5038,53 @@ declare module "bcrypto/lib/native/ecdsa" {
         get _handle(): any;
         get size(): any;
         get bits(): any;
-        privateKeyGenerate(): any;
-        privateKeyVerify(key: any): any;
-        privateKeyExport(key: any): {
+        static privateKeyGenerate(): any;
+        static privateKeyVerify(key: any): any;
+        static privateKeyExport(key: any): {
             d: any;
             x: any;
             y: any;
         };
-        privateKeyImport(json: any): any;
-        privateKeyTweakAdd(key: any, tweak: any): any;
-        privateKeyTweakMul(key: any, tweak: any): any;
-        privateKeyNegate(key: any): any;
-        privateKeyInvert(key: any): any;
-        publicKeyCreate(key: any, compress?: boolean): any;
-        publicKeyConvert(key: any, compress?: boolean): any;
-        publicKeyFromUniform(bytes: any, compress?: boolean): any;
-        publicKeyToUniform(key: any, hint?: any): any;
-        publicKeyFromHash(bytes: any, compress?: boolean): any;
-        publicKeyToHash(key: any): any;
-        publicKeyVerify(key: any): any;
-        publicKeyExport(key: any): {
+        static privateKeyImport(json: any): any;
+        static privateKeyTweakAdd(key: any, tweak: any): any;
+        static privateKeyTweakMul(key: any, tweak: any): any;
+        static privateKeyNegate(key: any): any;
+        static privateKeyInvert(key: any): any;
+        static publicKeyCreate(key: any, compress?: boolean): any;
+        static publicKeyConvert(key: any, compress?: boolean): any;
+        static publicKeyFromUniform(bytes: any, compress?: boolean): any;
+        static publicKeyToUniform(key: any, hint?: any): any;
+        static publicKeyFromHash(bytes: any, compress?: boolean): any;
+        static publicKeyToHash(key: any): any;
+        static publicKeyVerify(key: any): any;
+        static publicKeyExport(key: any): {
             x: any;
             y: any;
         };
-        publicKeyImport(json: any, compress?: boolean): any;
-        publicKeyTweakAdd(key: any, tweak: any, compress?: boolean): any;
-        publicKeyTweakMul(key: any, tweak: any, compress?: boolean): any;
-        publicKeyCombine(keys: any, compress?: boolean): any;
-        publicKeyNegate(key: any, compress?: boolean): any;
-        signatureNormalize(sig: any): any;
-        signatureNormalizeDER(sig: any): any;
-        signatureExport(sig: any): any;
-        signatureImport(sig: any): any;
-        isLowS(sig: any): any;
+        static publicKeyImport(json: any, compress?: boolean): any;
+        static publicKeyTweakAdd(key: any, tweak: any, compress?: boolean): any;
+        static publicKeyTweakMul(key: any, tweak: any, compress?: boolean): any;
+        static publicKeyCombine(keys: any, compress?: boolean): any;
+        static publicKeyNegate(key: any, compress?: boolean): any;
+        static signatureNormalize(sig: any): any;
+        static signatureNormalizeDER(sig: any): any;
+        static signatureExport(sig: any): any;
+        static signatureImport(sig: any): any;
+        static isLowS(sig: any): any;
         static isLowDER(sig: any): any;
-        sign(msg: any, key: any): any;
-        signRecoverable(msg: any, key: any): any;
+        static sign(msg: any, key: any): any;
+        static signRecoverable(msg: any, key: any): any;
         static signDER(msg: any, key: any): any;
-        
-        signRecoverableDER(msg: any, key: any): any;
-        verify(msg: any, sig: any, key: any): any;
+
+        static signRecoverableDER(msg: any, key: any): any;
+        static verify(msg: any, sig: any, key: any): any;
         static verifyDER(msg: any, sig: any, key: any): any;
-        recover(msg: any, sig: any, param: any, compress?: boolean): any;
-        recoverDER(msg: any, sig: any, param: any, compress?: boolean): any;
-        derive(pub: any, priv: any, compress?: boolean): any;
-        schnorrSign(msg: any, key: any): any;
-        schnorrVerify(msg: any, sig: any, key: any): any;
-        schnorrVerifyBatch(batch: any): any;
+        static recover(msg: any, sig: any, param: any, compress?: boolean): any;
+        static recoverDER(msg: any, sig: any, param: any, compress?: boolean): any;
+        static derive(pub: any, priv: any, compress?: boolean): any;
+        static schnorrSign(msg: any, key: any): any;
+        static schnorrVerify(msg: any, sig: any, key: any): any;
+        static schnorrVerifyBatch(batch: any): any;
     }
 }
 declare module "bcrypto/lib/native/p192" {
@@ -7347,7 +7343,7 @@ declare module "bcrypto/lib/encoding/asn1" {
      * String
      */
     export const Str: {
-        new (...options: any[]): {
+        new(...options: any[]): {
             value: string;
             readonly encoding: string;
             getBodySize(): any;
@@ -7385,7 +7381,7 @@ declare module "bcrypto/lib/encoding/asn1" {
      * Boolean
      */
     export const Bool: {
-        new (...options: any[]): {
+        new(...options: any[]): {
             value: boolean;
             readonly type: number;
             getBodySize(): number;
@@ -7491,7 +7487,7 @@ declare module "bcrypto/lib/encoding/asn1" {
     export class Enum extends Integer {
     }
     const Utf8String_base: {
-        new (...options: any[]): {
+        new(...options: any[]): {
             value: string;
             readonly encoding: string;
             getBodySize(): any;
@@ -7548,7 +7544,7 @@ declare module "bcrypto/lib/encoding/asn1" {
     export class RawSet extends RawSequence {
     }
     const NumString_base: {
-        new (...options: any[]): {
+        new(...options: any[]): {
             value: string;
             readonly encoding: string;
             getBodySize(): any;
@@ -7589,7 +7585,7 @@ declare module "bcrypto/lib/encoding/asn1" {
         get type(): number;
     }
     const PrintString_base: {
-        new (...options: any[]): {
+        new(...options: any[]): {
             value: string;
             readonly encoding: string;
             getBodySize(): any;
@@ -7630,7 +7626,7 @@ declare module "bcrypto/lib/encoding/asn1" {
         get type(): number;
     }
     const T61String_base: {
-        new (...options: any[]): {
+        new(...options: any[]): {
             value: string;
             readonly encoding: string;
             getBodySize(): any;
@@ -7671,7 +7667,7 @@ declare module "bcrypto/lib/encoding/asn1" {
         get type(): number;
     }
     const IA5String_base: {
-        new (...options: any[]): {
+        new(...options: any[]): {
             value: string;
             readonly encoding: string;
             getBodySize(): any;
@@ -7735,7 +7731,7 @@ declare module "bcrypto/lib/encoding/asn1" {
         get type(): number;
     }
     const GenString_base: {
-        new (...options: any[]): {
+        new(...options: any[]): {
             value: string;
             readonly encoding: string;
             getBodySize(): any;
@@ -8429,6 +8425,10 @@ declare module "bcrypto/lib/x448" {
     const _exports: typeof import("bcrypto/lib/js/ecdh") | typeof import("bcrypto/lib/native/ecdh");
     export = _exports;
 }
+declare module "bcrypto" {
+    import * as bcrypto from "bcrypto/lib/bcrypto";
+    export = bcrypto;
+}
 declare module "bcrypto/lib/bcrypto" {
     export var AEAD: typeof import("bcrypto/lib/js/aead") | typeof import("bcrypto/lib/native/aead");
     export var aes: typeof import("bcrypto/lib/js/aes");
@@ -8444,7 +8444,8 @@ declare module "bcrypto/lib/bcrypto" {
     export var BLAKE2s160: typeof import("bcrypto/lib/blake2s160");
     export var BLAKE2s224: typeof import("bcrypto/lib/blake2s224");
     export var BLAKE2s256: typeof import("bcrypto/lib/blake2s256");
-    export var BN: typeof import("bcrypto/lib/native/bn") | typeof import("bcrypto/lib/js/bn");
+    import BN from "bcrypto/lib/bn";
+    export {BN};
     export var box: typeof import("bcrypto/lib/box");
     export var ChaCha20: typeof import("bcrypto/lib/js/chacha20") | typeof import("bcrypto/lib/native/chacha20");
     export var cipher: typeof import("bcrypto/lib/js/cipher") | typeof import("bcrypto/lib/native/cipher");

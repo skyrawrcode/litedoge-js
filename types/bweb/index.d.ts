@@ -1,7 +1,3 @@
-declare module "bweb" {
-    const _exports: typeof import("bweb/lib/bweb");
-    export = _exports;
-}
 
 declare module "bweb/lib/mime" {
     export function file(path: any): any;
@@ -311,12 +307,12 @@ declare module "bweb/lib/rpc" {
     }
 }
 declare module "bweb/lib/server" {
-    export = Server;
+    import { EventEmitter } from 'node:events'
     /**
-     * HTTP Server
-     * @extends EventEmitter
-     */
-    class Server {
+      * HTTP Server
+      * @extends EventEmitter
+      */
+    export default class Server extends EventEmitter {
         /**
          * Create an http server.
          * @constructor
@@ -418,12 +414,16 @@ declare module "bweb/lib/server" {
          * @param {String?} path
          * @param {Function} handler
          */
-        use(path: string | null, handler: Function): void;
+        use(path: Function)
+        use(path: string, handler: Function)
+        use(path: string | Function | null, handler?: Function | null): void;
         /**
          * Add a hook to the stack.
          * @param {String?} path
          * @param {Function} handler
          */
+        hook(handler: Function)
+        hook(path: string, handler: Function)
         hook(path: string | null, handler: Function): void;
         /**
          * Add a GET route.
@@ -505,7 +505,7 @@ declare module "bweb/lib/server" {
          * Router middleware.
          * @returns {Function}
          */
-        router(routes: any): Function;
+        router(routes?: any): Function;
         /**
          * CORS middleware.
          * @returns {Function}
@@ -528,7 +528,7 @@ declare module "bweb/lib/server" {
          * @param {Object} rpc
          * @returns {Function}
          */
-        jsonRPC(rpc: any): Function;
+        jsonRPC(rpc?: any): Function;
         /**
          * Static file middleware.
          * @param {String} prefix
@@ -664,26 +664,31 @@ declare module "bweb/lib/middleware/index" {
     export var jsonRPC: typeof import("bweb/lib/middleware/jsonrpc");
     export var router: typeof import("bweb/lib/middleware/router");
 }
+
 declare module "bweb/lib/bweb" {
     export function createServer(options: any): Server;
     export function server(options: any): Server;
     export function router(): Router;
     export function rpc(): import("bweb/lib/rpc");
-    import Server = require("bweb/lib/server");
-    import Router = require("bweb/lib/router");
+    import Server from "bweb/lib/server";
+    import Router from "bweb/lib/router";
     import { RPC } from "bweb/lib/rpc";
     import { RPCError } from "bweb/lib/rpc";
     import { errors } from "bweb/lib/rpc";
-    import middleware = require("bweb/lib/middleware");
+    import middleware from "bweb/lib/middleware";
     export { Server, Router, RPC, RPCError, errors, middleware };
 }
+
+declare module "bweb" {
+    export * from "bweb/lib/bweb";
+}
+
 declare module "bweb/lib/server-browser" {
-    export = Server;
     /**
      * HTTP Server
      * @extends EventEmitter
      */
-    class Server {
+    export default class Server {
         /**
          * Create an http server.
          * @constructor

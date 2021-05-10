@@ -7,13 +7,35 @@
 'use strict';
 
 import {ChainEntry} from "../blockchain/chainentry";
-import { TX } from "./tx";
+import { TX, TXJson } from "./tx";
 
-const assert = require('bsert');
-const bio = require('bufio');
-const util = require('../utils/util');
-const {inspectSymbol} = require('../utils');
+import assert from 'bsert';
+import bio from 'bufio';
+import * as util from '../utils/util';
+import { inspectSymbol } from '../utils';
+import { CoinView } from "../coins/coinview";
+import { Network } from "../protocol";
 
+export interface FormattedTXMeta {
+  mtime: number;
+  time:number;
+  height:number;
+  block:string;
+}
+
+export interface TXMetaJson extends TXJson {
+
+}
+
+export interface TXMetaOptions {
+  index: number;
+  time: number;
+  block: Buffer;
+  height: number;
+  mtime: number;
+  tx: TX;
+
+}
 /**
  * TXMeta
  * An extended transaction object.
@@ -24,7 +46,7 @@ export class TXMeta {
   tx = new TX();
   mtime = util.now();
   height = -1;
-  block = null;
+  block:Buffer = null;
   time = 0;
   index = -1;
   /**
@@ -33,7 +55,7 @@ export class TXMeta {
    * @param {Object?} options
    */
 
-  constructor(options) {
+  constructor(options?:TXMetaOptions) {
   
 
     if (options)
@@ -46,7 +68,7 @@ export class TXMeta {
    * @param {Object} options
    */
 
-  fromOptions(options) {
+  fromOptions(options:TXMetaOptions) {
     if (options.tx) {
       assert(options.tx instanceof TX);
       this.tx = options.tx;
@@ -115,7 +137,7 @@ export class TXMeta {
    * @returns {TXMeta}
    */
 
-  static fromTX(tx, entry: ChainEntry | null = null, index = null) {
+  static fromTX(tx, entry: ChainEntry | null = null, index = null):TXMeta {
     return new TXMeta().fromTX(tx, entry, index);
   }
 
@@ -124,7 +146,7 @@ export class TXMeta {
    * @returns {Object}
    */
 
-  [inspectSymbol]() {
+  [inspectSymbol]():FormattedTXMeta {
     return this.format();
   }
 
@@ -133,8 +155,8 @@ export class TXMeta {
    * @returns {Object}
    */
 
-  format(view) {
-    const data = this.tx.format(view, null, this.index);
+  format(view?:CoinView): FormattedTXMeta {
+    const data = this.tx.format(view, null, this.index) as FormattedTXMeta;
     data.mtime = this.mtime;
     data.height = this.height;
     data.block = this.block ? util.revHex(this.block) : null;
@@ -147,7 +169,7 @@ export class TXMeta {
    * @returns {Object}
    */
 
-  toJSON() {
+  toJSON():TXMetaJson {
     return this.getJSON();
   }
 
@@ -159,7 +181,7 @@ export class TXMeta {
    * @returns {Object}
    */
 
-  getJSON(network, view, chainHeight) {
+  getJSON(network?:Network, view?:CoinView, chainHeight?:number):TXMetaJson {
     const json = this.tx.getJSON(network, view, null, this.index);
     json.mtime = this.mtime;
     json.height = this.height;
@@ -179,7 +201,7 @@ export class TXMeta {
    * @param {Object} json
    */
 
-  fromJSON(json) {
+  fromJSON(json:TXMetaJson) {
     this.tx.fromJSON(json);
 
     assert((json.mtime >>> 0) === json.mtime);

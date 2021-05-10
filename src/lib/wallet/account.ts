@@ -7,7 +7,7 @@
 'use strict';
 
 import assert from 'bsert';
-import bio, {BufferReader, BufferWriter} from 'bufio';
+import bio, {BufferReader, BufferWriter, StaticWriter} from 'bufio';
 import * as binary from '../utils/binary';
 import {Path} from './path';
 import * as common from './common';
@@ -17,7 +17,27 @@ import {HDPublicKey} from '../hd';
 import {inspectSymbol} from '../utils';
 import {WalletDB} from './walletdb';
 import {Network} from '../protocol';
+import { Address } from '../primitives';
+import { Wallet } from './wallet';
 
+
+
+export interface AccountOptions {
+  watchOnly: any;
+  wid:number;
+  id:string;
+  accountKey:HDPublicKey;
+  name?:string;
+  initialized: boolean;
+  type: string|number;
+  changeDepth?:number;
+  receiveDepth?:number;
+  accountIndex:number;
+  m?:number;
+  n?:number;
+  lookahead?:number;
+  keys:[]
+}
 
 /**
  * Account types.
@@ -25,8 +45,8 @@ import {Network} from '../protocol';
  * @default
  */
 
-export enum types {
-  'PUBKEYHASH' = 0,
+export enum AccountTypes {
+  PUBKEYHASH = 0,
   MULTISIG = 1
 }
 
@@ -46,13 +66,13 @@ export class Account {
   wdb: WalletDB;
   network: Network;
   wid: number;
-  id: number;
+  id: string;
   initialized: boolean;
   static MAX_LOOKAHEAD: number;
   static typesByVal: string[];
-  static types = types;
+  static types = AccountTypes;
   watchOnly: boolean;
-  type: types;
+  type: AccountTypes;
   m: number;
   n: any;
   receiveDepth: any;
@@ -60,6 +80,8 @@ export class Account {
   lookahead: any;
   accountKey: any;
   keys: any;
+  change: WalletKey;
+  receive: WalletKey;
 
   /**
    * Create an account.
@@ -68,7 +90,7 @@ export class Account {
    * @param options
    */
 
-  constructor(wdb: WalletDB, options?) {
+  constructor(wdb: WalletDB, options?:AccountOptions) {
     assert(wdb, 'Database is required.');
 
     this.wdb = wdb;
@@ -80,7 +102,7 @@ export class Account {
     this.name = null;
     this.initialized = false;
     this.watchOnly = false;
-    this.type = types.PUBKEYHASH;
+    this.type = AccountTypes.PUBKEYHASH;
     this.m = 1;
     this.n = 1;
     this.receiveDepth = 0;
@@ -99,7 +121,7 @@ export class Account {
    * @param {Object} options
    */
 
-  fromOptions(options) {
+  fromOptions(options:AccountOptions) {
     assert(options, 'Options are required.');
     assert((options.wid >>> 0) === options.wid);
     assert(common.isName(options.id), 'Bad Wallet ID.');
@@ -134,7 +156,7 @@ export class Account {
 
     if (options.type != null) {
       if (typeof options.type === 'string') {
-        this.type = types[options.type.toUpperCase()];
+        this.type = AccountTypes[options.type.toUpperCase()];
         assert(this.type != null);
       } else {
         assert(typeof options.type === 'number');
@@ -693,7 +715,7 @@ export class Account {
    * @returns {Address}
    */
 
-  changeAddress() {
+  changeAddress():Address {
     const key = this.changeKey();
 
     if (!key)
@@ -860,15 +882,6 @@ export class Account {
 }
 
 
-/**
- * Account types by value.
- * @const {Object}
- */
-
-Account.typesByVal = [
-  'PUBKEYHASH',
-  'MULTISIG'
-];
 
 /**
  * Default address lookahead.
@@ -885,7 +898,7 @@ function cmp(a, b) {
   return a.compare(b);
 }
 
-function writeKey(key, bw: BufferWriter) {
+function writeKey(key, bw: BufferWriter|StaticWriter) {
   bw.writeU8(key.depth);
   bw.writeU32BE(key.parentFingerPrint);
   bw.writeU32BE(key.childIndex);

@@ -26,7 +26,7 @@ import * as common from './common';
 import {Address, TX} from '../primitives';
 
 const opcodes = common.opcodes;
-const scriptTypes = common.types;
+const scriptTypes = common.ScriptTypes;
 const {encoding} = bio;
 import {inspectSymbol} from '../utils';
 
@@ -82,7 +82,7 @@ export class Script {
    * @enum {Number}
    */
 
-  static types = common.types;
+  static types = common.ScriptTypes;
 
   
 

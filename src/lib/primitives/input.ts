@@ -7,21 +7,30 @@
 
 'use strict';
 
-import { Outpoint, OutpointOptions } from "./outpoint";
+import { Outpoint, OutpointJson, OutpointOptions } from "./outpoint";
 
 import assert from 'bsert';
-import bio from 'bufio';
+import bio, { BufferReader, BufferWriter, StaticWriter } from 'bufio';
 import { inspectSymbol } from '../utils';
 import { Script, ScriptOptions } from "../script/script";
-import { Coin } from "./coin";
+import { Coin, CoinJson } from "./coin";
 import { TX } from "./tx";
 import { Address } from "./address";
 import { Network } from "../protocol";
+import { ScriptTypes } from "../script/common";
 
 export interface InputOptions {
-  prevout: OutpointOptions;
-  script: ScriptOptions;
-  sequence: number; 
+  prevout?: OutpointOptions;
+  script?: ScriptOptions;
+  sequence?: number; 
+}
+export interface InputJson {  
+  prevout: OutpointJson;
+  script: string;
+  sequence: number;
+  address: string;
+  coin: CoinJson;
+  
 }
 
 /**
@@ -56,7 +65,7 @@ export class Input {
    * @param {Object} options
    */
 
-  fromOptions(options: { prevout: any; script: any; sequence: number; }) {
+  fromOptions(options: InputOptions) {
     assert(options, 'Input data is required.');
 
     this.prevout.fromOptions(options.prevout);
@@ -126,7 +135,7 @@ export class Input {
    * @returns {ScriptType} type
    */
 
-  getType(coin: { getType: () => any; }): ScriptType {
+  getType(coin: { getType: () => any; }): string {
     if (this.isCoinbase())
       return 'coinbase';
 
@@ -136,7 +145,7 @@ export class Input {
 
     let type = this.script.getInputType();
 
-    return Script.typesByVal[type].toLowerCase();
+    return ScriptTypes[type].toLowerCase();
   }
 
   /**
@@ -184,7 +193,7 @@ export class Input {
 
     const type = redeem.getType();
 
-    return Script.typesByVal[type].toLowerCase();
+    return ScriptTypes[type].toLowerCase();
   }
 
   /**
@@ -285,8 +294,8 @@ export class Input {
    * @returns {Object}
    */
 
-  toJSON(network: any, coin: any): object {
-    return this.getJSON();
+  toJSON(network: any, coin: any): InputJson {
+    return this.getJSON(network, coin);
   }
 
   /**
@@ -299,21 +308,21 @@ export class Input {
    * @returns {Object}
    */
 
-  getJSON(network: Network, coin: { getJSON: (arg0: any, arg1: boolean) => any; }): object {
+  getJSON(network?: Network, coin?: Coin): InputJson {
     network = Network.get(network);
 
-    let addr: { toString: (arg0: any) => any; };
+    let addrStr: string;
     if (!coin) {
-      addr = this.getAddress();
+      let addr = this.getAddress();
       if (addr)
-        addr = addr.toString(network);
+        addrStr = addr.toString(network);
     }
 
     return {
       prevout: this.prevout.toJSON(),
       script: this.script.toJSON(),
       sequence: this.sequence,
-      address: addr,
+      address: addrStr,
       coin: coin ? coin.getJSON(network, true) : undefined
     };
   }
@@ -370,7 +379,7 @@ export class Input {
    * @param {BufferWriter} bw
    */
 
-  toWriter(bw: bio.BufferWriter) {
+  toWriter(bw: BufferWriter |StaticWriter) {
     this.prevout.toWriter(bw);
     bw.writeVarBytes(this.script.toRaw());
     bw.writeU32(this.sequence);
@@ -405,7 +414,7 @@ export class Input {
    * @returns {Input}
    */
 
-  static fromReader(br: bio.BufferReader): Input {
+  static fromReader(br: BufferReader): Input {
     return new this().fromReader(br);
   }
 
@@ -416,8 +425,8 @@ export class Input {
    * @returns {Input}
    */
 
-  static fromRaw(data: Buffer | WithImplicitCoercion<string> | { [Symbol.toPrimitive](hint: "string"): string; }, enc: string): Input {
-    if (typeof data === 'string')
+  static fromRaw(data: Buffer, enc: 'hex' | null): Input {
+     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
   }

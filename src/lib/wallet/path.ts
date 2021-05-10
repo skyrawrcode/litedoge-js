@@ -24,6 +24,10 @@ import { inspectSymbol } from '../utils';
   ADDRESS= 2
 };
 
+export interface PathJson {
+
+}
+
 export interface PathOptions {
   keyType: any;
   name: any;
@@ -318,7 +322,7 @@ export class Path {
    * @returns {Object}
    */
 
-  toJSON() {
+  toJSON() :PathJson {
     return {
       name: this.name,
       account: this.account,

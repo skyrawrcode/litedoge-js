@@ -7,12 +7,10 @@
 
 import pkg from 'bsert';
 
-const {assert} = pkg;
-import {bio} from 'bufio';
-import {ScriptNum} from './scriptnum';
+const { assert } = pkg;
+import { ScriptNum } from './scriptnum';
 import * as common from './common';
 
-const Buffer = bio.buffer;
 const opcodes = common.opcodes;
 
 const opCache = [];
@@ -216,7 +214,7 @@ export class Opcode {
    * @returns {ScriptNum|null}
    */
 
-  toNum(minimal, limit) {
+  toNum(minimal?: boolean, limit?: number) {
     if (this.value === opcodes.OP_0)
       return ScriptNum.fromInt(0);
 
@@ -271,7 +269,7 @@ export class Opcode {
     if (this.value === -1)
       return 'OP_INVALIDOPCODE';
 
-    const symbol = common.opcodesByVal[this.value];
+    const symbol = Opcode[this.value];
 
     if (!symbol)
       return `0x${hex8(this.value)}`;
@@ -367,7 +365,7 @@ export class Opcode {
           return num.toString(10);
       }
 
-      const symbol = common.opcodesByVal[this.value];
+      const symbol = Opcode[this.value];
       const data = this.data.toString('hex');
 
       // Direct push
@@ -386,7 +384,7 @@ export class Opcode {
     }
 
     // Opcodes
-    const symbol = common.opcodesByVal[this.value];
+    const symbol = Opcode[this.value];
     if (symbol)
       return symbol;
 
@@ -402,14 +400,14 @@ export class Opcode {
    * @returns {String} Human-readable script.
    */
 
-  toASM(decode) {
+  toASM(decode?: boolean): string {
     if (this.value === -1)
       return '[error]';
 
     if (this.data)
       return common.toASM(this.data, decode);
 
-    return common.opcodesByVal[this.value] || 'OP_UNKNOWN';
+    return Opcode[this.value] || 'OP_UNKNOWN';
   }
 
   /**
@@ -485,7 +483,7 @@ export class Opcode {
    * @returns {Opcode}
    */
 
-  static fromString(str, enc = 'utf8') {
+  static fromString(str: string, enc?: 'utf8' | null): Opcode {
     assert(typeof str === 'string');
     const data = Buffer.from(str, enc || 'utf8');
     return this.fromData(data);

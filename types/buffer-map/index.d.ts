@@ -9,19 +9,19 @@ declare module "buffer-map/lib/buffer-map" {
     /**
      * Buffer Map
      */
-    export class BufferMap {
+    export class BufferMap<T> {
         constructor(iterable?: any);
         map: any;
         get size(): any;
-        get(key: any): any;
-        has(key: any): any;
-        set(key: any, value: any): BufferMap;
-        delete(key: any): any;
+        get(key: Buffer): T;
+        has(key: Buffer): boolean;
+        set(key: Buffer, value: T): BufferMap<T>;
+        delete(key: Buffer): any;
         clear(): void;
-        [Symbol.iterator](): {};
-        entries(): {};
-        keys(): {};
-        values(): {};
+        [Symbol.iterator](): Iterator<>;
+        entries(): [Buffer, T][];
+        keys(): Buffer[];
+        values(): T[];
         forEach(func: any, self: any): void;
         toKeys(): any[];
         toValues(): any[];
@@ -45,7 +45,7 @@ declare module "buffer-map/lib/buffer-map" {
         forEach(func: any, self: any): void;
         toKeys(): any[];
         toValues(): any[];
-        toArray(): any[];
+        toArray(): Buffer[];
     }
 }
 declare module "buffer-map/lib/custom-browser" {

@@ -27,7 +27,9 @@ const { TXRecord } = records;
 import { inspectSymbol } from '../utils';
 import { Wallet } from "./wallet";
 import { Address, Input, Output, TX } from "../primitives";
-import { Path } from "./path";
+import { Path, PathJson } from "./path";
+import { LoggerContext } from "blgr/lib/logger";
+import { Network } from "../protocol";
 
 /**
  * TXDB
@@ -37,7 +39,7 @@ import { Path } from "./path";
 export class TXDB {
   wdb: WalletDB;
   db: bdb.DB;
-  logger: Logger;
+  logger: LoggerContext;
   wid: number;
   locked: BufferSet;
   wallet: Wallet;
@@ -1428,7 +1430,7 @@ export class TXDB {
    * @returns {Promise} - Returns {@link Hash}[].
    */
 
-  getHeightRangeHashes(acct, options) {
+  getHeightRangeHashes(acct:number, options) {
     assert(typeof acct === 'number');
 
     if (acct !== -1)
@@ -1455,8 +1457,8 @@ export class TXDB {
    * @returns {Promise} - Returns {@link Hash}[].
    */
 
-  getHeightHashes(height) {
-    return this.getHeightRangeHashes({ start: height, end: height });
+  getHeightHashes(height:number):Promise<Buffer[]> {
+    return this.getHeightRangeHashes(-1, { start: height, end: height });
   }
 
   /**
@@ -2115,12 +2117,12 @@ export class TXDB {
  * @alias module:wallet.Balance
  */
 
-class Balance {
+export class Balance {
   account:number;
   tx:number;
   coin:number;
   unconfirmed:bigint;
-  confirmed;bigint;
+  confirmed: bigint;
   /**
    * Create a balance.
    * @constructor
@@ -2401,11 +2403,11 @@ export class Details {
   mtime: number;
   size: number;
   vsize: number;
-  block: Buffer|string;
+  block: Buffer;
   height: number;
   time: number;
-  inputs: Input[];
-  outputs: Output[];
+  inputs: DetailsMember[];
+  outputs: DetailsMember[];
   /**
    * Create transaction details.
    * @constructor
@@ -2515,8 +2517,8 @@ export class Details {
    */
 
   getFee() {
-    let inputValue = 0;
-    let outputValue = 0;
+    let inputValue = 0n;
+    let outputValue = 0n;
 
     for (const input of this.inputs) {
       if (!input.path)
@@ -2575,6 +2577,12 @@ export class Details {
   }
 }
 
+export interface DetailsMemberJson {
+  value:bigint;
+  address:string;
+  path:PathJson
+}
+
 /**
  * Transaction Details Member
  * @property {Number} value
@@ -2603,7 +2611,7 @@ class DetailsMember {
    * @returns {Object}
    */
 
-  toJSON() {
+  toJSON() :DetailsMemberJson {
     return this.getJSON();
   }
 
@@ -2613,7 +2621,7 @@ class DetailsMember {
    * @returns {Object}
    */
 
-  getJSON(network) {
+  getJSON(network?:Network):DetailsMemberJson {
     return {
       value: this.value,
       address: this.address

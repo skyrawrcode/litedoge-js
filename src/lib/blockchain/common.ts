@@ -7,6 +7,8 @@
 
 'use strict';
 
+import { Verify } from "node:crypto";
+
 /**
  * @module blockchain/common
  */
@@ -16,28 +18,16 @@
  * @enum {Number}
  */
 
-exports.lockFlags = {
-  VERIFY_SEQUENCE: 1 << 0,
-  MEDIAN_TIME_PAST: 1 << 1
+export enum LockFlags  {
+  VERIFY_SEQUENCE= 1 << 0,
+  MEDIAN_TIME_PAST = 1 << 1,
+  MANDATORY_LOCKTIME_FLAGS= 0,
+  /**
+   * Standard locktime flags
+   */
+   STANDARD_LOCKTIME_FLAGS = 0 | LockFlags.VERIFY_SEQUENCE | LockFlags.MEDIAN_TIME_PAST
 };
 
-/**
- * Consensus locktime flags (used for block validation).
- * @const {LockFlags}
- * @default
- */
-
-exports.lockFlags.MANDATORY_LOCKTIME_FLAGS = 0;
-
-/**
- * Standard locktime flags (used for mempool validation).
- * @const {LockFlags}
- * @default
- */
-
-exports.lockFlags.STANDARD_LOCKTIME_FLAGS = 0
-  | exports.lockFlags.VERIFY_SEQUENCE
-  | exports.lockFlags.MEDIAN_TIME_PAST;
 
 /**
  * Threshold states for versionbits
@@ -45,12 +35,12 @@ exports.lockFlags.STANDARD_LOCKTIME_FLAGS = 0
  * @default
  */
 
-exports.thresholdStates = {
-  DEFINED: 0,
-  STARTED: 1,
-  LOCKED_IN: 2,
-  ACTIVE: 3,
-  FAILED: 4
+export enum ThresholdStates  {
+  DEFINED=  0,
+  STARTED=  1,
+  LOCKED_IN=  2,
+  ACTIVE= 3,
+  FAILED= 4
 };
 
 /**
@@ -59,20 +49,10 @@ exports.thresholdStates = {
  * @default
  */
 
-exports.flags = {
-  VERIFY_NONE: 0,
-  VERIFY_POW: 1 << 0,
-  VERIFY_BODY: 1 << 1,
-  VERIFY_POS: 1 << 2
+export enum VerifyFlags  {
+  VERIFY_NONE= 0,
+  VERIFY_POW= 1 << 0,
+  VERIFY_BODY= 1 << 1,
+  VERIFY_POS= 1 << 2,
+  DEFAULT_FLAGS = 0 | VerifyFlags.VERIFY_POW | VerifyFlags.VERIFY_BODY | VerifyFlags.VERIFY_POS
 };
-
-/**
- * Default block verify flags.
- * @const {Number}
- * @default
- */
-
-exports.flags.DEFAULT_FLAGS = 0
-  | exports.flags.VERIFY_POW
-  | exports.flags.VERIFY_BODY
-  | exports.flags.VERIFY_POS;

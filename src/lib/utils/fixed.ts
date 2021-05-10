@@ -6,7 +6,7 @@
 
 'use strict';
 
-const assert = require('bsert');
+import assert from 'bsert';
 
 /**
  * Convert int to fixed number string and reduce by a
@@ -16,7 +16,7 @@ const assert = require('bsert');
  * @returns {String} Fixed number string.
  */
 
-exports.encode = function encode(num, exp) {
+export function encode(num:number, exp:number):string {
 
   let sign = '';
 
@@ -25,10 +25,10 @@ exports.encode = function encode(num, exp) {
     sign = '-';
   }
 
-  const mult = BigInt(pow10(exp));
+  const mult = pow10(exp);
 
-  let lo = num % mult;
-  let hi = (num - lo) / mult;
+  let lo: number|string = num % mult;
+  let hi:number|string = (num - lo) / mult;
 
   lo = lo.toString(10);
   hi = hi.toString(10);
@@ -57,7 +57,7 @@ exports.encode = function encode(num, exp) {
  * @returns {Number} Integer.
  */
 
-exports.decode = function decode(str, exp) {
+export  function decode(str:string, exp:number):number {
   assert(typeof str === 'string');
   assert(str.length <= 32, 'Fixed number string too large.');
 
@@ -68,39 +68,38 @@ exports.decode = function decode(str, exp) {
     sign = -1;
   }
 
-  let hi = str;
-  let lo = '0';
+  let hiStr = str;
+  let loStr = '0';
+  let hi:number;
+  let lo: number;
 
   const index = str.indexOf('.');
 
   if (index !== -1) {
-    hi = str.substring(0, index);
-    lo = str.substring(index + 1);
+    hiStr = str.substring(0, index);
+    loStr = str.substring(index + 1);
   }
 
-  hi = hi.replace(/^0+/, '');
-  lo = lo.replace(/0+$/, '');
+  hiStr = hiStr.replace(/^0+/, '');
+  loStr = loStr.replace(/0+$/, '');
 
-  assert(hi.length <= 16 - exp,
-    'Fixed number string exceeds 2^53-1.');
-
-  assert(lo.length <= exp,
+  assert(loStr.length <= exp,
     'Too many decimal places in fixed number string.');
 
-  if (hi.length === 0)
-    hi = '0';
+  if (hiStr.length === 0)
+    hiStr = '0';
 
-  while (lo.length < exp)
-    lo += '0';
+  while (loStr.length < exp)
+    loStr += '0';
 
-  if (lo.length === 0)
-    lo = '0';
+  if (loStr.length === 0)
+    loStr = '0';
 
-  assert(/^\d+$/.test(hi) && /^\d+$/.test(lo),
+  assert(/^\d+$/.test(hiStr) && /^\d+$/.test(loStr),
     'Non-numeric characters in fixed number string.');
 
-  hi = parseInt(hi, 10);
-  lo = parseInt(lo, 10);
+  hi = parseInt(hiStr, 10);
+  lo = parseInt(loStr, 10);
 
   const mult = pow10(exp);
   const maxLo = modSafe(mult);

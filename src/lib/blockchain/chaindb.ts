@@ -7,21 +7,21 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bdb = require('bdb');
-const bio = require('bufio');
-const LRU = require('blru');
-const {BufferMap} = require('buffer-map');
-const Amount = require('../btc/amount');
-const Network = require('../protocol/network');
-const CoinView = require('../coins/coinview');
-const UndoCoins = require('../coins/undocoins');
-const layout = require('./layout');
-const consensus = require('../protocol/consensus');
-const Block = require('../primitives/block');
-const Outpoint = require('../primitives/outpoint');
-const ChainEntry = require('./chainentry');
-const CoinEntry = require('../coins/coinentry');
+import assert from 'bsert';
+import bdb from 'bdb';
+import bio from 'bufio';
+import LRU from 'blru';
+import { BufferMap } from 'buffer-map';
+import {Amount} from '../btc/amount';
+import {Network} from '../protocol/network';
+import {CoinView} from '../coins/coinview';
+import UndoCoins from '../coins/undocoins';
+import * as layout from './layout';
+import * as consensus from '../protocol/consensus';
+import {Block} from '../primitives/block';
+import {Outpoint} from '../primitives/outpoint';
+import {ChainEntry} from './chainentry';
+import {CoinEntry} from '../coins/coinentry';
 
 /**
  * ChainDB

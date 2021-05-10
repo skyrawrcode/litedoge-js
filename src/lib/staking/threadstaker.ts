@@ -271,7 +271,7 @@ class ThreadStaker extends EventEmitter {
    * @returns {Promise} - Returns {@link Block}.
    */
 
-  async attemptStakeAsync(job) {
+  async attemptStakeAsync(job:ThreadStakeJob) {
 
     job.start ||= util.now();
     job.lastSearchTime = this.lastSearchTime;

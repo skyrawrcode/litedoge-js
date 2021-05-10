@@ -15,15 +15,15 @@ import base58 from 'bcrypto/lib/encoding/base58';
 import hash160 from 'bcrypto/lib/hash160';
 import hash256 from 'bcrypto/lib/hash256';
 import bio from 'bufio';
-import { cleanse} from 'bcrypto/lib/bcrypto';
-import { TXDB } from './txdb';
+import { BN, cleanse } from 'bcrypto/lib/bcrypto';
+import { Balance, TXDB } from './txdb';
 import { Path } from './path';
 import * as common from './common';
 import { Script } from '../script/script';
 const scriptTypes = Script.types;
 import { WalletKey } from './walletkey';
 import * as HD from '../hd/hd';
-import { Input, Output, Address, TX, MTX } from '../primitives';
+import { Input, Output, Address, TX, MTX, CoinSelector } from '../primitives';
 import { Account } from './account';
 import { MasterKey } from './masterkey';
 import { Network, policy } from '../protocol';
@@ -35,8 +35,8 @@ import { BufferSet } from 'buffer-map';
 import { WalletDB } from './walletdb';
 import { Kernel } from '../staking/kernel';
 import { Lock } from 'bmutex';
-import { BN } from 'bcrypto/lib/bn';
 import { SighashType } from '../script/common';
+import { LoggerContext } from 'blgr/lib/logger';
 
 
 export const StakeSplitAge = 9 * 24 * 60 * 60;
@@ -51,7 +51,7 @@ export const StakeCombineThreshold = 50n * consensus.COIN;
 export class Wallet extends EventEmitter {
   wdb: WalletDB;
   network: Network;
-  logger: Logger;
+  logger: LoggerContext;
   kernel: Kernel;
   writeLock: Lock;
   fundLock: Lock;
@@ -1159,7 +1159,7 @@ export class Wallet extends EventEmitter {
       estimate: prev => this.estimateSize(prev)
     });
 
-    assert(mtx.getFee() <= MTX.Selector.MAX_FEE, 'TX exceeds MAX_FEE.');
+    assert(mtx.getFee() <= CoinSelector.MAX_FEE, 'TX exceeds MAX_FEE.');
   }
 
   /**
@@ -1184,7 +1184,7 @@ export class Wallet extends EventEmitter {
    * @returns {Number}
    */
 
-  async estimateSize(prev) {
+  async estimateSize(prev: Script): Promise<number> {
     const address = prev.getAddress();
 
     if (!address)
@@ -1390,8 +1390,8 @@ export class Wallet extends EventEmitter {
 
     let fee = tx.getMinFee(null, rate);
 
-    if (fee > MTX.Selector.MAX_FEE)
-      fee = MTX.Selector.MAX_FEE;
+    if (fee > CoinSelector.MAX_FEE)
+      fee = CoinSelector.MAX_FEE;
 
     if (oldFee >= fee)
       throw new Error('Fee is not increasing.');
@@ -1863,7 +1863,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link BlockRecord}.
    */
 
-  getBlock(height:number) {
+  getBlock(height: number) {
     return this.txdb.getBlock(height);
   }
 
@@ -2157,7 +2157,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link TX}[].
    */
 
-  async getPending(acct) {
+  async getPending(acct?: number) {
     const account = await this.ensureIndex(acct);
     return this.txdb.getPending(account);
   }
@@ -2168,7 +2168,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Balance}.
    */
 
-  async getBalance(acct):Promise<bigint> {
+  async getBalance(acct?: number): Promise<Balance> {
     const account = await this.ensureIndex(acct);
     return this.txdb.getBalance(account);
   }
@@ -2359,14 +2359,14 @@ export class Wallet extends EventEmitter {
     if (!walletKey)
       return null;
 
-    if (credit === 0n || credit > balance - this.wdb.reserveBalance)
+    if (credit === 0n || credit > balance.confirmed - this.wdb.reserveBalance)
       return null;
 
 
     const fundedAmount = await this.fundCoinstake(coinStakeTx, unReservedCredits, credit, walletKey, balance);
     credit += fundedAmount;
-    const coinAge = await coinStakeTx.getCoinAge(this.txdb);
-    if (!coinAge === -1n)
+    const coinAge = await this.getCoinAge(coinStakeTx);
+    if (coinAge !== -1n)
       throw new Error("failed to calculate coin age")
 
     const reward = consensus.getProofOfStakeReward(this.wdb.state.height)
@@ -2449,7 +2449,7 @@ export class Wallet extends EventEmitter {
    * @param {module:primitives.MTX} transaction
    * @returns {Promise<bigint>}
    */
-  async getCoinAge(transaction:MTX) {
+  async getCoinAge(transaction: MTX): Promise<bigint> {
     let centSeconds = 0n;  // coin age in the unit of cent-seconds
     let coinAge = 0n;
 
@@ -2480,7 +2480,7 @@ export class Wallet extends EventEmitter {
     }
 
     const coinDay = centSeconds * consensus.CENT / consensus.COIN / (24n * 60n * 60n);
-    
+
     coinAge = BN.fromBuffer(BN.fromBigInt(coinDay, 'le').toArrayLike(Buffer, 'le', 8), 'le').toBigInt();
     return coinAge;
   }

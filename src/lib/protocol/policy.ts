@@ -209,7 +209,7 @@ export const BLOCK_PRIORITY_THRESHOLD = FREE_THRESHOLD;
  * @returns {Amount} fee
  */
 
-export  function getMinFee(size, rate) {
+export  function getMinFee(size:number, rate?:bigint) {
   if (rate == null)
     rate =  MIN_RELAY;
 
@@ -236,7 +236,7 @@ export  function getMinFee(size, rate) {
  * @returns {Amount} fee
  */
 
-export function getRoundFee(size:number, rate:bigint) {
+export function getRoundFee(size:number, rate:bigint):bigint {
   if (rate == null)
     rate =  MIN_RELAY;
 
@@ -244,7 +244,7 @@ export function getRoundFee(size:number, rate:bigint) {
   assert(rate >= 0n);
 
   if (size === 0)
-    return 0;
+    return 0n;
 
   let fee = rate * BigInt(Math.ceil(size / 1000));
 
@@ -261,12 +261,12 @@ export function getRoundFee(size:number, rate:bigint) {
  * @returns {Rate}
  */
 
-export  function getRate(size, fee) {
+export  function getRate(size:number, fee:bigint):bigint {
   assert(size >= 0);
   assert(fee >= 0);
 
   if (size === 0)
-    return 0;
+    return 0n;
 
   return fee * 1000n / BigInt(size);
 };

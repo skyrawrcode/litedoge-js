@@ -6,9 +6,10 @@
 
 'use strict';
 
-const assert = require('bsert');
-const LRU = require('blru');
-const common = exports;
+import assert from 'bsert';
+import LRU from 'blru';
+import { HDPrivateKey } from './private';
+import { HDPublicKey } from './public';
 
 /**
  * Index at which hardening begins.
@@ -16,7 +17,7 @@ const common = exports;
  * @default
  */
 
-common.HARDENED = 0x80000000;
+export const HARDENED = 0x80000000;
 
 /**
  * Min entropy bits.
@@ -24,7 +25,7 @@ common.HARDENED = 0x80000000;
  * @default
  */
 
-common.MIN_ENTROPY = 128;
+export const MIN_ENTROPY = 128;
 
 /**
  * Max entropy bits.
@@ -32,14 +33,14 @@ common.MIN_ENTROPY = 128;
  * @default
  */
 
-common.MAX_ENTROPY = 512;
+export const MAX_ENTROPY = 512;
 
 /**
  * LRU cache to avoid deriving keys twice.
  * @type {LRU}
  */
 
-common.cache = new LRU(500);
+export const cache = new LRU(500);
 
 /**
  * Parse a derivation path and return an array of indexes.
@@ -49,7 +50,7 @@ common.cache = new LRU(500);
  * @returns {Number[]}
  */
 
-common.parsePath = function parsePath(path, hard) {
+export  function parsePath(path, hard) {
   assert(typeof path === 'string');
   assert(typeof hard === 'boolean');
   assert(path.length >= 1);
@@ -106,7 +107,7 @@ common.parsePath = function parsePath(path, hard) {
  * @returns {Boolean}
  */
 
-common.isMaster = function isMaster(key) {
+export  function isMaster(key) {
   return key.depth === 0
     && key.childIndex === 0
     && key.parentFingerPrint === 0;
@@ -119,7 +120,7 @@ common.isMaster = function isMaster(key) {
  * @returns {Boolean}
  */
 
-common.isAccount = function isAccount(key, account) {
+export function isAccount(key:HDPrivateKey|HDPublicKey, account?:number):boolean {
   if (account != null) {
     const index = (common.HARDENED | account) >>> 0;
     if (key.childIndex !== index)
@@ -134,4 +135,4 @@ common.isAccount = function isAccount(key, account) {
  * @default
  */
 
-common.ZERO_KEY = Buffer.alloc(33, 0x00);
+export const ZERO_KEY = Buffer.alloc(33, 0x00);

@@ -8,9 +8,12 @@
 'use strict';
 
 import {Address, KeyRing, KeyRingOptions} from '../primitives';
+import { Network } from '../protocol';
 import {Path, pathTypes} from './path';
 
+export interface WalletKeyJson {
 
+}
 /**
  * Wallet Key
  * Represents a key ring which amounts to an address.
@@ -47,7 +50,7 @@ export class WalletKey extends KeyRing {
    * @returns {Object}
    */
 
-  toJSON(network) {
+  toJSON(network:Network):WalletKeyJson {
     return {
       name: this.name,
       account: this.account,

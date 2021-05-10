@@ -679,7 +679,7 @@ class PendingJob {
    * @param {Error} err
    */
 
-  reject(err) {
+  reject(err:Error) {
     const job = this.cleanup();
     job?.reject(err);
   }

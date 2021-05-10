@@ -6,9 +6,9 @@
 
 'use strict';
 
-const assert = require('bsert');
-const {BufferMap} = require('buffer-map');
-const secp256k1 = require('bcrypto/lib/secp256k1');
+import assert from 'bsert';
+import { BufferMap } from 'buffer-map';
+import secp256k1 from 'bcrypto/lib/secp256k1';
 
 /**
  * Signature cache.
@@ -19,13 +19,16 @@ const secp256k1 = require('bcrypto/lib/secp256k1');
  */
 
 export class SigCache {
+  size:number;
+  keys:undefined[];
+  valid:BufferMap<SigCacheEntry>;
   /**
    * Create a signature cache.
    * @constructor
    * @param {Number} [size=10000]
    */
 
-  constructor(size) {
+  constructor(size:number) {
     if (size == null)
       size = 10000;
 
@@ -41,7 +44,7 @@ export class SigCache {
    * @param {Number} size
    */
 
-  resize(size) {
+  resize(size:number ) {
     assert((size >>> 0) === size);
 
     this.size = size;
@@ -57,7 +60,7 @@ export class SigCache {
    * @param {Buffer} key
    */
 
-  add(msg, sig, key) {
+  add(msg, sig:Buffer, key:Buffer) {
     if (this.size === 0)
       return;
 
@@ -125,6 +128,8 @@ export class SigCache {
  */
 
 class SigCacheEntry {
+  sig:Buffer;
+  key:Buffer;
   /**
    * Create a cache entry.
    * @constructor
@@ -132,7 +137,7 @@ class SigCacheEntry {
    * @param {Buffer} key
    */
 
-  constructor(sig, key) {
+  constructor(sig: Buffer, key: Buffer) {
     this.sig = Buffer.from(sig);
     this.key = Buffer.from(key);
   }
@@ -144,7 +149,7 @@ class SigCacheEntry {
    * @returns {Boolean}
    */
 
-  equals(sig, key) {
+  equals(sig:Buffer, key:Buffer): boolean {
     return this.sig.equals(sig) && this.key.equals(key);
   }
 }

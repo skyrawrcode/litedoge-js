@@ -2,13 +2,16 @@ import assert from 'bsert';
 import path from 'path';
 import Logger from 'blgr';
 import {Network} from '../protocol/network';
-import * as common from '../blockchain/common';
+import { common} from '../blockchain';
 import {consensus} from '../protocol';
 import { BN } from 'bcrypto';
 import {ChainEntry} from '../blockchain/chainentry';
 import hash256 from 'bcrypto/lib/hash256';
 import bio from "bufio";
 import { VerifyError } from '../protocol/errors';
+import { AbstractBlock, Coin, Outpoint, TX } from '../primitives';
+import { VerifyFlags } from '../script/common';
+
 const ZERO = new BN(0);
 
 export interface KernelOptions {
@@ -150,7 +153,7 @@ export class Kernel {
    * @param bits {number}
    * @returns {Promise<{proofHash: Buffer, targetProofOfStake: Buffer}>}
    */
-  async checkProofOfStake(prev, coinstakeTx, bits) {
+  async checkProofOfStake(prev, coinstakeTx, bits):Promise<StakeKernel> {
     const chain = this.node.chain;
     if (!coinstakeTx.isCoinstake())
       throw new VerifyError(coinstakeTx, 'proofOfStake', 'called on non-coinstake', 0);
@@ -176,7 +179,7 @@ export class Kernel {
     // coinStakeInputBlock.txs
     //verify signature coin
     try {
-      coinstakeTx.checkInput(0, coin, common.flags.VERIFY_NONE);
+      coinstakeTx.checkInput(0, coin, VerifyFlags.VERIFY_NONE);
     } catch (e) {
       throw new VerifyError(coinstakeTx, 'proofOfStake', 'verify signature failed on coinstake  ' + coin.rhash(), 100);
     }
@@ -203,9 +206,9 @@ export class Kernel {
    * @returns {{proofHash: Buffer, targetProofOfStake: Buffer}}
    */
   // prev, bits, coinStakeInputBlock, inputTransaction, input prevout,coinstakeTx.time,  coin);
-  checkStakeKernelHash(prev, bits, blockFrom, txPrev, prevout, time) {
+  async checkStakeKernelHash(prev:ChainEntry, bits:number, blockFrom:AbstractBlock|ChainEntry, txPrev:TX, prevout:Outpoint|Coin, time:number) :Promise<StakeKernel> {
     return this.network.isProtocolV1(prev.height) ?
-      this.checkStakeKernelHashV1(prev, bits, time, txPrev, prevout) :
+      await this.checkStakeKernelHashV1(prev, bits, time, txPrev, prevout) :
       this.checkStakeKernelHashV2(prev, bits, blockFrom.time, txPrev, prevout, time);
   }
 
@@ -248,7 +251,7 @@ export class Kernel {
    * @param coin
    * @returns {{proofHash: Buffer, targetProofOfStake: Buffer}|null}
    */
-  checkStakeKernelHashV1(prev, bits, time, txPrev, coin) {
+  async checkStakeKernelHashV1(prev, bits, time, txPrev, coin) : Promise<StakeKernel> {
     const chain = this.node.chain;
     if (time < txPrev.time)  // Transaction timestamp violation
       throw new Error("checkStakeKernelHash(): nTime violation")
@@ -280,7 +283,7 @@ export class Kernel {
 
     const targetProofOfStake = weightedTarget.toArrayLike(Buffer, 'le', 32);
 
-    return {proofHash: hashProofOfStake, targetProofOfStake: targetProofOfStake};
+    return new StakeKernel(hashProofOfStake,  targetProofOfStake);
   }
 
   /**
@@ -311,7 +314,7 @@ export class Kernel {
    * @param {TX} txPrev
    * @param {Outpoint|Coin} prevout
    */
-  checkStakeKernelHashV2(prev, bits, blockFromTime, txPrev, prevout, time) {
+  checkStakeKernelHashV2(prev, bits, blockFromTime, txPrev, prevout, time):StakeKernel {
     if (time < txPrev.time)
       throw new Error("checkStakeKernelHash(): nTime violation")
 
@@ -332,7 +335,7 @@ export class Kernel {
     }
 
     const targetProofOfStake = weightedTarget.toString('hex')
-    return {proofHash: hashProofOfStake, targetProofOfStake: targetProofOfStake}
+    return new StakeKernel(hashProofOfStake, targetProofOfStake);
   }
 
 
@@ -406,3 +409,13 @@ function rcmp(a, b) {
   return 0;
 }
 
+
+export class StakeKernel {
+
+  /**
+   *
+   */
+  constructor(readonly proofHash:Buffer, readonly targetProofOfStake:BN ) {
+    
+  }
+}
