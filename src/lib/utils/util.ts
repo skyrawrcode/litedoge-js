@@ -70,7 +70,7 @@ export function ms():number {
  * @returns {String}
  */
 
-export function date(time:number):string {
+export function date(time?:number):string {
   if (time == null)
     time = now();
 

@@ -7,12 +7,12 @@
 
 'use strict';
 
-const assert = require('bsert');
-const Chain = require('../blockchain/chain');
-const Pool = require('../net/pool');
-const Node = require('./node');
-const HTTP = require('./http');
-const RPC = require('./rpc');
+import assert from 'bsert';
+import {Chain} from '../blockchain/chain';
+import {Pool} from '../net/pool';
+import {Node} from './node';
+import {HTTP} from './http';
+import {RPC} from './rpc';
 
 /**
  * SPV Node
@@ -23,6 +23,7 @@ const RPC = require('./rpc');
  */
 
 export class SPVNode extends Node {
+  opened:boolean;
   /**
    * Create SPV node.
    * @constructor

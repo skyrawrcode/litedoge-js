@@ -33,7 +33,7 @@ declare module "blgr/lib/logger" {
          * @param {String?} options.level
          * @param {Boolean} [options.colors=true]
          */
-        constructor(options: (string | any) | null);
+        constructor(options?: (string | any) | null);
         level: number;
         colors: boolean;
         maxFileSize: number;

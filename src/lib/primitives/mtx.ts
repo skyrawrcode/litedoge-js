@@ -952,7 +952,7 @@ export class MTX extends TX {
    * @returns {Number} Number of inputs signed.
    */
 
-  sign(ring: KeyRing, type: SighashType): number {
+  sign(ring: KeyRing|KeyRing[], type: SighashType): number {
     if (Array.isArray(ring)) {
       let total = 0;
       for (const key of ring)
@@ -997,7 +997,7 @@ export class MTX extends TX {
    * @returns {Promise}
    */
 
-  async signAsync(ring: KeyRing, type: SighashType | null, pool: WorkerPool | null): Promise<any> {
+  async signAsync(ring: KeyRing|KeyRing[], type: SighashType | null, pool: WorkerPool | null): Promise<any> {
     if (!pool)
       return this.sign(ring, type);
 

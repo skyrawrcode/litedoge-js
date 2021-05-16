@@ -6,11 +6,12 @@
 
 'use strict';
 
-const EventEmitter = require('events');
-const path = require('path');
-const cp = require('child_process');
+import EventEmitter from 'events';
+import path from 'path';
+import cp from 'child_process';
+import { SpawnOptions } from 'child_process';
 
-const children = new Set();
+const children = new Set<Child>();
 
 let exitBound = false;
 
@@ -22,7 +23,8 @@ let exitBound = false;
  * @ignore
  */
 
-class Child extends EventEmitter {
+export class Child extends EventEmitter {
+  child: any;
   /**
    * Represents a child process.
    * @constructor
@@ -56,7 +58,7 @@ class Child extends EventEmitter {
   init(file) {
     const bin = process.argv[0];
     const filename = path.resolve(__dirname, file);
-    const options = { stdio: 'pipe', env: process.env };
+    const options:SpawnOptions = { stdio: 'pipe', env: process.env };
 
     this.child = cp.spawn(bin, [filename], options);
 
@@ -186,9 +188,3 @@ function listenExit(handler) {
     }
   });
 }
-
-/*
- * Expose
- */
-
-module.exports = Child;

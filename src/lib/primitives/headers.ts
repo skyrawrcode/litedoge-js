@@ -132,7 +132,7 @@ export class Headers extends AbstractBlock {
    * @returns {Headers}
    */
 
-  static fromHead(data, enc) {
+  static fromHead(data:Buffer, enc?:'hex'):Headers {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromHead(data);

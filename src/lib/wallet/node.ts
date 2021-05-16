@@ -6,13 +6,14 @@
 
 'use strict';
 
-const assert = require('bsert');
-const Node = require('../node/node');
-const WalletDB = require('./walletdb');
-const HTTP = require('./http');
-const Client = require('./client');
-const RPC = require('./rpc');
-const Staker = require('../staking/staker')
+import assert from 'bsert';
+import {Node} from '../node/node';
+import {WalletDB} from './walletdb';
+import {HTTP} from './http';
+import {WalletClient} from './client';
+import {RPC} from './rpc';
+import {Staker} from '../staking/staker';
+import { Kernel } from '../staking/kernel';
 
 /**
  * Wallet Node
@@ -20,6 +21,10 @@ const Staker = require('../staking/staker')
  */
 
 export class WalletNode extends Node {
+  opened:boolean;
+  client:WalletClient;
+  kernel:Kernel;
+  wdb:WalletDB;
   /**
    * Create a wallet node.
    * @constructor
@@ -31,7 +36,7 @@ export class WalletNode extends Node {
 
     this.opened = false;
 
-    this.client = new Client({
+    this.client = new WalletClient({
       network: this.network,
       url: this.config.str('node-url'),
       host: this.config.str('node-host'),
@@ -40,18 +45,26 @@ export class WalletNode extends Node {
       apiKey: this.config.str('node-api-key')
     });
 
+    this.kernel = new Kernel({
+      network:this.network,
+      logger:this.logger,
+      node: this
+    });
+
     this.wdb = new WalletDB({
       network: this.network,
       logger: this.logger,
       workers: this.workers,
       client: this.client,
+      kernel: this.kernel,
       prefix: this.config.prefix,
       memory: this.config.bool('memory'),
       maxFiles: this.config.uint('max-files'),
       cacheSize: this.config.mb('cache-size'),
       wipeNoReally: this.config.bool('wipe-no-really'),
       reserveBalance: BigInt(this.config.uint('reserve-balance', 0)),
-      spv: this.config.bool('spv')
+      spv: this.config.bool('spv'),
+      
     });
 
     this.rpc = new RPC(this);

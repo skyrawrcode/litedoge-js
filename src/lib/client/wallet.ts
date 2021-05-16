@@ -4,19 +4,19 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
 
+import {Client} from 'bcurl';
 import assert from 'bsert';
-import EventEmitter from 'events';
-import { Client } from 'bcurl';
+import {EventEmitter} from 'events';
 
 /**
  * Wallet Client
- * @extends {bcurl.Client}
  */
 
 export class WalletClient extends Client {
+  opened:boolean;
   wallets:Map<number, Wallet>;
+  
   /**
    * Create a wallet client.
    * @param {Object?} options
@@ -29,8 +29,6 @@ export class WalletClient extends Client {
 
   /**
    * Open the client.
-   * @private
-   * @returns {Promise}
    */
 
   init() {
@@ -121,7 +119,7 @@ export class WalletClient extends Client {
    * @param {String} token
    */
 
-  wallet(id, token) {
+  wallet(id:number, token:string):Wallet {
     return new Wallet(this, id, token);
   }
 
@@ -653,7 +651,7 @@ export class WalletClient extends Client {
  * @extends {EventEmitter}
  */
 
-class Wallet extends EventEmitter {
+export class Wallet extends EventEmitter {
   parent: WalletClient;
   client: WalletClient;
   id:number;
@@ -862,6 +860,11 @@ class Wallet extends EventEmitter {
 
   getInfo() {
     return this.client.getInfo(this.id);
+  }
+
+  getMempool() {
+    throw new Error("Why is it here?");
+    // return this.client.getMempool();
   }
 
   /**

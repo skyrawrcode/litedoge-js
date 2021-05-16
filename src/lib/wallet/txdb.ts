@@ -1850,8 +1850,9 @@ export class TXDB {
    * @param {TXRecord[]} wtxs
    * @returns {Promise}
    */
-
-  async toDetails(wtxs) {
+  async toDetails(wtx:records.TXRecord): Promise<Details>
+  async toDetails(wtx:records.TXRecord[]): Promise<Details[]>
+  async toDetails(wtxs:records.TXRecord[]| records.TXRecord):(Promise<Details|Details[]>) {
     const out = [];
 
     if (!Array.isArray(wtxs))
@@ -1876,7 +1877,7 @@ export class TXDB {
    * @returns {Promise}
    */
 
-  async _toDetails(wtx) {
+  async _toDetails(wtx:records.TXRecord):Promise<Details> {
     const tx = wtx.tx;
     const block = wtx.getBlock();
     const details = new Details(wtx, block);
@@ -2408,6 +2409,9 @@ export class Details {
   time: number;
   inputs: DetailsMember[];
   outputs: DetailsMember[];
+  confirmations:number;
+  fee:bigint;
+  index:number;
   /**
    * Create transaction details.
    * @constructor

@@ -5,9 +5,6 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
-
-import { Verify } from "node:crypto";
 
 /**
  * @module blockchain/common

@@ -506,7 +506,7 @@ export class MerkleBlock extends AbstractBlock {
    * @returns {MerkleBlock}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data:Buffer, enc?:'hex') {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);

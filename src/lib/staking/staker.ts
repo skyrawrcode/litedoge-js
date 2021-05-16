@@ -1,12 +1,48 @@
-const assert = require('bsert');
-const EventEmitter = require('events');
-const ThreadStaker = require('./threadstaker');
-const {BlockTemplate,BlockEntry} = require('../mining/template');
-const Amount = require('../btc/amount')
-const consensus = require('../protocol/consensus')
-require('bcrypto/lib/hash256');
-const {BufferMap} = require("buffer-map");
-const Heap = require('bheep')
+import assert from 'bsert';
+import EventEmitter from 'events';
+import {ThreadStaker} from './threadstaker';
+import { BlockTemplate, BlockEntry } from '../mining/template';
+import {Amount} from '../btc/amount';
+import * as consensus from '../protocol/consensus';
+import { BufferMap } from "buffer-map";
+import Heap from 'bheep';
+import { Network, NetworkPOS } from '../protocol';
+import { LoggerContext } from 'blgr/lib/logger';
+import { WorkerPool } from '../workers';
+import { Chain } from '../blockchain';
+import { Lock } from 'bmutex';
+import { Pool } from '../net';
+import { Mempool } from '../mempool';
+import { Wallet } from '../wallet';
+import { Address } from '../primitives';
+
+/**
+   *  To decrease granularity of timestamp
+   *  Supposed to be 2^n-1
+   * @type {number}
+   */
+export const STAKE_TIMESTAMP_MASK = 15;
+
+export interface StakerOptions {
+  preverify: any;
+  minWeight: any;
+  priorityThreshold: any;
+  maxSigops: any;
+  maxWeight: any;
+  staking:boolean;
+  opened:boolean;
+  network:Network;
+  logger:LoggerContext;
+  workers:WorkerPool
+  chain:Chain;
+  pool:Pool;
+  mempool:Mempool;
+  version?:number;
+  
+  reservedWeight:number;
+  reservedSigops:number;
+  priorityWeight:number;
+}
 
 /**
  * Staker
@@ -14,15 +50,21 @@ const Heap = require('bheep')
  * @Property {module:blockchain.Chain} chain
  * @Property {Wallet} wallet
  */
-class Staker extends EventEmitter {
+export class Staker extends EventEmitter {
 
-  /**
-   *  To decrease granularity of timestamp
-   *  Supposed to be 2^n-1
-   * @type {number}
-   */
-  STAKE_TIMESTAMP_MASK = 15;
-
+  options:StakerOptions;
+  staking:boolean;
+  opened:boolean;
+  network:Network;
+  logger:LoggerContext;
+  workers:WorkerPool
+  chain:Chain;
+  locker:Lock;
+  pool:Pool;
+  threadStaker: ThreadStaker;
+  pos:NetworkPOS;
+  mempool:Mempool;
+  wallet:Wallet;
 
   /**
    *
@@ -114,14 +156,12 @@ class Staker extends EventEmitter {
    * @returns {Promise} - Returns {@link BlockTemplate}.
    */
 
-  async _createBlock(tip, address) {
+  async _createBlock(tip, address:Address) {
     let version = this.options.version || -1;
 
     if (!tip)
       tip = this.chain.tip;
 
-    if (!address)
-      address = this.getAddress();
 
     if (version === -1)
       version = await this.chain.computeBlockVersion(tip);
@@ -131,7 +171,7 @@ class Staker extends EventEmitter {
 
     const state = await this.chain.getDeployments(time, tip);
 
-    const target = await this.chain.getTarget(time, tip, true);
+    const target = await this.chain.getTarget(tip, true);
 
     const locktime = state.hasMTP() ? mtp : time;
 
@@ -145,7 +185,6 @@ class Staker extends EventEmitter {
       mtp: mtp,
       flags: state.flags,
       address: address,
-      coinbaseFlags: this.options.coinbaseFlags,
       interval: this.network.halvingInterval,
       weight: this.options.reservedWeight,
       sigops: this.options.reservedSigops,
@@ -199,7 +238,7 @@ class Staker extends EventEmitter {
     assert(this.mempool.tip.equals(this.chain.tip.hash),
       'Mempool/chain tip mismatch! Unsafe to create block.');
 
-    const depMap = new BufferMap();
+    const depMap = new BufferMap<BlockEntry[]>();
     const queue = new Heap(cmpRate);
 
     let priority = this.options.priorityWeight > 0;
@@ -330,8 +369,3 @@ function cmpPriority(a, b) {
     return cmpRate(a, b);
   return b.priority - a.priority;
 }
-/*
- * Expose
- */
-
-module.exports = Staker;

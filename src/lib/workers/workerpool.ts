@@ -9,15 +9,15 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const os = require('os');
-const Network = require('../protocol/network');
-const Child = require('./child');
-const jobs = require('./jobs');
-const Parser = require('./parser');
-const Framer = require('./framer');
-const packets = require('./packets');
+import assert from 'bsert';
+import EventEmitter from 'events';
+import os from 'os';
+import {Network} from '../protocol/network';
+import {Child} from './child';
+import * as jobs from './jobs';
+import {Parser} from './parser';
+import {Framer} from './framer';
+import * as packets from './packets';
 
 /**
  * Worker Pool

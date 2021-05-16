@@ -10,17 +10,17 @@
 
 import {TX, TXMeta} from "../primitives";
 
-const assert = require('bsert');
-const Chain = require('../blockchain/chain');
-const Fees = require('../mempool/fees');
-const Mempool = require('../mempool/mempool');
-const Pool = require('../net/pool');
-const Miner = require('../mining/miner');
-const Kernel = require('../staking/kernel');
-const Node = require('./node');
-const HTTP = require('./http');
-const RPC = require('./rpc');
-const blockstore = require('../blockstore');
+import assert from 'bsert';
+import {Chain} from '../blockchain/chain';
+import {PolicyEstimator as Fees} from '../mempool/fees';
+import {Mempool} from '../mempool/mempool';
+import {Pool} from '../net/pool';
+import {Miner} from '../mining/miner';
+import {Kernel} from '../staking/kernel';
+import {Node} from './node';
+import {HTTP} from './http';
+import {RPC} from './rpc';
+import * as blockstore from '../blockstore';
 import {TXIndexer} from "../indexer/txindexer";
 
 import {AddrIndexer} from '../indexer/addrindexer';
@@ -41,6 +41,8 @@ export class FullNode extends Node {
    * @param {Object?} options
    */
   txindex: TXIndexer | null = null;
+  opened:boolean;
+  kernel:Kernel;
 
   constructor(options) {
     super('ldogejs', 'ldogejs.conf', 'debug.log', options);
@@ -379,7 +381,7 @@ export class FullNode extends Node {
    * @returns {Promise}
    */
 
-  async sendTX(tx) {
+  async sendTX(tx:TX): Promise<void> {
     let missing;
 
     try {

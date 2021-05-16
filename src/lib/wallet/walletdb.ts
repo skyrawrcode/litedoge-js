@@ -780,7 +780,7 @@ export class WalletDB extends EventEmitter {
    * @returns {Promise} - Returns {@link Wallet}.
    */
 
-  async get(id) {
+  async get(id:number|string):Promise<Wallet> {
     const wid = await this.ensureWID(id);
 
     if (wid === -1)
@@ -1569,8 +1569,8 @@ export class WalletDB extends EventEmitter {
    * @returns {Promise}
    */
 
-  async getWalletsByTX(tx) {
-    const wids = new Set();
+  async getWalletsByTX(tx):Promise<Set<(string|number)>> {
+    const wids = new Set<string|number>();
 
     if (!tx.isCoinbase()) {
       for (const {prevout} of tx.inputs) {
@@ -2257,13 +2257,13 @@ interface WalletOptionsOptions {
   workers: WorkerPool;
   client: any;
   kernel: Kernel;
-  feeRate: any;
+  feeRate?: any;
   prefix: any;
-  location: any;
+  location?: any;
   memory: any;
   maxFiles: any;
   cacheSize: any;
-  compression: any;
+  compression?: any;
   spv: any;
   wipeNoReally: any;
   reserveBalance: any;

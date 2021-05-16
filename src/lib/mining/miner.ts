@@ -8,7 +8,7 @@
 'use strict';
 
 import { LoggerContext } from "blgr/lib/logger";
-import { Chain } from "../blockchain";
+import { Chain, ChainEntry } from "../blockchain";
 import { WorkerPool } from "../workers";
 
 import assert from 'bsert';
@@ -115,7 +115,7 @@ export class Miner extends EventEmitter {
    * @returns {Promise} - Returns {@link BlockTemplate}.
    */
 
-  async createBlock(tip, address) {
+  async createBlock(tip?:ChainEntry, address?:Address):Promise<BlockTemplate> {
     const unlock = await this.locker.lock();
     try {
       return await this._createBlock(tip, address);

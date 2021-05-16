@@ -45,7 +45,7 @@ export function search(items:any[], key:any, compare:Function, insert?:boolean) 
  * @returns {Number} index
  */
 
-export function insert(items, item, compare, uniq) {
+export function insert(items, item, compare, uniq?) {
   const i = exports.search(items, item, compare, true);
 
   if (uniq && i < items.length) {

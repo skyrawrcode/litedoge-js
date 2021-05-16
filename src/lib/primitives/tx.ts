@@ -33,7 +33,6 @@ import { Coin } from './coin';
 import { WorkerPool } from '../workers';
 import { Address } from './address';
 
-import { Verify } from 'node:crypto';
 import { ChainEntry } from '../blockchain/chainentry';
 import { BloomFilter } from 'bfilter/lib/bfilter';
 
@@ -1252,7 +1251,7 @@ export class TX {
    * @returns {Number} sigop weight
    */
 
-  getSigopsCost(view: CoinView, flags?: VerifyFlags | null): number {
+  getSigopsCost(view?: CoinView, flags?: VerifyFlags | null): number {
     if (flags == null)
       flags = Script.flags.STANDARD_VERIFY_FLAGS;
 

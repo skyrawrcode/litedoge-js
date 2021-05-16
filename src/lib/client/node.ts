@@ -15,6 +15,7 @@ import { Client } from 'bcurl';
  */
 
 export class NodeClient extends Client {
+  opened:boolean;
   /**
    * Creat a node client.
    * @param {Object?} options

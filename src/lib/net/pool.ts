@@ -37,11 +37,6 @@ import { Mempool } from '../mempool/mempool';
 import { LoggerContext } from 'blgr/lib/logger';
 import { Chain } from '../blockchain';
 
-export interface PoolOptionsOptions{
-  network?:Network;
-  logger?:Logger|LoggerContext;
-
-}
 
 /**
  * Pool
@@ -3543,7 +3538,47 @@ export class Pool extends EventEmitter {
  */
 
 export const DISCOVERY_INTERVAL = 120000;
-
+export interface PoolOptionsOptions{
+  seeds?: any;
+  nodes?: any;
+  only?: any;
+  discover?: any;
+  invTimeout?: any;
+  feeRate?: any;
+  banTime?: any;
+  banScore?: any;
+  agent?: any;
+  version?: any;
+  selfish?: any;
+  upnp?: any;
+  onion?: any;
+  proxy?: any;
+  resolve?: any;
+  createServer?: any;
+  createSocket?: any;
+  maxInbound?: any;
+  maxOutbound?: any;
+  publicPort?: any;
+  publicHost?: any;
+  port?: any;
+  host?: any;
+  noRelay?: any;
+  compact?: any;
+  listen?: any;
+  bip37?: boolean;
+  spv?: boolean;
+  checkpoints?: boolean;
+  prefix?: any;
+  mempool?: any;
+  blockMode?: number;
+  memory?: boolean;
+  services?: any;
+  requiredServices?: any;
+  network?:Network;
+  logger?:Logger|LoggerContext;
+  chain:Chain;
+  
+}
 /**
  * Pool Options
  * @alias module:net.PoolOptions
@@ -3552,10 +3587,8 @@ export const DISCOVERY_INTERVAL = 120000;
 class PoolOptions {
   port: number;
   host: string;
-
-
   network: Network;
-  logger: Logger;
+  logger: Logger|LoggerContext;
   chain: Chain;
   mempool: Mempool;
   discover: boolean;
@@ -3571,26 +3604,26 @@ class PoolOptions {
   agent: any;
   version: any;
   selfish: boolean;
-  spv: any;
-  checkpoints: any;
-  listen: any;
-  maxInbound: any;
-  publicPort: any;
-  upnp: any;
-  proxy: any;
-  compact: any;
-  bip37: any;
-  onion: any;
-  prefix: any;
-  noRelay: boolean;
-  publicHost: string;
-  createSocket: (port: any, host: any) => any;
-  resolve: (name: any) => any;
-  services: any;
-  requiredServices: any;
-  options: any;
-  maxOutbound: number;
-  createServer: (handler?: Function) => any;
+  spv?: boolean;
+  checkpoints?: boolean;
+  listen?: any;
+  maxInbound?: number;
+  publicPort?: number;
+  upnp?: boolean;
+  proxy?: any;
+  compact?: any;
+  bip37?: boolean;
+  onion?: boolean;
+  prefix?: any;
+  noRelay?: boolean;
+  publicHost?: string;
+  createSocket?: (port: any, host: any) => any;
+  resolve?: (name: any) => any;
+  services?: any;
+  requiredServices?: any;
+  options?: any;
+  maxOutbound?: number;
+  createServer?: (handler?: Function) => any;
   /**
    * Create pool options.
    * @constructor
@@ -3648,7 +3681,7 @@ class PoolOptions {
    * @returns {PoolOptions}
    */
 
-  fromOptions(options) {
+  fromOptions(options:PoolOptionsOptions) {
     assert(options, 'Pool requires options.');
     assert(options.chain && typeof options.chain === 'object',
       'Pool options require a blockchain.');
@@ -4037,7 +4070,7 @@ class PeerList {
    * @returns {Peer}
    */
 
-  head() {
+  head():Peer {
     return this.list.head;
   }
 
@@ -4380,6 +4413,7 @@ class NonceList {
     return true;
   }
 }
+
 
 /**
  * Header Entry

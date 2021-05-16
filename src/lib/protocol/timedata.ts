@@ -7,9 +7,9 @@
 
 'use strict';
 
-const EventEmitter = require('events');
-const util = require('../utils/util');
-const binary = require('../utils/binary');
+import EventEmitter from 'events';
+import * as util from '../utils/util';
+import * as binary from '../utils/binary';
 
 /**
  * Time Data
@@ -26,6 +26,11 @@ const binary = require('../utils/binary');
  */
 
 export class TimeData extends EventEmitter {
+  samples: number[];
+  known:Map<string, number>;
+  limit:number;
+  offset:number;
+  checked:boolean;
   /**
    * Create time data.
    * @constructor
@@ -51,7 +56,7 @@ export class TimeData extends EventEmitter {
    * @param {Number} time
    */
 
-  add(id, time) {
+  add(id:string , time:number) {
     if (this.samples.length >= this.limit)
       return;
 

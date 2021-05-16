@@ -1,8 +1,6 @@
 import assert from 'bsert';
-import path from 'path';
 import Logger from 'blgr';
 import {Network} from '../protocol/network';
-import { common} from '../blockchain';
 import {consensus} from '../protocol';
 import { BN } from 'bcrypto';
 import {ChainEntry} from '../blockchain/chainentry';
@@ -11,20 +9,24 @@ import bio from "bufio";
 import { VerifyError } from '../protocol/errors';
 import { AbstractBlock, Coin, Outpoint, TX } from '../primitives';
 import { VerifyFlags } from '../script/common';
+import { Node } from '../node';
+import { LoggerContext } from 'blgr/lib/logger';
 
 const ZERO = new BN(0);
 
 export interface KernelOptions {
-
+  network:Network;
+  logger:Logger;
+  node: Node;
 }
 export class Kernel {
   pos: { modifierInterval: any; stakeMinAge: any; limit?: BN; bits?: number; coinbaseMaturity?: number; };
   network: Network;
-  logger: Logger;
-  node: any;
-  options: any;
+  logger: LoggerContext;
+  node: Node;
+  options: KernelOptions;
 
-  constructor(options) {
+  constructor(options:KernelOptions) {
     this.options = options;
     this.network = this.options.network;
     this.pos = this.network.pos;

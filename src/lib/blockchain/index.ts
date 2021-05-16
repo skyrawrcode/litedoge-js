@@ -4,12 +4,6 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
-
-/**
- * @module blockchain
- */
-
 export {ChainDB} from "./chaindb";
 export {ChainEntry} from './chainentry'
 export {Chain} from './chain'

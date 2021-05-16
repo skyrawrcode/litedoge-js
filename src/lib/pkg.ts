@@ -4,8 +4,6 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
-
 
 /**
  * Package Name
@@ -75,6 +73,7 @@ export const  url = `https://github.com/${organization}/${name}`;
   * Current version string.
   * @const {String}
   */
- 
-export const version = require('../../package.json').version;
+  import pkg from '../../package.json';
+  const { version } = pkg;
+export {version};
  

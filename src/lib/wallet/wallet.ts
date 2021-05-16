@@ -16,14 +16,14 @@ import hash160 from 'bcrypto/lib/hash160';
 import hash256 from 'bcrypto/lib/hash256';
 import bio from 'bufio';
 import { BN, cleanse } from 'bcrypto/lib/bcrypto';
-import { Balance, TXDB } from './txdb';
+import { Balance, Details, TXDB } from './txdb';
 import { Path } from './path';
 import * as common from './common';
 import { Script } from '../script/script';
 const scriptTypes = Script.types;
 import { WalletKey } from './walletkey';
 import * as HD from '../hd/hd';
-import { Input, Output, Address, TX, MTX, CoinSelector } from '../primitives';
+import { Input, Output, Address, TX, MTX, CoinSelector, KeyRing } from '../primitives';
 import { Account } from './account';
 import { MasterKey } from './masterkey';
 import { Network, policy } from '../protocol';
@@ -37,6 +37,7 @@ import { Kernel, StakeKernel } from '../staking/kernel';
 import { Lock } from 'bmutex';
 import { SighashType } from '../script/common';
 import { LoggerContext } from 'blgr/lib/logger';
+import { TXRecord } from './records';
 
 
 export const StakeSplitAge = 9 * 24 * 60 * 60;
@@ -692,7 +693,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns Array.
    */
 
-  getAddressHashes(acct) {
+  getAddressHashes(acct?:string|number) {
     if (acct != null)
       return this.getAccountHashes(acct);
     return this.wdb.getWalletHashes(this.wid);
@@ -719,7 +720,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Account}.
    */
 
-  async getAccount(acct) {
+  async getAccount(acct:string|number):Promise<Account> {
     const index = await this.getAccountIndex(acct);
 
     if (index === -1)
@@ -806,7 +807,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link WalletKey}.
    */
 
-  createReceive(acct = 0) {
+  createReceive(acct:number|string = 0) {
     return this.createKey(acct, 0);
   }
 
@@ -929,7 +930,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Path}.
    */
 
-  async getPaths(acct) {
+  async getPaths(acct?:string|number) {
     if (acct != null)
       return this.getAccountPaths(acct);
 
@@ -973,12 +974,12 @@ export class Wallet extends EventEmitter {
    * Import a keyring (will not exist on derivation chain).
    * Rescanning must be invoked manually.
    * @param {(String|Number)?} acct
-   * @param {WalletKey} ring
+   * @param {KeyRing} ring
    * @param {(String|Buffer)?} passphrase
    * @returns {Promise}
    */
 
-  async importKey(acct, ring, passphrase) {
+  async importKey(acct:string|number, ring:KeyRing, passphrase?:string|Buffer) {
     const unlock = await this.writeLock.lock();
     try {
       return await this._importKey(acct, ring, passphrase);
@@ -996,7 +997,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise}
    */
 
-  async _importKey(acct, ring, passphrase) {
+  async _importKey(acct, ring, passphrase):Promise<void> {
     if (!this.watchOnly) {
       if (!ring.privateKey)
         throw new Error('Cannot import pubkey into non watch-only wallet.');
@@ -1107,7 +1108,7 @@ export class Wallet extends EventEmitter {
    * fee from existing outputs rather than adding more inputs.
    */
 
-  async fund(mtx, options, force) {
+  async fund(mtx:MTX, options, force?:boolean) {
     const unlock = await this.fundLock.lock(force);
     try {
       return await this._fund(mtx, options);
@@ -1309,7 +1310,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link TX}.
    */
 
-  async send(options, passphrase) {
+  async send(options, passphrase?:string) {
     const unlock = await this.fundLock.lock();
     try {
       return await this._send(options, passphrase);
@@ -1516,7 +1517,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise}
    */
 
-  async getKey(address) {
+  async getKey(address):Promise<KeyRing> {
     const hash = Address.getHash(address);
     const path = await this.getPath(hash);
 
@@ -1539,7 +1540,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise}
    */
 
-  async getPrivateKey(address: Address | Buffer, passphrase?: Buffer | string) {
+  async getPrivateKey(address: Address | Buffer, passphrase?: Buffer | string):Promise<KeyRing> {
     const hash = Address.getHash(address);
     const path = await this.getPath(hash);
 
@@ -1813,7 +1814,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Details}.
    */
 
-  toDetails(wtx) {
+  toDetails(wtx:TXRecord):Promise<Details> {
     return this.txdb.toDetails(wtx);
   }
 
@@ -2039,7 +2040,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link TX}[].
    */
 
-  async getHistory(acct) {
+  async getHistory(acct?:number|string) {
     const account = await this.ensureIndex(acct);
     return this.txdb.getHistory(account);
   }
@@ -2050,7 +2051,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Coin}[].
    */
 
-  async getCoins(acct) {
+  async getCoins(acct?:string|number) {
     const account = await this.ensureIndex(acct);
     return this.txdb.getCoins(account);
   }
@@ -2168,7 +2169,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Balance}.
    */
 
-  async getBalance(acct?: number): Promise<Balance> {
+  async getBalance(acct?: number|string): Promise<Balance> {
     const account = await this.ensureIndex(acct);
     return this.txdb.getBalance(account);
   }
@@ -2245,7 +2246,7 @@ export class Wallet extends EventEmitter {
    * @returns {Address}
    */
 
-  async receiveAddress(acct = 0) {
+  async receiveAddress(acct:string|number = 0):Promise<Address> {
     const account = await this.getAccount(acct);
     if (!account)
       throw new Error('Account not found.');
@@ -2510,7 +2511,7 @@ export class Wallet extends EventEmitter {
    * @returns {Object}
    */
 
-  toJSON(unsafe, balance) {
+  toJSON(unsafe?, balance?) {
     return {
       network: this.network.type,
       wid: this.wid,

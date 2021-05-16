@@ -4,11 +4,11 @@
 
 process.title = 'bcoin';
 
-const assert = require('assert');
-const Spvnode = require('../../lib/node/spvnode');
-const Outpoint = require('../../lib/primitives/outpoint');
+import assert from 'assert';
+import {SPVNode} from '../lib/node/spvnode';
+import {Outpoint} from '../lib/primitives/outpoint';
 
-const node = new Spvnode({
+const node = new SPVNode({
   file: true,
   argv: true,
   env: true,

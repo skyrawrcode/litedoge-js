@@ -5,9 +5,8 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-import pkg from 'bsert';
+import assert from 'bsert';
 
-const { assert } = pkg;
 import { ScriptNum } from './scriptnum';
 import * as common from './common';
 import bio from "bufio";

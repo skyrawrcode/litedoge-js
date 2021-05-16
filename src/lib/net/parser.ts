@@ -200,8 +200,3 @@ class Header {
   }
 }
 
-/*
- * Expose
- */
-
-module.exports = Parser;

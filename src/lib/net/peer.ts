@@ -95,8 +95,8 @@ export class Peer extends EventEmitter {
   banScore: number;
   invQueue: any[];
   onPacket: any;
-  next: any;
-  prev: any;
+  next: Peer;
+  prev: Peer;
   version: number;
   services: number;
   height: number;

@@ -10,7 +10,6 @@
 import {Network} from './protocol'
 import { NetworkType } from './types';
 
-'use strict';
 
 /**
  * A ldogejs "environment" which exposes all

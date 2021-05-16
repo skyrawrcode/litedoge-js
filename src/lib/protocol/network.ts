@@ -538,7 +538,9 @@ export interface Deployment {
   threshold: number;
   timeout: number;
   startTime: number;
-  
+  name:string;
+  force?:boolean;
+  required?:boolean;
 }
 
 /*

@@ -5,9 +5,8 @@
  */
 
 'use strict';
-import pkg from 'bsert';
+import assert from 'bsert';
 
-const {assert} = pkg;
 import {I64} from 'n64';
 
 

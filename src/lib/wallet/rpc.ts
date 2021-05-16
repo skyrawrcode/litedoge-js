@@ -6,28 +6,34 @@
 
 'use strict';
 
-const assert = require('bsert');
-const {format} = require('util');
-const bweb = require('bweb');
-const {Lock} = require('bmutex');
-const fs = require('bfile');
-const Validator = require('bval');
-const {BufferMap, BufferSet} = require('buffer-map');
-const util = require('../utils/util');
-const messageUtil = require('../utils/message');
-const Amount = require('../btc/amount');
-const Script = require('../script/script');
-const Address = require('../primitives/address');
-const KeyRing = require('../primitives/keyring');
-const MerkleBlock = require('../primitives/merkleblock');
-const MTX = require('../primitives/mtx');
-const Outpoint = require('../primitives/outpoint');
-const Output = require('../primitives/output');
-const TX = require('../primitives/tx');
-const consensus = require('../protocol/consensus');
-const pkg = require('../pkg');
-const common = require('./common');
-const {BlockMeta} = require('./records');
+import assert from 'bsert';
+import { format } from 'util';
+import bweb from 'bweb';
+import { Lock } from 'bmutex';
+import fs from 'bfile';
+import Validator from 'bval';
+import { BufferMap, BufferSet } from 'buffer-map';
+import * as util from '../utils/util';
+import * as messageUtil from '../utils/message';
+import {Amount} from '../btc/amount';
+import {Script} from '../script/script';
+import {Address} from '../primitives/address';
+import {KeyRing} from '../primitives/keyring';
+import {MerkleBlock} from '../primitives/merkleblock';
+import {MTX} from '../primitives/mtx';
+import {Outpoint} from '../primitives/outpoint';
+import {Output} from '../primitives/output';
+import {TX} from '../primitives/tx';
+import * as consensus from '../protocol/consensus';
+import * as pkg from '../pkg';
+import * as common from './common';
+import { BlockMeta } from './records';
+import { WalletDB } from './walletdb';
+import { Network } from '../protocol';
+import { LoggerContext } from 'blgr/lib/logger';
+import { Wallet } from './wallet';
+import { WalletClient } from './client';
+import {RPC as NodeRPC} from '../node/rpc';
 const RPCBase = bweb.RPC;
 const RPCError = bweb.RPCError;
 
@@ -75,7 +81,13 @@ export const errs = {
  * @extends bweb.RPC
  */
 
-export class RPC extends RPCBase {
+export class RPC extends NodeRPC {
+  wdb: WalletDB;
+  network:Network;
+  logger:LoggerContext;
+  client: WalletClient;
+  locker: Lock;
+  wallet: Wallet;
   /**
    * Create an RPC.
    * @param {WalletDB} wdb
@@ -615,8 +627,8 @@ export class RPC extends RPCBase {
     }
 
     const det = [];
-    let sent = 0;
-    let received = 0;
+    let sent = 0n;
+    let received = 0n;
 
     for (let i = 0; i < details.outputs.length; i++) {
       const member = details.outputs[i];
@@ -822,7 +834,7 @@ export class RPC extends RPCBase {
 
     const wallet = this.wallet;
     const valid = new Validator(args);
-    let addr = valid.str(0, '');
+    let addr: string|Address = valid.str(0, '');
     const rescan = valid.bool(2, false);
     const p2sh = valid.bool(3, false);
 
@@ -867,7 +879,7 @@ export class RPC extends RPCBase {
     if (!data)
       throw new RPCError(errs.TYPE_ERROR, 'Invalid parameter.');
 
-    const key = KeyRing.fromPublic(data, this.network);
+    const key = KeyRing.fromPublic(data);
 
     await wallet.importKey(0, key);
 
@@ -905,7 +917,7 @@ export class RPC extends RPCBase {
         value = balance.confirmed;
 
       if (wallet.watchOnly !== watchOnly)
-        value = 0;
+        value = 0n;
 
       map[account] = Amount.btc(value, true);
     }
@@ -968,14 +980,21 @@ export class RPC extends RPCBase {
     const paths = await wallet.getPaths();
     const height = this.wdb.state.height;
 
-    const map = new BufferMap();
+    const map = new BufferMap<{
+      involvesWatchonly: boolean,
+      address:string,
+      account:string,
+      amount:bigint,
+      confirmations:number,
+      label:string,
+    }>();
     for (const path of paths) {
       const addr = path.toAddress();
       map.set(path.hash, {
         involvesWatchonly: wallet.watchOnly,
         address: addr.toString(this.network),
         account: path.name,
-        amount: 0,
+        amount: 0n,
         confirmations: -1,
         label: ''
       });
@@ -1117,8 +1136,8 @@ export class RPC extends RPCBase {
       }
     }
 
-    let sent = 0;
-    let received = 0;
+    let sent = 0n;
+    let received = 0n;
     let sendMember = null;
     let recMember = null;
     let sendIndex = -1;
@@ -1155,7 +1174,7 @@ export class RPC extends RPCBase {
       } else {
         // In the odd case where we send to ourselves.
         receive = true;
-        received = 0;
+        received = 0n;
         member = recMember;
         index = recIndex;
       }
@@ -1418,7 +1437,7 @@ export class RPC extends RPCBase {
       uniq.add(hash);
 
       const output = new Output();
-      output.value = value;
+      output.value = BigInt(value);
       output.script.fromAddress(addr);
       outputs.push(output);
     }

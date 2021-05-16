@@ -48,10 +48,12 @@ export interface KeyRingJson {
  */
 
 export class KeyRing implements KeyRingOptions {
+  name:string;
   publicKey: Buffer;
   privateKey: Buffer;
   script: Script;
   key: Buffer;
+  branch:number;
   _keyHash: any;
   _keyAddress: any;
   _scriptHash160: any;
@@ -200,7 +202,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {KeyRing}
    */
 
-  static fromPublic(key) {
+  static fromPublic(key:Buffer) {
     return new this().fromPublic(key);
   }
 
@@ -380,7 +382,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Buffer} Private key.
    */
 
-  getPrivateKey(enc, network) {
+  getPrivateKey(enc?:'hex'|'base58', network?:Network):Buffer|string {
     if (!this.privateKey)
       return null;
 
@@ -398,8 +400,9 @@ export class KeyRing implements KeyRingOptions {
    * @param {String?} enc - `"hex"` or `null`.
    * @returns {Buffer}
    */
-
-  getPublicKey(enc) {
+  getPublicKey(): Buffer;
+  getPublicKey(enc:'base58'|'hex'):string
+  getPublicKey(enc?:'base58'|'hex'):string|Buffer {
     if (enc === 'base58')
       return base58.encode(this.publicKey);
 

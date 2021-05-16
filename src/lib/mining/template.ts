@@ -409,7 +409,7 @@ export class BlockTemplate {
    * @returns {TX}
    */
 
-  getCoinbase(nonce1, nonce2) {
+  getCoinbase(nonce1:number, nonce2:number):TX {
     const raw = this.getRawCoinbase(nonce1, nonce2);
     return TX.fromRaw(raw);
   }

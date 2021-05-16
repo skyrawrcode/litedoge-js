@@ -7,7 +7,7 @@
 
 'use strict';
 
-const Master = require('./master');
+import Master from './master';
 const server = new Master();
 
 process.title = 'ldogejs-worker';

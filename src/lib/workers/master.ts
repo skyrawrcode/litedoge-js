@@ -7,15 +7,15 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const {format} = require('util');
-const Network = require('../protocol/network');
-const jobs = require('./jobs');
-const Parser = require('./parser');
-const Framer = require('./framer');
-const packets = require('./packets');
-const Parent = require('./parent');
+import assert from 'bsert';
+import {EventEmitter} from 'events';
+import { format } from 'util';
+import {Network} from '../protocol/network';
+import * as jobs from './jobs';
+import {Parser} from './parser';
+import {Framer} from './framer';
+import packets from './packets';
+import {Parent} from './parent';
 
 /**
  * Master
@@ -24,7 +24,7 @@ const Parent = require('./parent');
  * @extends EventEmitter
  */
 
-class Master extends EventEmitter {
+export class Master extends EventEmitter {
   /**
    * Create the master process.
    * @constructor
@@ -189,9 +189,3 @@ class Master extends EventEmitter {
     }
   }
 }
-
-/*
- * Expose
- */
-
-module.exports = Master;

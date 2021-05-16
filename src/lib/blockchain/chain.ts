@@ -5,7 +5,6 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
 
 import assert from 'bsert';
 import path from 'path';
@@ -1239,7 +1238,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise}
    */
 
-  async _add(block: AbstractBlock | MemBlock, flags: number, id: number): Promise<ChainEntry> {
+  async _add(block: AbstractBlock | MemBlock, flags?: number, id?: number): Promise<ChainEntry> {
     const hash = block.hash();
 
     if (flags == null)
@@ -2474,7 +2473,7 @@ export class Chain extends AsyncEmitter {
 
 export interface ChainOptionsOptions {
   network: Network;
-  blocks: boolean;
+  blocks?: boolean;
   logger?: Logger | LoggerContext;
   workers?: undefined;
   kernel?: Kernel;
@@ -2490,6 +2489,8 @@ export interface ChainOptionsOptions {
   entryCache?: number;
   maxOrphans?: number;
   checkpoints?: boolean;
+  indexTX?: boolean;
+  indexAddress?:boolean;
 }
 
 /**

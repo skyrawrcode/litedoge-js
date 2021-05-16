@@ -7,11 +7,11 @@
 
 'use strict';
 
-const assert = require('bsert');
-const NodeClient = require('../client/node');
-const util = require('../utils/util');
-const TX = require('../primitives/tx');
-const hash256 = require('bcrypto/lib/hash256');
+import assert from 'bsert';
+import {NodeClient} from '../client/node';
+import * as util from '../utils/util';
+import {TX} from '../primitives/tx';
+import hash256 from 'bcrypto/lib/hash256';
 
 const parsers = {
   'block connect': (entry, txs) => parseBlock(entry, txs),

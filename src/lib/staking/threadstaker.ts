@@ -4,14 +4,24 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const {Lock} = require('bmutex');
-const util = require('../utils/util');
-const TX = require('../primitives/tx')
-const consensus = require('../protocol/consensus')
-const Output = require('../primitives/output')
-const {Amount} = require('../btc')
+import assert from 'bsert';
+import EventEmitter from 'events';
+import { Lock } from 'bmutex';
+import * as util from '../utils/util';
+import {TX} from '../primitives/tx';
+import * as consensus from '../protocol/consensus';
+import {Output} from '../primitives/output';
+import { Amount } from '../btc';
+import { Staker, STAKE_TIMESTAMP_MASK } from './staker';
+import { Network, timedata } from '../protocol';
+import { LoggerContext } from 'blgr/lib/logger';
+import { WorkerPool } from '../workers';
+import { Chain } from '../blockchain';
+import { Pool } from '../net';
+import { Kernel } from './kernel';
+import { node } from '..';
+import { BlockTemplate } from '../mining';
+import { Wallet } from '../wallet';
 
 /**
  * Thread Staker
@@ -20,9 +30,27 @@ const {Amount} = require('../btc')
  * @alias module:staking.ThreadStaker
  */
 
-class ThreadStaker extends EventEmitter {
+export class ThreadStaker extends EventEmitter {
 
+  opened:boolean;
+  staker:Staker;
+  network:Network;
+  logger:LoggerContext;
+  workers:WorkerPool;
+  chain:Chain;
+  pool:Pool;
+  kernel:Kernel;
+  locker:Lock;
+  running:boolean;
+  stopping:boolean;
+  job:ThreadStakeJob;
+  stopJob: {resolve, reject};
+  activeDelay;
 
+  wallet:Wallet;
+  tryToSync:boolean;
+
+  lastSearchTime:number;
   /**
    * Create a Thread staker.
    * @constructor
@@ -46,7 +74,7 @@ class ThreadStaker extends EventEmitter {
     this.job = null;
     this.stopJob = null;
     this.activeDelay = null;
-
+    
     this.init();
   }
 
@@ -222,14 +250,15 @@ class ThreadStaker extends EventEmitter {
     if (!proofOfStake)
       throw new Error("proof-of-stake checking failed");
 
-    logger.info("new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", block.rhash(), util.revHex(proofOfStake.proofHash), util.revHex(proofOfStake.targetProofOfStake));
+    const targetProofHash = proofOfStake.targetProofOfStake.toBuffer('le', 16);
+    logger.info("new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", block.rhash(), util.revHex(proofOfStake.proofHash), util.revHex(targetProofHash));
     logger.info("%s\n", block.toJSON());
     logger.info("out %s\n", Amount.btc(block.txs[1].getOutputValue()));
 
     //there is a lock here not sure there needs to be
     // LOCK(cs_main);
 
-    if (!block.prevBlock.equals(this.tip.hash()))
+    if (!block.prevBlock.equals(this.chain.tip.hash))
       throw new Error("CheckStake() : generated block is stale");
 
     // Process this block the same as if we had received it from another node
@@ -295,7 +324,7 @@ class ThreadStaker extends EventEmitter {
 
     let coinStakeTime = util.now();
     if (isProtocolV2)
-      coinStakeTime &= ~this.staker.STAKE_TIMESTAMP_MASK;
+      coinStakeTime &= ~STAKE_TIMESTAMP_MASK;
 
     const searchTime = coinStakeTime;
     if (searchTime > this.lastSearchTime) {
@@ -303,22 +332,23 @@ class ThreadStaker extends EventEmitter {
 
       const cs = await this.wallet.createCoinStake(job.attempt.bits, coinStakeTime, searchInterval);
       if (cs != null) {
-        const {coinStake, keyRing} = cs;
-        if (coinStake.time >= Math.max(this.chain.getPastTimeLimit(tip) + 1, this.network.pastDrift(tip.time, tip.height + 1))) {
+        const {coinstake , keyRing} = cs;
+        if (coinstake.time >= Math.max(this.chain.getPastTimeLimit(this.network, tip) + 1, this.network.pastDrift(tip.time, tip.height + 1))) {
           // make sure coinstake would meet timestamp protocol
           // as it would be the same as the block timestamp
-          block.txs[0].time = block.time = coinStake.time;
-          block.time = Math.max(this.chain.getPastTimeLimit(tip) + 1, block.getMaxTransactionTime());
+          block.txs[0].time = block.time = coinstake.time;
+          block.time = Math.max(this.chain.getPastTimeLimit(this.network, tip) + 1, block.getMaxTransactionTime());
           block.time = Math.max(block.time, this.network.pastDrift(tip.time, tip.height + 1));
 
 
           // we have to make sure that we have no future timestamps in
           //    our transactions set
           for (let tx of block.txs)
-            if (tx.time > time) block.txs.splice(block.txs.indexOf(tx), 1);
+            if (tx.time > block.time) block.txs.splice(block.txs.indexOf(tx), 1);
 
 
-          block.txs.splice(1, 0, coinStake);
+          //@ts-expect-error
+          block.txs.splice(1, 0, coinstake);
           block.merkleRoot = block.createMerkleRoot()
 
           //   // append a signature to our block
@@ -448,6 +478,13 @@ class ThreadStaker extends EventEmitter {
  */
 
 class ThreadStakeJob {
+  staker: ThreadStaker;
+  attempt:BlockTemplate;
+  destroyed:boolean;
+  committed:boolean;
+  start: number;
+  lastSearchTime:number;
+  lastSearchInterval:number;
   /**
    * Create a mining job.
    * @constructor
@@ -466,18 +503,6 @@ class ThreadStakeJob {
     this.refresh();
   }
 
-  /**
-   * Get the raw block header.
-   * @returns {Buffer}
-   */
-
-  getHeader() {
-    const attempt = this.attempt;
-    const time = attempt.time;
-    const root = attempt.getRoot(n1, n2);
-
-    return data;
-  }
 
   /**
    * Commit job and return a block.
@@ -486,7 +511,6 @@ class ThreadStakeJob {
 
   commit(block) {
     const attempt = this.attempt;
-
     assert(!this.committed, 'Job already committed.');
     this.committed = true;
     return block;
@@ -532,9 +556,3 @@ class ThreadStakeJob {
   }
 }
 
-/*
-
- * Expose
- */
-
-module.exports = ThreadStaker;

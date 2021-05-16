@@ -601,8 +601,3 @@ class CPUJob {
   }
 }
 
-/*
- * Expose
- */
-
-module.exports = CPUMiner;

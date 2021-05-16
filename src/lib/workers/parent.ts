@@ -66,8 +66,3 @@ class Parent extends EventEmitter {
   }
 }
 
-/*
- * Expose
- */
-
-module.exports = Parent;

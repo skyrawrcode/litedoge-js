@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-
-'use strict';
+import {WalletNode} from '../lib/wallet/node';
+import {version} from '../../package.json'
 
 process.title = 'bwallet';
 
@@ -13,15 +13,13 @@ if (process.argv.indexOf('--help') !== -1
 
 if (process.argv.indexOf('--version') !== -1
     || process.argv.indexOf('-v') !== -1) {
-  const pkg = require('../../package.json');
-  console.log(pkg.version);
+  console.log(version);
   process.exit(0);
   throw new Error('Could not exit.');
 }
 
-const Node = require('../../lib/wallet/node');
 
-const node = new Node({
+const node = new WalletNode({
   file: true,
   argv: true,
   env: true,

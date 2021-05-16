@@ -1,18 +1,21 @@
 #!/usr/bin/env node
 
-'use strict';
 
-const Config = require('bcfg');
-const WalletClient = require('../../lib/client/wallet');
-
+import Config from 'bcfg';
+import { WalletClient, Wallet} from '../lib/client/wallet';
+import { NetworkType } from '../lib/types';
+import {Client} from "bcurl";
 const ports = {
   main: 27015,
-  testnet: 18334,
-  regtest: 48334,
-  simnet: 18558
+  testnet: 18334
 };
 
-class CLI {
+export class CLI {
+  config : Config;
+  argv:string[];
+  network:NetworkType;
+  client:WalletClient;
+  wallet:Wallet;
   constructor() {
     this.config = new Config('bcoin', {
       suffix: 'network',
@@ -57,7 +60,7 @@ class CLI {
 
   log(json) {
     if (typeof json === 'string')
-      return console.log.apply(console, arguments);
+      return console.log.apply(console, arguments as any);
     return console.log(JSON.stringify(json, null, 2));
   }
 
@@ -355,6 +358,7 @@ class CLI {
 
   async viewTX() {
     const raw = this.config.str([0, 'tx']);
+    //@ts-expect-error
     const tx = await this.wallet.fill(raw);
 
     this.log(tx);

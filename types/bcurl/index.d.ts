@@ -1,9 +1,12 @@
+
+
 declare module "bcurl/lib/client" {
     export = Client;
+    let EventEmitter = require("node/events").EventEmitter;
     /**
      * HTTP Client
      */
-    class Client {
+    class Client extends EventEmitter {
         /**
          * Create an HTTP client.
          * @constructor
@@ -128,5 +131,7 @@ declare module "bcurl/lib/bcurl" {
     import Client = require("bcurl/lib/client");
 }
 declare module "bcurl" {
-    export * from "bcurl/lib/bcurl";
+    export { Client };
+    export function client(options: any): Client;
+    import Client = require("bcurl/lib/client");
 }

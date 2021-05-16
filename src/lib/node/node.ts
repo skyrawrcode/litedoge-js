@@ -7,14 +7,24 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const fs = require('bfile');
-const Logger = require('blgr');
-const Config = require('bcfg');
-const Network = require('../protocol/network');
-const WorkerPool = require('../workers/workerpool');
+import assert from 'bsert';
+import EventEmitter from 'events';
+import fs from 'bfile';
+import Logger from 'blgr';
+import Config from 'bcfg';
+import {Network} from '../protocol/network';
+import {WorkerPool} from '../workers/workerpool';
+import { RPC } from './rpc';
+import { TX, TXMeta } from '../primitives';
 
+export interface Node {
+  getBlockFilter?(hash:Buffer):Promise<any>;
+  close?():Promise<any>;
+  hasTX?(hash:Buffer):Promise<boolean>;
+  getMeta?(hash:Buffer):Promise<TXMeta>;
+  relay?(TX:TX):Promise<void>;
+  sendTX?(TX:TX):Promise<void>;
+}
 /**
  * Node
  * Base class from which every other
@@ -24,7 +34,31 @@ const WorkerPool = require('../workers/workerpool');
  * @abstract
  */
 
-export class Node extends EventEmitter {
+export abstract class Node extends EventEmitter {
+  config: Config;
+  network:Network
+  rpc:RPC;
+  memory:boolean;
+  startTime:number;
+  plugins: any;
+  stack: any[];
+  bound:[EventEmitter, string, (...args: any[]) => void][];
+  logger = null;
+  workers = null;
+
+  spv = false;
+  blocks = null;
+  chain = null;
+  fees = null;
+  mempool = null;
+  pool = null;
+  miner = null;
+  http = null;
+  txindex = null;
+  addrindex = null;
+  filterindex = null;
+  staker = null;
+  loaded: any;
   /**
    * Create a node.
    * @constructor
@@ -207,6 +241,7 @@ export class Node extends EventEmitter {
     ;
   }
 
+
   /**
    * Close node. Unbind all events.
    * @private
@@ -233,7 +268,7 @@ export class Node extends EventEmitter {
    * @param {Function} listener
    */
 
-  _bind(obj, event, listener) {
+  _bind(obj:EventEmitter, event:string, listener:(...args: any[]) => void) {
     this.bound.push([obj, event, listener]);
     obj.on(event, listener);
   }
@@ -391,6 +426,7 @@ export class Node extends EventEmitter {
     }
   }
 
+  
   /**
    * Open plugins.
    * @private

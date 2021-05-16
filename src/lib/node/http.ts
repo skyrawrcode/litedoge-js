@@ -9,7 +9,7 @@
 
 import Logger from "blgr/lib/blgr";
 import { LoggerContext } from "blgr/lib/logger";
-import { Node } from "./node";
+
 
 import assert from 'bsert';
 import path from 'path';
@@ -30,6 +30,9 @@ import { Chain } from "../blockchain";
 import { Mempool, PolicyEstimator } from "../mempool";
 import { Pool } from "../net/pool";
 import { Miner } from "../mining/miner";
+import { Node } from "./node";
+import { FullNode } from "./fullnode";
+import { SPVNode } from "./spvnode";
 
 /**
  * HTTP
@@ -39,12 +42,13 @@ import { Miner } from "../mining/miner";
 export class HTTP extends Server {
   network:Network;
   logger:LoggerContext
-  node:Node;
+  node:Node|FullNode|SPVNode;
   chain:Chain;
   mempool:Mempool;
   pool:Pool;
   fees:PolicyEstimator;
   miner:Miner;
+  options:HTTPOptions
   /**
    * Create an http server.
    * @constructor
@@ -191,7 +195,8 @@ export class HTTP extends Server {
       enforce(index != null, 'Index is required.');
       enforce(!this.chain.options.spv, 'Cannot get coins in SPV mode.');
 
-      const coin = await this.node.getCoin(hash, index);
+      
+      const coin = await (this.node as FullNode).getCoin(hash, index);
 
       if (!coin) {
         res.json(404);
@@ -209,14 +214,14 @@ export class HTTP extends Server {
       enforce(hash, 'Hash is required.');
       enforce(!this.chain.options.spv, 'Cannot get TX in SPV mode.');
 
-      const meta = await this.node.getMeta(hash);
+      const meta = await (this.node as FullNode).getMeta(hash);
 
       if (!meta) {
         res.json(404);
         return;
       }
 
-      const view = await this.node.getMetaView(meta);
+      const view = await (this.node as FullNode).getMetaView(meta);
 
       res.json(200, meta.getJSON(this.network, view, this.chain.height));
     });
@@ -236,13 +241,13 @@ export class HTTP extends Server {
 
       const addr = Address.fromString(address, this.network);
 
-      const metas = await this.node.getMetaByAddress(
+      const metas = await (this.node as FullNode).getMetaByAddress(
         addr, {limit, reverse, after});
 
       const result = [];
 
       for (const meta of metas) {
-        const view = await this.node.getMetaView(meta);
+        const view = await (this.node as FullNode).getMetaView(meta);
         result.push(meta.getJSON(this.network, view, this.chain.height));
       }
 
@@ -301,7 +306,7 @@ export class HTTP extends Server {
 
       enforce(hash != null, 'Hash or height required.');
 
-      const filter = await this.node.getBlockFilter(hash);
+      const filter = await (this.node as FullNode).getBlockFilter(hash);
 
       if (!filter) {
         res.json(404);
@@ -680,7 +685,8 @@ export class HTTP extends Server {
     if (!socket.filter)
       return null;
 
-    await this.node.scan(start, socket.filter, (entry, txs) => {
+      
+    await (this.node as FullNode).scan(start, socket.filter, (entry, txs) => {
       const block = entry.toRaw();
       const raw = [];
 

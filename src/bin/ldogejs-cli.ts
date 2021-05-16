@@ -2,15 +2,22 @@
 
 'use strict';
 
-const Config = require('bcfg');
-const NodeClient = require('../lib/client/node');
-const Amount = require('../lib/btc/amount');
+import Config from 'bcfg';
+import {NodeClient} from '../lib/client/node';
+import {Amount} from '../lib/btc/amount';
+import { NetworkType } from '../lib/types';
+
+import { Client } from 'bcurl';
 
 const ports = {
   main: 17015,
 };
 
 class CLI {
+  config: Config;
+  argv: string[];
+  network: NetworkType;
+  client:NodeClient;
   constructor() {
     this.config = new Config('ldogejs', {
       suffix: 'network',
@@ -49,7 +56,7 @@ class CLI {
 
   log(json) {
     if (typeof json === 'string')
-      return console.log.apply(console, arguments);
+      return console.log.apply(console, arguments as any);
     return console.log(JSON.stringify(json, null, 2));
   }
 

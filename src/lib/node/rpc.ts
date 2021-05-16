@@ -6,36 +6,44 @@
 
 'use strict';
 
-import { ChainEntry } from "../blockchain";
+import { Chain, ChainEntry } from "../blockchain";
 
-const assert = require('bsert');
-const bweb = require('bweb');
-const {Lock} = require('bmutex');
-const IP = require('binet');
-const Validator = require('bval');
-const {BufferMap, BufferSet} = require('buffer-map');
-const hash160 = require('bcrypto/lib/hash160');
-const {safeEqual} = require('bcrypto/lib/safe');
-const secp256k1 = require('bcrypto/lib/secp256k1');
-const util = require('../utils/util');
-const messageUtil = require('../utils/message');
-const common = require('../blockchain/common');
-const Amount = require('../btc/amount');
-const NetAddress = require('../net/netaddress');
-const Script = require('../script/script');
-const Address = require('../primitives/address');
-const Block = require('../primitives/block');
-const Headers = require('../primitives/headers');
-const Input = require('../primitives/input');
-const KeyRing = require('../primitives/keyring');
-const MerkleBlock = require('../primitives/merkleblock');
-const MTX = require('../primitives/mtx');
-const Network = require('../protocol/network');
-const Outpoint = require('../primitives/outpoint');
-const Output = require('../primitives/output');
-const TX = require('../primitives/tx');
-const consensus = require('../protocol/consensus');
-const pkg = require('../pkg');
+import assert from 'bsert';
+import bweb from 'bweb';
+import { Lock } from 'bmutex';
+import IP from 'binet';
+import Validator from 'bval';
+import { BufferMap, BufferSet } from 'buffer-map';
+import hash160 from 'bcrypto/lib/hash160';
+import { safeEqual } from 'bcrypto/lib/safe';
+import secp256k1 from 'bcrypto/lib/secp256k1';
+import * as util from '../utils/util';
+import * as messageUtil from '../utils/message';
+import * as common from '../blockchain/common';
+import {Amount} from '../btc/amount';
+import {NetAddress} from '../net/netaddress';
+import {Script} from '../script/script';
+import {Address} from '../primitives/address';
+import {Block} from '../primitives/block';
+import {Headers} from '../primitives/headers';
+import {Input} from '../primitives/input';
+import {KeyRing} from '../primitives/keyring';
+import {MerkleBlock} from '../primitives/merkleblock';
+import {MTX} from '../primitives/mtx';
+import {Network} from '../protocol/network';
+import {Outpoint} from '../primitives/outpoint';
+import {Output} from '../primitives/output';
+import {TX} from '../primitives/tx';
+import * as consensus from '../protocol/consensus';
+import * as pkg from '../pkg';
+import { WorkerPool } from "../workers";
+import { Mempool, PolicyEstimator } from "../mempool";
+import { Pool } from "../net";
+import { LoggerContext } from "blgr/lib/logger";
+import { BlockTemplate, Miner } from "../mining";
+import { Node } from "./node";
+import { ScriptTypes } from "../script/common";
+import { Wallet } from "../wallet";
 const RPCBase = bweb.RPC;
 const RPCError = bweb.RPCError;
 
@@ -82,12 +90,33 @@ const errs = {
  */
 
 export class RPC extends RPCBase {
+  node:Node;
+
+  network:Network;
+  workers:WorkerPool
+  chain:Chain;
+  mempool:Mempool;
+  pool:Pool;
+  fees:PolicyEstimator;
+  miner: Miner;
+  logger:LoggerContext
+  locker:Lock;
+  wallet: Wallet;
+  mining:boolean;
+  procLimit:number;
+  attempt: BlockTemplate;
+  lastActivity:number;
+  boundChain:boolean;
+  nonce1:number;
+  nonce2:number;
+  merkleMap: BufferMap<[number,number]>;
+  pollers: {resolve, reject}[];
   /**
    * Create RPC.
    * @param {Node} node
    */
 
-  constructor(node) {
+  constructor(node?) {
     super();
 
     assert(node, 'RPC requires a Node.');
@@ -457,7 +486,7 @@ export class RPC extends RPCBase {
       const offset = this.network.time.known.get(peer.hostname()) || 0;
       const hashes = [];
 
-      for (const hash in peer.blockMap.keys()) {
+      for (const hash of peer.blockMap.keys()) {
         const str = util.revHex(hash);
         hashes.push(str);
       }
@@ -1430,12 +1459,12 @@ export class RPC extends RPCBase {
       let name = deploy.name;
 
       switch (state) {
-        case common.thresholdStates.DEFINED:
-        case common.thresholdStates.FAILED:
+        case common.ThresholdStates.DEFINED:
+        case common.ThresholdStates.FAILED:
           break;
-        case common.thresholdStates.LOCKED_IN:
+        case common.ThresholdStates.LOCKED_IN:
           version |= 1 << deploy.bit;
-        case common.thresholdStates.STARTED:
+        case common.ThresholdStates.STARTED:
           if (!deploy.force) {
             if (rules.indexOf(name) === -1)
               version &= ~(1 << deploy.bit);
@@ -1444,7 +1473,7 @@ export class RPC extends RPCBase {
           }
           vbavailable[name] = deploy.bit;
           break;
-        case common.thresholdStates.ACTIVE:
+        case common.ThresholdStates.ACTIVE:
           if (!deploy.force && deploy.required) {
             if (rules.indexOf(name) === -1) {
               throw new RPCError(errs.INVALID_PARAMETER,
@@ -1487,6 +1516,7 @@ export class RPC extends RPCBase {
         flags: attempt.coinbaseFlags.toString('hex')
       },
       coinbasevalue: undefined,
+      coinstakevalue:undefined,
       coinbasetxn: undefined,
       transactions: txs
     };
@@ -1515,7 +1545,8 @@ export class RPC extends RPCBase {
         weight: tx.getWeight()
       };
     } else {
-      json.coinbasevalue = attempt.getReward();
+      json.coinbasevalue = attempt.getProofOfWorkReward();
+      json.coinstakevalue = attempt.getProofOfStakeReward();
     }
 
     return json;
@@ -1757,7 +1788,7 @@ export class RPC extends RPCBase {
           throw new RPCError(errs.TYPE_ERROR, 'Invalid nulldata..');
 
         const output = new Output();
-        output.value = 0;
+        output.value = 0n;
         output.script.fromNulldata(value);
         tx.outputs.push(output);
 
@@ -1778,7 +1809,7 @@ export class RPC extends RPCBase {
         throw new RPCError(errs.TYPE_ERROR, 'Invalid output value.');
 
       const output = new Output();
-      output.value = value;
+      output.value = BigInt(value);
       output.script.fromAddress(addr);
 
       tx.outputs.push(output);
@@ -1900,8 +1931,8 @@ export class RPC extends RPCBase {
     const tx = MTX.fromRaw(data);
     tx.view = await this.mempool.getSpentView(tx);
 
-    const map = new BufferMap();
-    const keys = [];
+    const map = new BufferMap<KeyRing>();
+    const keys:KeyRing[] = [];
 
     if (secrets) {
       const valid = new Validator(secrets);
@@ -1928,7 +1959,7 @@ export class RPC extends RPCBase {
         const outpoint = new Outpoint(hash, index);
 
         const script = Script.fromRaw(scriptRaw);
-        const coin = Output.fromScript(script, value);
+        const coin = Output.fromScript(script, BigInt(value));
 
         tx.view.addOutput(outpoint, coin);
 
@@ -1962,7 +1993,7 @@ export class RPC extends RPCBase {
 
     let type = Script.hashType.ALL;
     if (sighash) {
-      const parts = sighash.split('|');
+      const parts:string[] = sighash.split('|');
 
       if (parts.length < 1 || parts.length > 2)
         throw new RPCError(errs.INVALID_PARAMETER, 'Invalid sighash type.');
@@ -2115,7 +2146,7 @@ export class RPC extends RPCBase {
 
     const fee = this.fees.estimateFee(blocks, false);
 
-    if (fee === 0)
+    if (fee === 0n)
       return -1;
 
     return Amount.btc(fee, true);
@@ -2146,10 +2177,10 @@ export class RPC extends RPCBase {
 
     let fee = this.fees.estimateFee(blocks, true);
 
-    if (fee === 0)
-      fee = -1;
+    if (fee === 0n)
+      fee = -1n;
     else
-      fee = Amount.btc(fee, true);
+      fee = BigInt(Amount.btc(fee, true));
 
     return {
       fee: fee,
@@ -2257,7 +2288,7 @@ export class RPC extends RPCBase {
     if ((lastTX >>> 0) !== lastTX)
       throw new RPCError(errs.INVALID_PARAMETER, 'Invalid longpoll ID.');
 
-    const hash = util.revHex(watched);
+    const hash = Buffer.from(watched).reverse();
 
     if (!this.chain.tip.hash.equals(hash))
       return;
@@ -2414,8 +2445,6 @@ export class RPC extends RPCBase {
 
   getSoftforks() {
     return [
-      toDeployment('bip34', 2, this.chain.state.hasBIP34()),
-      toDeployment('bip66', 3, this.chain.state.hasBIP66()),
       toDeployment('bip65', 4, this.chain.state.hasCLTV())
     ];
   }
@@ -2429,19 +2458,19 @@ export class RPC extends RPCBase {
       let status;
 
       switch (state) {
-        case common.thresholdStates.DEFINED:
+        case common.ThresholdStates.DEFINED:
           status = 'defined';
           break;
-        case common.thresholdStates.STARTED:
+        case common.ThresholdStates.STARTED:
           status = 'started';
           break;
-        case common.thresholdStates.LOCKED_IN:
+        case common.ThresholdStates.LOCKED_IN:
           status = 'locked_in';
           break;
-        case common.thresholdStates.ACTIVE:
+        case common.ThresholdStates.ACTIVE:
           status = 'active';
           break;
-        case common.thresholdStates.FAILED:
+        case common.ThresholdStates.FAILED:
           status = 'failed';
           break;
         default:
@@ -2606,7 +2635,7 @@ export class RPC extends RPCBase {
     const json = {
       asm: script.toASM(),
       hex: undefined,
-      type: Script.typesByVal[type],
+      type: ScriptTypes[type],
       reqSigs: 1,
       addresses: [],
       p2sh: undefined

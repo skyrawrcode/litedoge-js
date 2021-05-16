@@ -9,12 +9,9 @@ import assert from 'bsert';
 import bufio from 'bufio';
 import hash256 from 'bcrypto/lib/hash256';
 import secp256k1 from 'bcrypto/lib/secp256k1';
+import { KeyRing } from '../primitives';
 
-/**
- * @exports utils/message
- */
 
-const message = exports;
 
 /**
  * Bitcoin signing magic string.
@@ -22,7 +19,7 @@ const message = exports;
  * @default
  */
 
-message.MAGIC_STRING = 'LiteDoge Signed Message:\\n';
+export const MAGIC_STRING = 'LiteDoge Signed Message:\\n';
 
 /**
  * Hash message with magic string.
@@ -31,7 +28,7 @@ message.MAGIC_STRING = 'LiteDoge Signed Message:\\n';
  * @returns {Hash}
  */
 
-message.magicHash = (msg, prefix = message.MAGIC_STRING) => {
+export function magicHash(msg, prefix = MAGIC_STRING){
   assert(typeof prefix === 'string', 'prefix must be a string.');
   assert(typeof msg === 'string', 'message must be a string');
 
@@ -51,10 +48,10 @@ message.magicHash = (msg, prefix = message.MAGIC_STRING) => {
  * @returns {Buffer}
  */
 
-message.sign = (msg, ring, prefix) => {
+export function sign(msg:string, ring:KeyRing, prefix?:string) {
   assert(ring.getPrivateKey(), 'Cannot sign without private key.');
 
-  const hash = message.magicHash(msg, prefix);
+  const hash = magicHash(msg, prefix);
   const compress = 0x04 !== ring.getPublicKey().readInt8(0);
   const [
     signature,
@@ -76,11 +73,11 @@ message.sign = (msg, ring, prefix) => {
  * @param {String} [prefix = MAGIC_STRING]
  */
 
-message.recover = (msg, signature, prefix) => {
+export function recover(msg:string, signature:Buffer, prefix?:string) {
   assert(typeof msg === 'string', 'msg must be a string');
   assert(Buffer.isBuffer(signature), 'sig must be a buffer');
 
-  const hash = message.magicHash(msg, prefix);
+  const hash = magicHash(msg, prefix);
 
   assert.strictEqual(signature.length, 65, 'Invalid signature length');
 

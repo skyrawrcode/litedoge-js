@@ -124,9 +124,3 @@ export class BitWriter {
     return data;
   }
 }
-
-/*
- * Expose
- */
-
-module.exports = BitWriter;

@@ -101,7 +101,7 @@ declare module "bval/lib/validator" {
          * @param {Object?} fallback
          * @returns {Number|null}
          */
-        ufixed(key: string, exp: number | null, fallback: any | null): number | null;
+        ufixed(key: string|number, exp: number | null, fallback?: any | null): number | null;
         /**
          * Get a value (as an int32).
          * @param {String} key
@@ -129,7 +129,7 @@ declare module "bval/lib/validator" {
          * @param {Object?} fallback
          * @returns {Number|null}
          */
-        i64(key: string, fallback: any | null): number | null;
+        i64(key: string|number, fallback?: any | null): number | null;
         /**
          * Get a value (as a uint32).
          * @param {String} key
@@ -150,7 +150,7 @@ declare module "bval/lib/validator" {
          * @param {Object?} fallback
          * @returns {Number|null}
          */
-        u32(key: string, fallback?: any | null): number | null;
+        u32(key: string|number, fallback?: any | null): number | null;
         /**
          * Get a value (as a uint64).
          * @param {String} key
@@ -199,7 +199,7 @@ declare module "bval/lib/validator" {
          * @param {Object?} fallback
          * @returns {Buffer|null}
          */
-        brhash(key: string, fallback: any | null): any | null;
+        brhash(key: string|number, fallback?: any | null): Buffer | null;
         /**
          * Get a value (as a number or reverse hash).
          * @param {String} key
@@ -220,7 +220,7 @@ declare module "bval/lib/validator" {
          * @param {Object?} fallback
          * @returns {Boolean|null}
          */
-        bool(key: string, fallback: any | null): boolean | null;
+        bool(key: string|number, fallback: any | null): boolean | null;
         /**
          * Get a value (as a buffer).
          * @param {String} key
@@ -235,14 +235,14 @@ declare module "bval/lib/validator" {
          * @param {Object?} fallback
          * @returns {Array|String[]|null}
          */
-        array(key: string, fallback?: any | null): any[] | string[] | null;
+        array(key: string|number, fallback?: any | null): any[] | string[] | null;
         /**
          * Get a value (as an object).
          * @param {String} key
          * @param {Object?} fallback
          * @returns {Object|null}
          */
-        obj(key: string, fallback: any | null): any | null;
+        obj(key: string|number, fallback?: any | null): any | null;
         /**
          * Get a value (as a function).
          * @param {String} key

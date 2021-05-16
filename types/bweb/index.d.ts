@@ -255,19 +255,18 @@ declare module "bweb/lib/rpc" {
         call(body: any | any[], query: any): Promise<any>;
         /**
          * Execute an RPC call.
-         * @private
-         * @param {Object} json
+          * @param {Object} json
          * @param {Boolean} help
          * @returns {Promise}
          */
-        private execute;
+        execute(json: any,help:boolean):Promise<any>;
         /**
          * Add an RPC call.
          * @param {String} name
          * @param {Function} func
          * @param {Object?} ctx
          */
-        add(name: string, func: Function, ctx: any | null): void;
+        add(name: string, func: Function, ctx?: any | null): void;
         /**
          * Mount another RPC object.
          * @param {Object} rpc
@@ -307,7 +306,8 @@ declare module "bweb/lib/rpc" {
     }
 }
 declare module "bweb/lib/server" {
-    import { EventEmitter } from 'node:events'
+    import EventEmitter from "events";
+
     /**
       * HTTP Server
       * @extends EventEmitter
@@ -688,7 +688,7 @@ declare module "bweb/lib/server-browser" {
      * HTTP Server
      * @extends EventEmitter
      */
-    export default class Server {
+    export default class Server extends EventEmitter {
         /**
          * Create an http server.
          * @constructor

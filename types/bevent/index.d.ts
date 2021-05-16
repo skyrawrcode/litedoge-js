@@ -117,12 +117,13 @@ declare module "bevent/lib/asyncemitter" {
         private _emitAsync;
     }
 }
+
 declare module "bevent/lib/bevent" {
     const _exports: typeof import("bevent/lib/asyncemitter");
     export = _exports;
 }
-declare module "bevent"{
-    import emitter from "bevent/lib/asyncemitter";
-    export default emitter;
-    export * from "bevent/lib/asyncemitter";
+
+declare module "bevent" {
+    const _exports: typeof import("bevent/lib/asyncemitter");
+    export = _exports;
 }
