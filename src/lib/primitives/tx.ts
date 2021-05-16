@@ -82,7 +82,7 @@ export class TX {
    * @param {Object?} options
    */
 
-  constructor(options?: TXOptions | null) {
+  constructor(options?: TXOptions) {
     this.version = 1;
     this.inputs = [];
     this.outputs = [];
@@ -162,7 +162,7 @@ export class TX {
    * @returns {TX}
    */
 
-  clone(): TX {
+  clone() {
     return new TX().inject(this);
   }
 
@@ -174,7 +174,7 @@ export class TX {
    * @returns {TX}
    */
 
-  inject(tx: {version:number, inputs:Input[], outputs:Output[], locktime:number} ): TX {
+  inject(tx: {version:number, inputs:Input[], outputs:Output[], locktime:number} ) {
     this.version = tx.version;
     
     for (const input of tx.inputs)
@@ -281,7 +281,7 @@ export class TX {
    * @param {BufferWriter} bw
    */
 
-  toNormalWriter(bw: BufferWriter) {
+  toNormalWriter(bw: BufferWriter|StaticWriter) {
 
     return this.toWriter(bw);
   }
@@ -1064,7 +1064,7 @@ export class TX {
    * @returns {Hash[]} hashes
    */
 
-  getHashes(view: CoinView | null, enc?:'hex'|null): string[] | Buffer {
+  getHashes(view: CoinView | null, enc?:'hex'|null): string[] | Buffer[] {
     const [, table] = this._getAddresses(view);
 
     if (enc !== 'hex')

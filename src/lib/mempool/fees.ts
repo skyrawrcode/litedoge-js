@@ -8,13 +8,17 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const Logger = require('blgr');
-const {BufferMap} = require('buffer-map');
-const binary = require('../utils/binary');
-const consensus = require('../protocol/consensus');
-const policy = require('../protocol/policy');
+import { LoggerContext } from "blgr/lib/logger";
+
+import assert from 'bsert';
+import bio, { BufferReader } from 'bufio';
+import Logger from 'blgr';
+import { BufferMap } from 'buffer-map';
+import * as binary from '../utils/binary';
+import * as consensus from '../protocol/consensus';
+import * as policy from '../protocol/policy';
+import { Amount, Rate } from "../types";
+import { MempoolEntry } from "./mempoolentry";
 const {encoding} = bio;
 
 /*
@@ -42,7 +46,20 @@ const PRI_SPACING = 2n;
  */
 
 class ConfirmStats {
-  logger: any;
+  logger: LoggerContext|Logger;
+  type:string;
+  decay:number;
+  maxConfirms:number;
+  buckets:BigInt64Array;
+  bucketMap:DoubleMap;
+  avg: Float64Array;
+  curBlockVal: Float64Array;
+  txAvg: Float64Array;
+  curBlockTX: Int32Array;
+  oldUnconfTX: Int32Array;
+  unconfTX: Array<Int32Array>;
+  curBlockConf: Int32Array[];
+  confAvg: Float64Array[];
   /**
    * Create confirmation stats.
    * @constructor
@@ -50,7 +67,7 @@ class ConfirmStats {
    * @param {Logger?} logger
    */
 
-  constructor(type, logger) {
+  constructor(type:string, logger?:Logger) {
     this.logger = Logger.global;
 
     this.type = type;
@@ -60,9 +77,9 @@ class ConfirmStats {
     this.buckets = new BigInt64Array(0);
     this.bucketMap = new DoubleMap();
 
-    this.confAvg = [];
-    this.curBlockConf = [];
-    this.unconfTX = [];
+    this.confAvg = new Array(this.maxConfirms);
+    this.curBlockConf = new Array(this.maxConfirms);
+    this.unconfTX = new Array(this.maxConfirms);
 
     this.oldUnconfTX = new Int32Array(0);
     this.curBlockTX = new Int32Array(0);
@@ -84,7 +101,7 @@ class ConfirmStats {
    * @private
    */
 
-  init(buckets, maxConfirms, decay) {
+  init(buckets, maxConfirms:number, decay:number) {
     this.maxConfirms = maxConfirms;
     this.decay = decay;
 
@@ -135,17 +152,17 @@ class ConfirmStats {
    * @param {Rate|Number} val - Rate or priority.
    */
 
-  record(blocks, val) {
+  record(blocks:number, val:Rate|Number) {
     if (blocks < 1)
       return;
 
-    const bucketIndex = this.bucketMap.search(val);
+    const bucketIndex = this.bucketMap.search(val) as number;
 
     for (let i = blocks; i <= this.curBlockConf.length; i++)
       this.curBlockConf[i - 1][bucketIndex]++;
 
     this.curBlockTX[bucketIndex]++;
-    this.curBlockVal[bucketIndex] += val;
+    this.curBlockVal[bucketIndex] += Number(val);
   }
 
   /**
@@ -173,7 +190,7 @@ class ConfirmStats {
    * @returns {Rate|Number} Returns -1 on error.
    */
 
-  estimateMedian(target, needed, breakpoint, greater, height) {
+  estimateMedian(target:number, needed, breakpoint, greater, height):number {
     const max = this.buckets.length - 1;
     const start = greater ? max : 0;
     const step = greater ? -1 : 1;
@@ -246,7 +263,7 @@ class ConfirmStats {
    * @returns {Number} Bucket index.
    */
 
-  addTX(height, val) {
+  addTX(height:number, val: number):number {
     const bucketIndex = this.bucketMap.search(val);
     const blockIndex = height % this.unconfTX.length;
     this.unconfTX[blockIndex][bucketIndex]++;
@@ -402,12 +419,32 @@ class ConfirmStats {
 
 export class PolicyEstimator {
   /**
+ * Serialization version.
+ * @const {Number}
+ * @default
+ */
+
+  static VERSION = 0;
+  logger: LoggerContext|Logger;
+  minTrackedFee: bigint;
+  minTrackedPri: bigint;
+  feeStats: ConfirmStats;
+  priStats: ConfirmStats;
+  feeUnlikely: bigint;
+  feeLikely: bigint;
+  priUnlikely: bigint;
+  priLikely: bigint;
+  map: BufferMap<StatEntry>;
+  bestHeight: number;
+
+  
+  /**
    * Create an estimator.
    * @constructor
    * @param {Logger?} logger
    */
 
-  constructor(logger) {
+  constructor(logger?:Logger) {
     this.logger = Logger.global;
 
     this.minTrackedFee = MIN_FEERATE;
@@ -416,9 +453,9 @@ export class PolicyEstimator {
     this.feeStats = new ConfirmStats('FeeRate');
     this.priStats = new ConfirmStats('Priority');
 
-    this.feeUnlikely = 0;
+    this.feeUnlikely = 0n;
     this.feeLikely = INF_FEERATE;
-    this.priUnlikely = 0;
+    this.priUnlikely = 0n;
     this.priLikely = INF_PRIORITY;
 
     this.map = new BufferMap();
@@ -470,9 +507,9 @@ export class PolicyEstimator {
    */
 
   reset() {
-    this.feeUnlikely = 0;
+    this.feeUnlikely = 0n;
     this.feeLikely = INF_FEERATE;
-    this.priUnlikely = 0;
+    this.priUnlikely = 0n;
     this.priLikely = INF_PRIORITY;
 
     this.map.clear();
@@ -486,7 +523,7 @@ export class PolicyEstimator {
    * @param {Hash} hash
    */
 
-  removeTX(hash) {
+  removeTX(hash:Buffer) {
     const item = this.map.get(hash);
 
     if (!item) {
@@ -506,7 +543,7 @@ export class PolicyEstimator {
    * @returns {Boolean}
    */
 
-  isFeePoint(fee, priority) {
+  isFeePoint(fee:Amount, priority:number):boolean {
     if ((BigInt(priority) < this.minTrackedPri && fee >= this.minTrackedFee)
       || (BigInt(priority) < this.priUnlikely && fee > this.feeLikely)) {
       return true;
@@ -521,7 +558,7 @@ export class PolicyEstimator {
    * @returns {Boolean}
    */
 
-  isPriPoint(fee, priority) {
+  isPriPoint(fee:Amount, priority:number):boolean {
     if ((fee < this.minTrackedFee && BigInt(priority) >= this.minTrackedPri)
       || (fee < this.feeUnlikely && BigInt(priority) > this.priLikely)) {
       return true;
@@ -535,7 +572,7 @@ export class PolicyEstimator {
    * @param {Boolean} current - Whether the chain is synced.
    */
 
-  processTX(entry, current) {
+  processTX(entry:MempoolEntry, current:boolean) {
     const height = entry.height;
     const hash = entry.hash();
 
@@ -570,7 +607,7 @@ export class PolicyEstimator {
     } else if (fee >= policy.MIN_TX_FEEv2) {
       const item = new StatEntry();
       item.blockHeight = height;
-      item.bucketIndex = this.feeStats.addTX(height, rate);
+      item.bucketIndex = this.feeStats.addTX(height, Number(rate));
       this.map.set(hash, item);
     } else {
       this.logger.spam('Not adding tx %h.', entry.hash());
@@ -616,7 +653,7 @@ export class PolicyEstimator {
    * @param {Boolean} current - Whether the chain is synced.
    */
 
-  processBlock(height, entries, current) {
+  processBlock(height:number, entries:MempoolEntry[], current:boolean):boolean {
     // Ignore reorgs.
     if (height <= this.bestHeight)
       return;
@@ -632,33 +669,33 @@ export class PolicyEstimator {
 
     this.logger.debug('Recalculating dynamic cutoffs.');
 
-    this.feeLikely = this.feeStats.estimateMedian(
+    this.feeLikely = BigInt(this.feeStats.estimateMedian(
       2, SUFFICIENT_FEETXS, MIN_SUCCESS_PCT,
-      true, height);
+      true, height));
 
-    if (this.feeLikely === -1)
+    if (this.feeLikely === -1n)
       this.feeLikely = INF_FEERATE;
 
-    this.feeUnlikely = this.feeStats.estimateMedian(
+    this.feeUnlikely = BigInt(this.feeStats.estimateMedian(
       10, SUFFICIENT_FEETXS, UNLIKELY_PCT,
-      false, height);
+      false, height));
 
-    if (this.feeUnlikely === -1)
-      this.feeUnlikely = 0;
+    if (this.feeUnlikely === -1n)
+      this.feeUnlikely = 0n;
 
-    this.priLikely = this.priStats.estimateMedian(
+    this.priLikely = BigInt(this.priStats.estimateMedian(
       2, SUFFICIENT_PRITXS, MIN_SUCCESS_PCT,
-      true, height);
+      true, height));
 
-    if (this.priLikely === -1)
+    if (this.priLikely === -1n)
       this.priLikely = INF_PRIORITY;
 
-    this.priUnlikely = this.priStats.estimateMedian(
+    this.priUnlikely = BigInt(this.priStats.estimateMedian(
       10, SUFFICIENT_PRITXS, UNLIKELY_PCT,
-      false, height);
+      false, height));
 
-    if (this.priUnlikely === -1)
-      this.priUnlikely = 0;
+    if (this.priUnlikely === -1n)
+      this.priUnlikely = 0n;
 
     this.feeStats.clearCurrent(height);
     this.priStats.clearCurrent(height);
@@ -683,7 +720,7 @@ export class PolicyEstimator {
    * @returns {Rate}
    */
 
-  estimateFee(target, smart) {
+  estimateFee(target?:number, smart?:boolean) : Rate {
     if (!target)
       target = 1;
 
@@ -695,29 +732,29 @@ export class PolicyEstimator {
       'Too many confirmations for estimate.');
 
     if (!smart) {
-      const rate = this.feeStats.estimateMedian(
+      const rate = BigInt(this.feeStats.estimateMedian(
         target, SUFFICIENT_FEETXS, MIN_SUCCESS_PCT,
-        true, this.bestHeight);
+        true, this.bestHeight));
 
-      if (rate < 0)
-        return 0;
+      if (rate < 0n)
+        return 0n;
 
-      return Math.floor(rate);
+      return rate;
     }
 
-    let rate = -1;
-    while (rate < 0 && target <= this.feeStats.maxConfirms) {
-      rate = this.feeStats.estimateMedian(
+    let rate = -1n;
+    while (rate < 0n && target <= this.feeStats.maxConfirms) {
+      rate = BigInt(this.feeStats.estimateMedian(
         target++, SUFFICIENT_FEETXS, MIN_SUCCESS_PCT,
-        true, this.bestHeight);
+        true, this.bestHeight));
     }
 
     target -= 1;
 
-    if (rate < 0)
-      return 0;
+    if (rate < 0n)
+      return 0n
 
-    return Math.floor(rate);
+    return rate;
   }
 
   /**
@@ -727,7 +764,7 @@ export class PolicyEstimator {
    * @returns {Number}
    */
 
-  estimatePriority(target, smart) {
+  estimatePriority(target, smart):number {
     if (!target)
       target = 1;
 
@@ -741,7 +778,7 @@ export class PolicyEstimator {
     if (!smart) {
       const priority = this.priStats.estimateMedian(
         target, SUFFICIENT_PRITXS, MIN_SUCCESS_PCT,
-        true, this.bestHeight);
+        true, this.bestHeight) as number;
       return Math.floor(priority);
     }
 
@@ -814,7 +851,7 @@ export class PolicyEstimator {
    * @returns {PolicyEstimator}
    */
 
-  static fromRaw(data, logger) {
+  static fromRaw(data:Buffer, logger?:Logger):PolicyEstimator {
     return new this(logger).fromRaw(data);
   }
 
@@ -824,20 +861,14 @@ export class PolicyEstimator {
    * @returns {PolicyEstimator}
    */
 
-  inject(estimator) {
+  inject(estimator:PolicyEstimator) {
     this.bestHeight = estimator.bestHeight;
     this.feeStats = estimator.feeStats;
     return this;
   }
 }
 
-/**
- * Serialization version.
- * @const {Number}
- * @default
- */
 
-PolicyEstimator.VERSION = 0;
 
 /**
  * Stat Entry
@@ -846,6 +877,8 @@ PolicyEstimator.VERSION = 0;
  */
 
 class StatEntry {
+  blockHeight:number;
+  bucketIndex:number;
   /**
    * StatEntry
    * @constructor
@@ -864,6 +897,7 @@ class StatEntry {
  */
 
 class DoubleMap {
+  buckets: undefined[][]
   /**
    * DoubleMap
    * @constructor
@@ -878,7 +912,7 @@ class DoubleMap {
     this.buckets.splice(i, 0, [key, value]);
   }
 
-  search(key) {
+  search(key):number {
     assert(this.buckets.length !== 0, 'Cannot search.');
     const i = binary.search(this.buckets, key, compare, true);
     return this.buckets[i][1];
@@ -905,7 +939,7 @@ function writeArray(bw, buckets) {
     bw.writeDouble(buckets[i]);
 }
 
-function readArray(br) {
+function readArray(br:BufferReader) {
   const buckets = new Float64Array(br.readVarint());
 
   for (let i = 0; i < buckets.length; i++)

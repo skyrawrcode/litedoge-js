@@ -10,8 +10,8 @@
  * @module mining
  */
 
-exports.common = require('./common');
-exports.CPUMiner = require('./cpuminer');
-exports.mine = require('./mine');
-exports.Miner = require('./miner');
-exports.BlockTemplate = require('./template');
+export * as common from "./common";
+export {CPUMiner} from "./cpuminer";
+export {mine} from "./mine"
+export {Miner} from "./miner";
+export {BlockTemplate} from "./template";

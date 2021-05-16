@@ -6,6 +6,8 @@
 
 'use strict';
 
+import { ChainEntry } from "../blockchain";
+
 const assert = require('bsert');
 const bweb = require('bweb');
 const {Lock} = require('bmutex');
@@ -1170,10 +1172,10 @@ export class RPC extends RPCBase {
     return true;
   }
 
-  async createWork(data) {
+  async createWork(data?) {
     const unlock = await this.locker.lock();
     try {
-      return await this._createWork(data);
+      return await this._createWork();
     } finally {
       unlock();
     }
@@ -1194,7 +1196,7 @@ export class RPC extends RPCBase {
     head.copy(data, 0);
 
     data[80] = 0x80;
-    data.writeUInt32BE(80 * 8, data.length - 4, true);
+    data.writeUInt32BE(80 * 8, data.length - 4);
 
     swap32(data);
 
@@ -1411,18 +1413,12 @@ export class RPC extends RPCBase {
         hash: tx.txid(),
         depends: deps,
         fee: entry.fee,
-        sigops: entry.sigops / scale | 0,
+        sigops: entry.sigops | 0,
         weight: tx.getWeight()
       });
     }
 
-    if (this.chain.options.bip91) {
-      rules.push('segwit');
-      rules.push('segsignal');
-    }
-
-    if (this.chain.options.bip148)
-      rules.push('segwit');
+ 
 
     // Calculate version based on given rules.
     let version = attempt.version;
@@ -2464,7 +2460,7 @@ export class RPC extends RPCBase {
     return forks;
   }
 
-  async getHashRate(lookup, height) {
+  async getHashRate(lookup, height?:number) {
     let tip = this.chain.tip;
 
     if (height != null)
@@ -2537,7 +2533,7 @@ export class RPC extends RPCBase {
     throw new Error('Fork not found.');
   }
 
-  txToJSON(tx, entry) {
+  txToJSON(tx, entry?:ChainEntry) {
     let height = -1;
     let time = 0;
     let hash = null;
@@ -2557,6 +2553,7 @@ export class RPC extends RPCBase {
         coinbase: undefined,
         txid: undefined,
         scriptSig: undefined,
+        vout: 0,
         sequence: input.sequence
       };
 
@@ -2603,7 +2600,7 @@ export class RPC extends RPCBase {
     };
   }
 
-  scriptToJSON(script, hex) {
+  scriptToJSON(script, hex?:boolean) {
     const type = script.getType();
 
     const json = {

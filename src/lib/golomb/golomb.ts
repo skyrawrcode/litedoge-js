@@ -33,7 +33,7 @@ const M = new U64(784931);
  * @property {Buffer} data
  */
 
-class Golomb {
+export class Golomb {
   m:U64;
   n:number;
   p:number;
@@ -462,8 +462,4 @@ function compare(a, b) {
   return a.cmp(b);
 }
 
-/*
- * Expose
- */
 
-module.exports = Golomb;

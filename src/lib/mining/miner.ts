@@ -7,19 +7,24 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const Heap = require('bheep');
-const {BufferMap} = require('buffer-map');
-const random = require('bcrypto/lib/random');
-const Amount = require('../btc/amount');
-const Address = require('../primitives/address');
-const BlockTemplate = require('./template');
-const Network = require('../protocol/network');
-const consensus = require('../protocol/consensus');
-const policy = require('../protocol/policy');
-const CPUMiner = require('./cpuminer');
-const {BlockEntry} = BlockTemplate;
+import { LoggerContext } from "blgr/lib/logger";
+import { Chain } from "../blockchain";
+import { WorkerPool } from "../workers";
+
+import assert from 'bsert';
+import EventEmitter from 'events';
+import Heap from 'bheep';
+import { BufferMap } from 'buffer-map';
+import random from 'bcrypto/lib/random';
+import {Amount} from '../btc/amount';
+import {Address} from '../primitives/address';
+import {BlockTemplate, BlockEntry} from './template';
+import {Network} from '../protocol/network';
+import * as consensus from '../protocol/consensus';
+import * as policy from '../protocol/policy';
+import {CPUMiner} from './cpuminer';
+import { Mempool } from "../mempool";
+import { Lock } from "bmutex";
 
 /**
  * Miner
@@ -29,6 +34,16 @@ const {BlockEntry} = BlockTemplate;
  */
 
 export class Miner extends EventEmitter {
+  opened:boolean;
+  options:MinerOptions;
+  network:Network;
+  logger:LoggerContext;
+  workers:WorkerPool;
+  chain:Chain;
+  mempool:Mempool;
+  addresses: Address[]
+  locker: Lock;
+  cpu:CPUMiner;
   /**
    * Create a bitcoin miner.
    * @constructor
@@ -256,7 +271,7 @@ export class Miner extends EventEmitter {
     assert(this.mempool.tip.equals(this.chain.tip.hash),
       'Mempool/chain tip mismatch! Unsafe to create block.');
 
-    const depMap = new BufferMap();
+    const depMap = new BufferMap<BlockEntry[]>();
     const queue = new Heap(cmpRate);
 
     let priority = this.options.priorityWeight > 0;
@@ -368,13 +383,30 @@ export class Miner extends EventEmitter {
  */
 
 class MinerOptions {
+  network:Network;
+  logger:LoggerContext;
+  workers:WorkerPool;
+  chain:Chain;
+  mempool:Mempool;
+  version:number;
+  addresses:Address[];
+  coinbaseFlags: Buffer;
+  preverify: boolean;
+  minWeight: number;
+  maxWeight: number;
+  priorityWeight: number;
+  priorityThreshold: bigint;
+  maxSigops: number;
+  reservedWeight: number;
+  reservedSigops: number;
+
   /**
    * Create miner options.
    * @constructor
    * @param {Object}
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.network = Network.primary;
     this.logger = null;
     this.workers = null;

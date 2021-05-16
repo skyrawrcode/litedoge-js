@@ -1,6 +1,11 @@
 {
   "files": [
-    "src/lib/index.ts"
+    "src/lib/index.ts",
+    "src/bin/node.ts",
+    "src/bin/spvnode.ts",
+    "src/bin/wallet.ts",
+    "src/bin/ldogejs-cli.ts",
+    "src/bin/bwallet-cli.ts"
   ],
   "include": [
     "src/**/*.d.ts"

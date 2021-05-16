@@ -7,30 +7,34 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const {Lock} = require('bmutex');
-const {format} = require('util');
-const tcp = require('btcp');
-const dns = require('bdns');
-const Logger = require('blgr');
-const {RollingFilter} = require('bfilter');
-const {BufferMap} = require('buffer-map');
-const Parser = require('./parser');
-const Framer = require('./framer');
-const packets = require('./packets');
-const consensus = require('../protocol/consensus');
-const common = require('./common');
-const InvItem = require('../primitives/invitem');
-const BIP152 = require('./bip152');
-const Block = require('../primitives/block');
-const TX = require('../primitives/tx');
-const NetAddress = require('./netaddress');
-const Network = require('../protocol/network');
-const services = common.services;
+import assert from 'bsert';
+import EventEmitter from 'events';
+import { Lock } from 'bmutex';
+import { format } from 'util';
+import tcp from 'btcp';
+import dns from 'bdns';
+import Logger from 'blgr';
+import { RollingFilter } from 'bfilter';
+import { BufferMap } from 'buffer-map';
+import {Parser} from './parser';
+import {Framer} from './framer';
+import * as packets from './packets';
+import * as consensus from '../protocol/consensus';
+import * as common from './common';
+import {InvItem} from '../primitives/invitem';
+import * as bip152 from './bip152';
+import {Block} from '../primitives/block';
+import {TX} from '../primitives/tx';
+import {NetAddress} from './netaddress';
+import {Network} from '../protocol/network';
+const services = common.ServiceBits;
 const invTypes = InvItem.types;
-const packetTypes = packets.types;
-const {inspectSymbol} = require('../utils');
+const packetTypes = packets.PacketTypes;
+import { inspectSymbol } from '../utils';
+import { PoolOptionsOptions } from './pool';
+import { LoggerContext } from 'blgr/lib/logger';
+import BN from 'bcrypto/lib/native/bn';
+import { Socket } from 'net';
 
 /**
  * Represents a network peer.
@@ -62,6 +66,71 @@ const {inspectSymbol} = require('../utils');
  */
 
 export class Peer extends EventEmitter {
+  options: PeerOptions& PoolOptionsOptions
+  network:Network;
+  logger: Logger|LoggerContext;
+  
+  locker:Lock;
+  
+  parser:Parser;
+  framer:Framer;
+  
+  id:number;
+  socket:Socket;
+  opened:boolean;
+  outbound:boolean;
+  loader:boolean;
+  address: NetAddress;
+  local: NetAddress;
+  name: any;
+  connected: boolean;
+  destroyed: boolean;
+  ack: boolean;
+  handshake: boolean;
+  time: number;
+  lastSend: number;
+  lastRecv: number;
+  drainSize: number;
+  drainQueue: any[];
+  banScore: number;
+  invQueue: any[];
+  onPacket: any;
+  next: any;
+  prev: any;
+  version: number;
+  services: number;
+  height: number;
+  agent: any;
+  noRelay: boolean;
+  preferHeaders: boolean;
+  hashContinue: any;
+  spvFilter: any;
+  feeRate: number;
+  compactMode: number;
+  merkleBlock: any;
+  merkleTime: number;
+  merkleMatches: number;
+  merkleMap: any;
+  syncing: boolean;
+  sentAddr: boolean;
+  sentGetAddr: boolean;
+  challenge: any;
+  lastPong: number;
+  lastPing: number;
+  minPing: number;
+  blockTime: number;
+  bestHash: any;
+  bestHeight: number;
+  connectTimeout: any;
+  pingTimer: any;
+  invTimer: any;
+  stallTimer: any;
+  addrFilter: RollingFilter;
+  invFilter: RollingFilter;
+  blockMap: BufferMap<number>;
+  txMap: BufferMap<number>;
+  responseMap: Map<packets.PacketTypes, any>;
+  compactBlocks: BufferMap<bip152.CompactBlock>;
   /**
    * Create a peer.
    * @alias module:net.Peer
@@ -241,7 +310,7 @@ export class Peer extends EventEmitter {
    * @param {net.Socket} socket
    */
 
-  _bind(socket) {
+  _bind(socket: Socket) {
     assert(!this.socket);
 
     this.socket = socket;
@@ -395,7 +464,7 @@ export class Peer extends EventEmitter {
       return Promise.resolve();
     }
 
-    return new Promise((resolve, reject) => {
+    return new Promise<void>((resolve, reject) => {
       const cleanup = () => {
         if (this.connectTimeout != null) {
           clearTimeout(this.connectTimeout);
@@ -440,7 +509,7 @@ export class Peer extends EventEmitter {
     assert(!this.destroyed);
     this.stallTimer = setInterval(() => {
       this.maybeTimeout();
-    }, Peer.STALL_INTERVAL);
+    }, STALL_INTERVAL);
     return Promise.resolve();
   }
 
@@ -494,12 +563,12 @@ export class Peer extends EventEmitter {
     // Setup the ping interval.
     this.pingTimer = setInterval(() => {
       this.sendPing();
-    }, Peer.PING_INTERVAL);
+    }, PING_INTERVAL);
 
     // Setup the inv flusher.
     this.invTimer = setInterval(() => {
       this.flushInv();
-    }, Peer.INV_INTERVAL);
+    }, INV_INTERVAL);
   }
 
   /**
@@ -731,7 +800,7 @@ export class Peer extends EventEmitter {
    */
 
   sendCompactBlock(block) {
-    const compact = BIP152.CompactBlock.fromBlock(block);
+    const compact = bip152.CompactBlock.fromBlock(block);
     this.send(new packets.CmpctBlockPacket(compact));
   }
 
@@ -968,7 +1037,7 @@ export class Peer extends EventEmitter {
   needsDrain(size) {
     this.drainSize += size;
 
-    if (this.drainSize >= Peer.DRAIN_MAX) {
+    if (this.drainSize >= DRAIN_MAX) {
       this.logger.warning(
         'Peer is not reading: %dmb buffered (%s).',
         this.drainSize / (1 << 20),
@@ -985,7 +1054,7 @@ export class Peer extends EventEmitter {
    */
 
   addTimeout(packet) {
-    const timeout = Peer.RESPONSE_TIMEOUT;
+    const timeout = RESPONSE_TIMEOUT;
 
     if (!this.outbound)
       return;
@@ -1042,8 +1111,8 @@ export class Peer extends EventEmitter {
 
     for (const [key, entry] of this.responseMap) {
       if (now > entry.timeout) {
-        const name = packets.typesByVal[key];
-        this.error('Peer is stalling (%s).', name.toLowerCase());
+        const name = packetTypes[key];
+        this.error(`Peer is stalling (${name.toLowerCase()})`);
         this.destroy();
         return;
       }
@@ -1051,7 +1120,7 @@ export class Peer extends EventEmitter {
 
     if (this.merkleBlock) {
       assert(this.merkleTime !== -1);
-      if (now > this.merkleTime + Peer.BLOCK_TIMEOUT) {
+      if (now > this.merkleTime + BLOCK_TIMEOUT) {
         this.error('Peer is stalling (merkleblock).');
         this.destroy();
         return;
@@ -1059,7 +1128,7 @@ export class Peer extends EventEmitter {
     }
 
     if (this.syncing && this.loader && !this.options.isFull()) {
-      if (now > this.blockTime + Peer.BLOCK_TIMEOUT) {
+      if (now > this.blockTime + BLOCK_TIMEOUT) {
         this.error('Peer is stalling (block).');
         this.destroy();
         return;
@@ -1068,7 +1137,7 @@ export class Peer extends EventEmitter {
 
     if (this.options.isFull() || !this.syncing) {
       for (const time of this.blockMap.values()) {
-        if (now > time + Peer.BLOCK_TIMEOUT) {
+        if (now > time + BLOCK_TIMEOUT) {
           this.error('Peer is stalling (block).');
           this.destroy();
           return;
@@ -1076,7 +1145,7 @@ export class Peer extends EventEmitter {
       }
 
       for (const time of this.txMap.values()) {
-        if (now > time + Peer.TX_TIMEOUT) {
+        if (now > time + TX_TIMEOUT) {
           this.error('Peer is stalling (tx).');
           this.destroy();
           return;
@@ -1084,7 +1153,7 @@ export class Peer extends EventEmitter {
       }
 
       for (const block of this.compactBlocks.values()) {
-        if (now > block.now + Peer.RESPONSE_TIMEOUT) {
+        if (now > block.now + RESPONSE_TIMEOUT) {
           this.error('Peer is stalling (blocktxn).');
           this.destroy();
           return;
@@ -1101,7 +1170,7 @@ export class Peer extends EventEmitter {
         return;
       }
 
-      if (now > this.lastSend + Peer.TIMEOUT_INTERVAL) {
+      if (now > this.lastSend + TIMEOUT_INTERVAL) {
         this.error('Peer is stalling (send).');
         this.destroy();
         return;
@@ -1109,13 +1178,13 @@ export class Peer extends EventEmitter {
 
       const mult = this.version <= common.PONG_VERSION ? 4 : 1;
 
-      if (now > this.lastRecv + Peer.TIMEOUT_INTERVAL * mult) {
+      if (now > this.lastRecv + TIMEOUT_INTERVAL * mult) {
         this.error('Peer is stalling (recv).');
         this.destroy();
         return;
       }
 
-      if (this.challenge && now > this.lastPing + Peer.TIMEOUT_INTERVAL) {
+      if (this.challenge && now > this.lastPing + TIMEOUT_INTERVAL) {
         this.error('Peer is stalling (ping).');
         this.destroy();
         return;
@@ -1131,7 +1200,7 @@ export class Peer extends EventEmitter {
    * @returns {RequestEntry}
    */
 
-  request(type, timeout) {
+  request(type, timeout?) {
     if (this.destroyed)
       return null;
 
@@ -1199,12 +1268,13 @@ export class Peer extends EventEmitter {
    * @param {...String|Error} err
    */
 
+
   error(err) {
     if (this.destroyed)
       return;
 
     if (typeof err === 'string') {
-      const msg = format.apply(null, arguments);
+      const msg = format.apply(null, arguments as any);
       err = new Error(msg);
     }
 
@@ -1739,7 +1809,7 @@ export class Peer extends EventEmitter {
    * @param {Hash} hash
    */
 
-  sendReject(code, reason, msg, hash) {
+  sendReject(code, reason, msg?, hash?) {
     const reject = packets.RejectPacket.fromReason(code, reason, msg, hash);
 
     if (msg) {
@@ -1884,7 +1954,7 @@ export class Peer extends EventEmitter {
  * @default
  */
 
-Peer.DRAIN_MAX = 10 << 20;
+export const DRAIN_MAX = 10 << 20;
 
 /**
  * Interval to check for drainage
@@ -1893,7 +1963,7 @@ Peer.DRAIN_MAX = 10 << 20;
  * @default
  */
 
-Peer.STALL_INTERVAL = 5000;
+export const STALL_INTERVAL = 5000;
 
 /**
  * Interval for pinging peers.
@@ -1901,7 +1971,7 @@ Peer.STALL_INTERVAL = 5000;
  * @default
  */
 
-Peer.PING_INTERVAL = 30000;
+export const PING_INTERVAL = 30000;
 
 /**
  * Interval to flush invs.
@@ -1912,7 +1982,7 @@ Peer.PING_INTERVAL = 30000;
  * @default
  */
 
-Peer.INV_INTERVAL = 5000;
+export const INV_INTERVAL = 5000;
 
 /**
  * Required time for peers to
@@ -1922,7 +1992,7 @@ Peer.INV_INTERVAL = 5000;
  * @default
  */
 
-Peer.RESPONSE_TIMEOUT = 60000;
+export const RESPONSE_TIMEOUT = 60000;
 
 /**
  * Required time for loader to
@@ -1931,7 +2001,7 @@ Peer.RESPONSE_TIMEOUT = 60000;
  * @default
  */
 
-Peer.BLOCK_TIMEOUT = 120000;
+export const BLOCK_TIMEOUT = 120000;
 
 /**
  * Required time for loader to
@@ -1940,7 +2010,7 @@ Peer.BLOCK_TIMEOUT = 120000;
  * @default
  */
 
-Peer.TX_TIMEOUT = 120000;
+export const TX_TIMEOUT = 120000;
 
 /**
  * Generic timeout interval.
@@ -1948,26 +2018,38 @@ Peer.TX_TIMEOUT = 120000;
  * @default
  */
 
-Peer.TIMEOUT_INTERVAL = 20 * 60000;
+export const TIMEOUT_INTERVAL = 20 * 60000;
 
 /**
  * Peer Options
  * @alias module:net.PeerOptions
  */
 
-class PeerOptions {
+export class PeerOptions {
+  network: Network;
+  logger: LoggerContext| Logger;
+  createSocket: any;
+  version: number;
+  services: common.ServiceBits;
+  agent: string;
+  noRelay: boolean;
+  spv: boolean;
+  compact: boolean;
+  headers: boolean;
+  banScore: number;
+  
   /**
    * Create peer options.
    * @constructor
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.network = Network.primary;
     this.logger = Logger.global;
 
     this.createSocket = tcp.createSocket;
     this.version = common.PROTOCOL_VERSION;
-    this.services = common.LOCAL_SERVICES;
+    this.services = common.ServiceBits.LOCAL_SERVICES;
     this.agent = common.USER_AGENT;
     this.noRelay = false;
     this.spv = false;
@@ -1985,6 +2067,11 @@ class PeerOptions {
       this.fromOptions(options);
   }
 
+  getHeight: ()=>number;
+  isFull: () =>boolean;
+  createNonce: (hostName:string)=>Buffer;
+  hasNonce: (nonce:any)=>boolean;
+  getRate:(hash)=>number;
   /**
    * Inject properties from object.
    * @private
@@ -2147,6 +2234,8 @@ class PeerOptions {
  */
 
 class RequestEntry {
+  timeout: number;
+  jobs: {resolve, reject}[];
   /**
    * Create a request entry.
    * @constructor

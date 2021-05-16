@@ -10,16 +10,16 @@
  * @module net/bip152
  */
 
-const assert = require('bsert');
-const bio = require('bufio');
-const consensus = require('../protocol/consensus');
-const sha256 = require('bcrypto/lib/sha256');
-const {siphash} = require('bcrypto/lib/siphash');
-const AbstractBlock = require('../primitives/abstractblock');
-const TX = require('../primitives/tx');
-const Headers = require('../primitives/headers');
-const Block = require('../primitives/block');
-const common = require('./common');
+import assert from 'bsert';
+import bio, { BufferReader, BufferWriter, StaticWriter } from 'bufio';
+import * as consensus from '../protocol/consensus';
+import sha256 from 'bcrypto/lib/sha256';
+import { siphash } from 'bcrypto/lib/siphash';
+import {AbstractBlock} from '../primitives/abstractblock';
+import {TX} from '../primitives/tx';
+import {Headers} from '../primitives/headers';
+import {Block} from '../primitives/block';
+import * as common from './common';
 const {encoding} = bio;
 
 /**
@@ -36,14 +36,23 @@ const {encoding} = bio;
  * @property {Buffer|null} sipKey - Siphash key.
  */
 
-class CompactBlock extends AbstractBlock {
+export class CompactBlock extends AbstractBlock {
+  keyNonce:Buffer;
+  ids: number[];
+  ptx: [number, TX][] //prefilled transactions
+  available: TX[]
+  idMap: Map<number,number>
+  count:number;
+  sipKey:Buffer;
+  totalTX:number; 
+  now:number;
   /**
    * Create a compact block.
    * @constructor
    * @param {Object?} options
    */
 
-  constructor(options) {
+  constructor(options?) {
     super();
 
     this.keyNonce = null;
@@ -163,7 +172,7 @@ class CompactBlock extends AbstractBlock {
    * @returns {CompactBlock}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data:Buffer, enc?:'hex') {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -175,7 +184,7 @@ class CompactBlock extends AbstractBlock {
    */
 
   toRaw() {
-    return this.frameRaw(true);
+    return this.frameRaw();
   }
 
   /**
@@ -184,7 +193,7 @@ class CompactBlock extends AbstractBlock {
    */
 
   toNormal() {
-    return this.frameRaw(false);
+    return this.frameRaw();
   }
 
   /**
@@ -212,7 +221,7 @@ class CompactBlock extends AbstractBlock {
    * @returns {Buffer}
    */
 
-  frameRaw() {
+  frameRaw():Buffer {
     const size = this.getSize();
     return this.writeRaw(bio.write(size)).render();
   }
@@ -246,7 +255,7 @@ class CompactBlock extends AbstractBlock {
    * @param {BufferWriter} bw
    */
 
-  writeRaw(bw) {
+  writeRaw(bw:BufferWriter|StaticWriter) {
     this.writeHead(bw);
 
     bw.writeBytes(this.keyNonce);
@@ -502,7 +511,7 @@ class CompactBlock extends AbstractBlock {
    * @returns {CompactBlock}
    */
 
-  static fromBlock(block, nonce) {
+  static fromBlock(block, nonce?) {
     return new this().fromBlock(block, nonce);
   }
 
@@ -524,14 +533,16 @@ class CompactBlock extends AbstractBlock {
  * @property {Number[]} indexes
  */
 
-class TXRequest {
+export class TXRequest {
+  hash:Buffer;
+  indexes: number[];
   /**
    * TX Request
    * @constructor
    * @param {Object?} options
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.hash = consensus.ZERO_HASH;
     this.indexes = [];
 
@@ -595,12 +606,11 @@ class TXRequest {
 
   /**
    * Inject properties from buffer reader.
-   * @private
    * @param {BufferReader} br
    * @returns {TXRequest}
    */
 
-  fromReader(br) {
+  fromReader(br:BufferReader) {
     this.hash = br.readHash();
 
     const count = br.readVarint();
@@ -641,7 +651,7 @@ class TXRequest {
    * @returns {TXRequest}
    */
 
-  static fromReader(br) {
+  static fromReader(br:BufferReader) {
     return new this().fromReader(br);
   }
 
@@ -719,14 +729,17 @@ class TXRequest {
  * @property {TX[]} txs
  */
 
-class TXResponse {
+export class TXResponse {
+  
+  hash:Buffer;
+  txs:TX[];
   /**
    * Create a tx response.
    * @constructor
    * @param {Object?} options
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.hash = consensus.ZERO_HASH;
     this.txs = [];
 
@@ -925,10 +938,3 @@ class TXResponse {
   }
 }
 
-/*
- * Expose
- */
-
-exports.CompactBlock = CompactBlock;
-exports.TXRequest = TXRequest;
-exports.TXResponse = TXResponse;

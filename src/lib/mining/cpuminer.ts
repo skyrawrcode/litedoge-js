@@ -7,18 +7,37 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const {Lock} = require('bmutex');
-const util = require('../utils/util');
-const mine = require('./mine');
+import assert from 'bsert';
+import EventEmitter from 'events';
+import { Lock } from 'bmutex';
+import * as util from '../utils/util';
+import { mine } from './mine';
+import { Miner } from './miner';
+import { Network } from '../protocol';
+import { LoggerContext } from 'blgr/lib/logger';
+import Logger from 'blgr/lib/blgr';
+import { WorkerPool } from '../workers';
+import { Chain, ChainEntry } from '../blockchain';
+import { Address } from '../primitives';
+import { BlockTemplate } from './template';
 
 /**
  * CPU miner.
  * @alias module:mining.CPUMiner
  */
 
-class CPUMiner extends EventEmitter {
+export class CPUMiner extends EventEmitter {
+  opened: boolean;
+  miner: Miner;
+  network: Network;
+  logger: LoggerContext | Logger;
+  workers: WorkerPool;
+  chain: Chain;
+  locker: Lock;
+  running: boolean;
+  stopping: boolean;
+  job: CPUJob;
+  stopJob: {resolve, reject};
   /**
    * Create a CPU miner.
    * @constructor
@@ -87,7 +106,7 @@ class CPUMiner extends EventEmitter {
 
   start() {
     assert(!this.running, 'Miner is already running.');
-    this._start().catch(() => {});
+    this._start().catch(() => { });
   }
 
   /**
@@ -103,7 +122,7 @@ class CPUMiner extends EventEmitter {
     this.running = true;
     this.stopping = false;
 
-    for (;;) {
+    for (; ;) {
       this.job = null;
 
       try {
@@ -236,7 +255,7 @@ class CPUMiner extends EventEmitter {
    * @returns {Promise} - Returns {@link Job}.
    */
 
-  async createJob(tip, address) {
+  async createJob(tip?: ChainEntry, address?: Address) {
     const attempt = await this.miner.createBlock(tip, address);
     return new CPUJob(this, attempt);
   }
@@ -281,7 +300,7 @@ class CPUMiner extends EventEmitter {
   findNonce(job) {
     const data = job.getHeader();
     const target = job.attempt.target;
-    const interval = CPUMiner.INTERVAL;
+    const interval = INTERVAL;
 
     let min = 0;
     let max = interval;
@@ -315,7 +334,7 @@ class CPUMiner extends EventEmitter {
 
     const data = job.getHeader();
     const target = job.attempt.target;
-    const interval = CPUMiner.INTERVAL;
+    const interval = INTERVAL;
 
     let min = 0;
     let max = interval;
@@ -349,7 +368,7 @@ class CPUMiner extends EventEmitter {
     job.start = util.now();
 
     let nonce;
-    for (;;) {
+    for (; ;) {
       nonce = this.findNonce(job);
 
       if (nonce !== -1)
@@ -375,7 +394,7 @@ class CPUMiner extends EventEmitter {
 
     job.start = util.now();
 
-    for (;;) {
+    for (; ;) {
       nonce = await this.findNonceAsync(job);
 
       if (nonce !== -1)
@@ -422,7 +441,7 @@ class CPUMiner extends EventEmitter {
  * @default
  */
 
-CPUMiner.INTERVAL = 0xffffffff / 1500 | 0;
+export const INTERVAL = 0xffffffff / 1500 | 0;
 
 /**
  * Mining Job
@@ -430,6 +449,13 @@ CPUMiner.INTERVAL = 0xffffffff / 1500 | 0;
  */
 
 class CPUJob {
+  miner: CPUMiner;
+  attempt: BlockTemplate;
+  destroyed: boolean;
+  committed: boolean;
+  start: number;
+  nonce1: number;
+  nonce2: number; 
   /**
    * Create a mining job.
    * @constructor

@@ -9,7 +9,7 @@
 
 import assert from 'bsert';
 import {BufferReader, BufferWriter} from 'bufio';
-
+import bio from "bufio";
 import {Script} from '../script/script';
 import {Output} from '../primitives/output';
 import {MTX} from '../primitives';

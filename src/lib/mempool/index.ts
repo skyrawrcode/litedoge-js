@@ -9,8 +9,7 @@
 /**
  * @module mempool
  */
-
-exports.Fees = require('./fees');
-exports.layout = require('./layout');
-exports.MempoolEntry = require('./mempoolentry');
-exports.Mempool = require('./mempool');
+export {PolicyEstimator} from "./fees";
+export *  as layout from "./layout"
+export {MempoolEntry} from "./mempoolentry";
+export {Mempool} from "./mempool";

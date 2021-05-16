@@ -1,4 +1,5 @@
 declare module "bufio" {
+    import bio from "bufio/lib/bufio";
     export * from "bufio/lib/bufio";
     // const _exports: typeof import("bufio/lib/bufio");
     // export = _exports;
@@ -1526,11 +1527,12 @@ declare module "bufio/lib/staticwriter" {
     }
 }
 declare module "bufio/lib/struct" {
-    export = Struct;
+    
     /**
      * Struct
      */
-    class Struct {
+    export default class Struct {
+        constructor();
         static read(br: any, extra: any): Struct;
         static decode(data: any, extra: any): Struct;
         static fromHex(str: any, extra: any): Struct;
@@ -1540,30 +1542,30 @@ declare module "bufio/lib/struct" {
         static fromOptions(options: any, extra: any): Struct;
         static from(options: any, extra: any): Struct;
         static fromReader(br: any, extra: any): Struct;
-        static fromRaw(data: any, extra: any): Struct;
+        static fromRaw(data: any, extra?: any): Struct;
         inject(obj: any): Struct;
         clone(): any;
-        getSize(extra: any): number;
-        write(bw: any, extra: any): any;
-        read(br: any, extra: any): Struct;
+        getSize(extra?: any): number;
+        write(bw: any, extra?: any): any;
+        read(br: any, extra?: any): Struct;
         toString(): any;
-        fromString(str: any, extra: any): Struct;
+        fromString(str: any, extra?: any): Struct;
         getJSON(): Struct;
-        fromJSON(json: any, extra: any): Struct;
-        fromOptions(options: any, extra: any): Struct;
-        from(options: any, extra: any): Struct;
+        fromJSON(json: any, extra?: any): Struct;
+        fromOptions(options: any, extra?: any): Struct;
+        from(options: any, extra?: any): Struct;
         format(): Struct;
-        encode(extra: any): any;
-        decode(data: any, extra: any): Struct;
-        toHex(extra: any): any;
-        fromHex(str: any, extra: any): Struct;
-        toBase64(extra: any): any;
-        fromBase64(str: any, extra: any): Struct;
+        encode(extra?: any): any;
+        decode(data: any, extra?: any): Struct;
+        toHex(extra?: any): any;
+        fromHex(str: any, extra?: any): Struct;
+        toBase64(extra?: any): any;
+        fromBase64(str: any, extra?: any): Struct;
         toJSON(): Struct;
-        toWriter(bw: any, extra: any): any;
-        fromReader(br: any, extra: any): Struct;
-        toRaw(extra: any): any;
-        fromRaw(data: any, extra: any): Struct;
+        toWriter(bw: any, extra?: any): any;
+        fromReader(br: any, extra?: any): Struct;
+        toRaw(extra?: any): any;
+        fromRaw(data: any, extra?: any): Struct;
     }
 }
 declare module "bufio/lib/bufio" {
@@ -1656,7 +1658,7 @@ declare module "bufio/lib/bufio" {
     import BufferReader = require("bufio/lib/reader");
     import BufferWriter = require("bufio/lib/writer");
     import StaticWriter = require("bufio/lib/staticwriter");
-    import Struct = require("bufio/lib/struct");
+    import Struct from "bufio/lib/struct";
     export { custom, encoding, EncodingError, BufferReader, BufferWriter, StaticWriter, Struct, sizeVarint, sizeVarint2, sliceBytes, readBytes, writeBytes, readString, writeString, realloc, copy, concat, sizeVarBytes, sizeVarlen, sizeVarString };
 }
 declare module "bufio/lib/custom-browser" {

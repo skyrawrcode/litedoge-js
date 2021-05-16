@@ -18,6 +18,7 @@ import { TX } from "./tx";
 import { Address } from "./address";
 import { Network } from "../protocol";
 import { ScriptTypes } from "../script/common";
+import { Output } from "./output";
 
 export interface InputOptions {
   prevout?: OutpointOptions;
@@ -275,7 +276,7 @@ export class Input {
    * @returns {Object}
    */
 
-  format(coin?: Coin): object {
+  format(coin?: Coin|Output): object {
     return {
       type: this.getType(coin),
       subtype: this.getSubtype(coin),

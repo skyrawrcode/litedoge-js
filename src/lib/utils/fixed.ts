@@ -25,7 +25,7 @@ export function encode(num: bigint, exp:number):string {
     sign = '-';
   }
 
-  const mult = pow10(exp);
+  const mult = BigInt(pow10(exp));
 
   let lo: bigint = num % mult;
   let hi:bigint = (num - lo) / mult;

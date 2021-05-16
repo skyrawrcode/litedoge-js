@@ -11,8 +11,8 @@
  * @module net/common
  */
 
-const random = require('bcrypto/lib/random');
-const pkg = require('../pkg');
+import random from 'bcrypto/lib/random';
+import * as pkg from '../pkg';
 
 /**
  * Default protocol version.
@@ -20,7 +20,7 @@ const pkg = require('../pkg');
  * @default
  */
 
-exports.PROTOCOL_VERSION = 60066;
+export const PROTOCOL_VERSION = 60066;
 
 /**
  * Minimum protocol version we're willing to talk to.
@@ -28,7 +28,7 @@ exports.PROTOCOL_VERSION = 60066;
  * @default
  */
 
-exports.MIN_VERSION = 60065;
+export const MIN_VERSION = 60065;
 
 /**
  * Minimum version for getheaders.
@@ -36,7 +36,7 @@ exports.MIN_VERSION = 60065;
  * @default
  */
 
-exports.HEADERS_VERSION = 31800;
+export const HEADERS_VERSION = 31800;
 
 /**
  * Minimum version for pong.
@@ -44,7 +44,7 @@ exports.HEADERS_VERSION = 31800;
  * @default
  */
 
-exports.PONG_VERSION = 60000;
+export const PONG_VERSION = 60000;
 
 /**
  * Minimum version for bip37.
@@ -52,7 +52,7 @@ exports.PONG_VERSION = 60000;
  * @default
  */
 
-exports.BLOOM_VERSION = 9999999;
+export const BLOOM_VERSION = 9999999;
 
 /**
  * Minimum version for bip152.
@@ -60,7 +60,7 @@ exports.BLOOM_VERSION = 9999999;
  * @default
  */
 
-exports.SENDHEADERS_VERSION = 99999999;
+export const SENDHEADERS_VERSION = 99999999;
 
 /**
  * Minimum version for bip152.
@@ -68,7 +68,7 @@ exports.SENDHEADERS_VERSION = 99999999;
  * @default
  */
 
-exports.COMPACT_VERSION = 99999999;
+export const COMPACT_VERSION = 99999999;
 
 /**
  * Service bits.
@@ -76,51 +76,35 @@ exports.COMPACT_VERSION = 99999999;
  * @default
  */
 
-exports.services = {
+export enum ServiceBits {
   /**
    * Whether network services are enabled.
    */
 
-  NETWORK: 1 << 0,
+  NETWORK= 1 << 0,
 
   /**
    * Whether the peer supports the getutxos packet.
    */
 
-  GETUTXO: 1 << 1,
+  GETUTXO= 1 << 1,
 
   /**
    * Whether the peer supports BIP37.
    */
 
-  BLOOM: 1 << 2,
+  BLOOM= 1 << 2,
 
+  LOCAL_SERVICES = 0 | ServiceBits.NETWORK,
+  REQUIRED_SERVICES = 0 | ServiceBits.NETWORK
 };
-
-/**
- * Bcoin's services (we support everything).
- * @const {Number}
- * @default
- */
-
-exports.LOCAL_SERVICES = 0
-  | exports.services.NETWORK;
-
-/**
- * Required services (network and segwit).
- * @const {Number}
- * @default
- */
-
-exports.REQUIRED_SERVICES = 0
-  | exports.services.NETWORK;
 
 /**
  * Default user agent: `/ldogejs:[version]/`.
  * @const {String}
  * @default
  */
-exports.USER_AGENT = `/LDOGE.JS:${pkg.version}/`;
+export const USER_AGENT = `/LDOGE.JS:${pkg.version}/`;
 
 /**
  * Max message size (~4mb with segwit, formerly 2mb)
@@ -128,7 +112,7 @@ exports.USER_AGENT = `/LDOGE.JS:${pkg.version}/`;
  * @default
  */
 
-exports.MAX_MESSAGE = 4 * 1000 * 1000;
+export const MAX_MESSAGE = 4 * 1000 * 1000;
 
 /**
  * Amount of time to ban misbheaving peers.
@@ -136,7 +120,7 @@ exports.MAX_MESSAGE = 4 * 1000 * 1000;
  * @default
  */
 
-exports.BAN_TIME = 24 * 60 * 60;
+export const BAN_TIME = 24 * 60 * 60;
 
 /**
  * Ban score threshold before ban is placed in effect.
@@ -144,14 +128,14 @@ exports.BAN_TIME = 24 * 60 * 60;
  * @default
  */
 
-exports.BAN_SCORE = 100;
+export const BAN_SCORE = 100;
 
 /**
  * Create a nonce.
  * @returns {Buffer}
  */
 
-exports.nonce = function nonce() {
+export function nonce():Buffer {
   return random.randomBytes(8);
 };
 
@@ -160,8 +144,7 @@ exports.nonce = function nonce() {
  * @const {Buffer}
  * @default
  */
-
-exports.ZERO_KEY = Buffer.alloc(33, 0x00);
+export const ZERO_KEY = Buffer.alloc(33, 0x00);
 
 /**
  * A 64 byte signature of all zeroes.
@@ -169,7 +152,7 @@ exports.ZERO_KEY = Buffer.alloc(33, 0x00);
  * @default
  */
 
-exports.ZERO_SIG = Buffer.alloc(64, 0x00);
+export const ZERO_SIG = Buffer.alloc(64, 0x00);
 
 /**
  * 8 zero bytes.
@@ -177,7 +160,7 @@ exports.ZERO_SIG = Buffer.alloc(64, 0x00);
  * @default
  */
 
-exports.ZERO_NONCE = Buffer.alloc(8, 0x00);
+export const ZERO_NONCE = Buffer.alloc(8, 0x00);
 
 /**
  * Maximum inv/getdata size.
@@ -185,7 +168,7 @@ exports.ZERO_NONCE = Buffer.alloc(8, 0x00);
  * @default
  */
 
-exports.MAX_INV = 50000;
+export const MAX_INV = 50000;
 
 /**
  * Maximum number of requests.
@@ -193,7 +176,7 @@ exports.MAX_INV = 50000;
  * @default
  */
 
-exports.MAX_REQUEST = 5000;
+export const MAX_REQUEST = 5000;
 
 /**
  * Maximum number of block requests per peer.
@@ -201,7 +184,7 @@ exports.MAX_REQUEST = 5000;
  * @default
  */
 
-exports.MAX_BLOCK_REQUEST = 500000 + 10000;
+export const MAX_BLOCK_REQUEST = 500000 + 10000;
 
 /**
  * Maximum number of tx requests.
@@ -209,4 +192,4 @@ exports.MAX_BLOCK_REQUEST = 500000 + 10000;
  * @default
  */
 
-exports.MAX_TX_REQUEST = 10000;
+export const MAX_TX_REQUEST = 10000;

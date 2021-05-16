@@ -4,27 +4,21 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
+import assert from 'bsert';
+import * as consensus from '../protocol/consensus';
+import {BN} from 'bcrypto';
+import * as common from './common';
 
-const assert = require('bsert');
-const consensus = require('../protocol/consensus');
-const BN = require('bcrypto/lib/bn.js');
-
-/**
- * @exports mining/common
- */
-
-const common = exports;
 
 /*
  * Constants
  */
 
-const DIFF = 0x00000000ffff0000000000000000000000000000000000000000000000000000;
-const B192 = 0x1000000000000000000000000000000000000000000000000;
-const B128 = 0x100000000000000000000000000000000;
-const B64 = 0x10000000000000000;
-const B0 = 0x1;
+export const DIFF = 0x00000000ffff0000000000000000000000000000000000000000000000000000;
+export const B192 = 0x1000000000000000000000000000000000000000000000000;
+export const B128 = 0x100000000000000000000000000000000;
+export const B64 = 0x10000000000000000;
+export const B0 = 0x1;
 
 /**
  * Swap 32 bit endianness of uint256.
@@ -32,7 +26,7 @@ const B0 = 0x1;
  * @returns {Buffer}
  */
 
-common.swap32 = function swap32(data) {
+ export function swap32(data) {
   for (let i = 0; i < data.length; i += 4) {
     const field = data.readUInt32LE(i, true);
     data.writeUInt32BE(field, i, true);
@@ -48,7 +42,7 @@ common.swap32 = function swap32(data) {
  * @returns {Number}
  */
 
-common.rcmp = function rcmp(a, b) {
+ export function rcmp(a, b) {
   assert(a.length === b.length);
 
   for (let i = a.length - 1; i >= 0; i--) {
@@ -67,7 +61,7 @@ common.rcmp = function rcmp(a, b) {
  * @returns {Number}
  */
 
-common.double256 = function double256(target) {
+ export function double256(target) {
   let n = 0;
   let hi, lo;
 
@@ -99,7 +93,7 @@ common.double256 = function double256(target) {
  * @returns {Number}
  */
 
-common.getDifficulty = function getDifficulty(target) {
+ export function getDifficulty(target) {
   const d = DIFF;
   const n = common.double256(target);
 
@@ -115,7 +109,7 @@ common.getDifficulty = function getDifficulty(target) {
  * @returns {Buffer}
  */
 
-common.getTarget = function getTarget(bits) {
+ export function getTarget(bits) {
   const target = consensus.fromCompact(bits);
 
   if (target.isNeg())
@@ -133,7 +127,7 @@ common.getTarget = function getTarget(bits) {
  * @returns {Buffer}
  */
 
-common.getBits = function getBits(data) {
+ export function getBits(data) {
   const target = new BN(data, 'le');
 
   if (target.isZero())

@@ -10,12 +10,12 @@
  * @module net
  */
 
-exports.bip152 = require('./bip152');
-exports.common = require('./common');
-exports.Framer = require('./framer');
-exports.HostList = require('./hostlist');
-exports.NetAddress = require('./netaddress');
-exports.packets = require('./packets');
-exports.Parser = require('./parser');
-exports.Peer = require('./peer');
-exports.Pool = require('./pool');
+export * as bip152 from "./bip152"
+export * as common from "./common";
+export {Framer} from "./framer";
+export {HostList} from "./hostlist";
+export {NetAddress} from "./netaddress";
+export * as packets from "./packets";
+export {Parser} from "./parser";
+export {Peer} from "./peer";
+export {Pool} from "./pool";

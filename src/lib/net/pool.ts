@@ -23,21 +23,23 @@ import * as util from '../utils/util';
 import * as common from './common';
 import * as chainCommon from '../blockchain/common';
 import {Address} from '../primitives/address';
-import BIP152 from './bip152';
+import * as BIP152 from './bip152';
 import {Network} from '../protocol/network';
 import {Peer} from './peer';
-import HostList from './hostlist';
+import {HostList, scores} from './hostlist';
 import {InvItem} from '../primitives/invitem';
 import * as  packets from './packets';
-const services = common.services;
+const services = common.ServiceBits;
 const invTypes = InvItem.types;
-const packetTypes = packets.types;
-const scores = HostList.scores;
+const packetTypes = packets.PacketTypes;
 import { inspectSymbol } from '../utils';
 import { Mempool } from '../mempool/mempool';
+import { LoggerContext } from 'blgr/lib/logger';
+import { Chain } from '../blockchain';
 
 export interface PoolOptionsOptions{
   network?:Network;
+  logger?:Logger|LoggerContext;
 
 }
 
@@ -52,8 +54,8 @@ export class Pool extends EventEmitter {
   opened: boolean;
   options:PoolOptions;
   network:Network;
-  logger: Logger;
-  chain: undefined;
+  logger: Logger|LoggerContext;
+  chain: Chain;
   mempool: Mempool;
   server: any;
   nonces: NonceList;
@@ -67,7 +69,7 @@ export class Pool extends EventEmitter {
   blockMap: BufferSet;
   txMap: BufferSet;
   compactBlocks: BufferSet;
-  invMap: BufferMap;
+  invMap: BufferMap<BroadcastItem>;
   pendingFilter: any;
   pendingRefill: any;
   checkpoints: boolean;
@@ -403,7 +405,7 @@ export class Pool extends EventEmitter {
 
   startTimer() {
     assert(this.timer == null, 'Timer already started.');
-    this.timer = setInterval(() => this.discover(), Pool.DISCOVERY_INTERVAL);
+    this.timer = setInterval(() => this.discover(), DISCOVERY_INTERVAL);
   }
   static DISCOVERY_INTERVAL(arg0: () => Promise<void>, DISCOVERY_INTERVAL: any): any {
     throw new Error('Method not implemented.');
@@ -501,7 +503,7 @@ export class Pool extends EventEmitter {
    * @returns {Promise}
    */
 
-  async discoverSeeds(checkPeers) {
+  async discoverSeeds(checkPeers?:boolean) {
     if (!this.options.discover)
       return;
 
@@ -704,8 +706,8 @@ export class Pool extends EventEmitter {
    * Send a sync to each peer.
    */
 
-  sync(force) {
-    this.resync(false);
+  sync(force?:boolean) {
+    this.resync(force);
   }
 
   /**
@@ -2138,7 +2140,7 @@ export class Pool extends EventEmitter {
    */
 
   async handleBlock(peer, packet) {
-    const flags = chainCommon.flags.DEFAULT_FLAGS;
+    const flags = chainCommon.VerifyFlags.DEFAULT_FLAGS;
 
     if (this.options.spv) {
       this.logger.warning(
@@ -2412,7 +2414,7 @@ export class Pool extends EventEmitter {
   async _handleTX(peer, packet) {
     const tx = packet.tx;
     const hash = tx.hash();
-    const flags = chainCommon.flags.VERIFY_NONE;
+    const flags = chainCommon.VerifyFlags.VERIFY_NONE;
     const block = peer.merkleBlock;
 
     if (block) {
@@ -2649,7 +2651,7 @@ export class Pool extends EventEmitter {
     const tree = block.getTree();
 
     if (tree.matches.length === 0) {
-      const flags = chainCommon.flags.VERIFY_NONE;
+      const flags = chainCommon.VerifyFlags.VERIFY_NONE;
       await this._addBlock(peer, block, flags);
       return;
     }
@@ -2781,7 +2783,7 @@ export class Pool extends EventEmitter {
       this.logger.debug(
         'Received full compact block %h (%s).',
         block.hash(), peer.hostname());
-      const flags = chainCommon.flags.VERIFY_BODY;
+      const flags = chainCommon.VerifyFlags.VERIFY_BODY;
       await this.addBlock(peer, block.toBlock(), flags);
       return;
     }
@@ -2871,7 +2873,7 @@ export class Pool extends EventEmitter {
   async handleBlockTxn(peer, packet) {
     const res = packet.response;
     const block = peer.compactBlocks.get(res.hash);
-    const flags = chainCommon.flags.VERIFY_BODY;
+    const flags = chainCommon.VerifyFlags.VERIFY_BODY;
 
     if (!block) {
       this.logger.debug(
@@ -3122,7 +3124,7 @@ export class Pool extends EventEmitter {
    * @param {String?} enc
    */
 
-  watch(data, enc) {
+  watch(data, enc?) {
     if (!this.options.spv)
       return;
 
@@ -3236,7 +3238,7 @@ export class Pool extends EventEmitter {
    * @returns {Promise}
    */
 
-  async getBlocks(peer, tip, stop) {
+  async getBlocks(peer, tip, stop?:Buffer) {
     const locator = await this.chain.getLocator(tip);
     peer.sendGetBlocks(locator, stop);
   }
@@ -3540,7 +3542,7 @@ export class Pool extends EventEmitter {
  * @default
  */
 
-Pool.DISCOVERY_INTERVAL = 120000;
+export const DISCOVERY_INTERVAL = 120000;
 
 /**
  * Pool Options
@@ -3554,7 +3556,7 @@ class PoolOptions {
 
   network: Network;
   logger: Logger;
-  chain: undefined;
+  chain: Chain;
   mempool: Mempool;
   discover: boolean;
   memory: boolean;
@@ -3588,6 +3590,7 @@ class PoolOptions {
   requiredServices: any;
   options: any;
   maxOutbound: number;
+  createServer: (handler?: Function) => any;
   /**
    * Create pool options.
    * @constructor
@@ -3630,8 +3633,8 @@ class PoolOptions {
     this.nodes = [];
     this.invTimeout = 60000;
     this.blockMode = 0;
-    this.services = common.LOCAL_SERVICES;
-    this.requiredServices = common.REQUIRED_SERVICES;
+    this.services = common.ServiceBits.LOCAL_SERVICES;
+    this.requiredServices = common.ServiceBits.REQUIRED_SERVICES;
     this.memory = true;
     this.discover = true;
 
@@ -3846,8 +3849,8 @@ class PoolOptions {
     }
 
     if (this.spv) {
-      this.requiredServices |= common.services.BLOOM;
-      this.services &= ~common.services.NETWORK;
+      this.requiredServices |= common.ServiceBits.BLOOM;
+      this.services &= ~common.ServiceBits.NETWORK;
       this.noRelay = true;
       this.checkpoints = true;
       this.compact = false;
@@ -3856,12 +3859,12 @@ class PoolOptions {
     }
 
     if (this.selfish) {
-      this.services &= ~common.services.NETWORK;
+      this.services &= ~common.ServiceBits.NETWORK;
       this.bip37 = false;
     }
 
     if (this.bip37)
-      this.services |= common.services.BLOOM;
+      this.services |= common.ServiceBits.BLOOM;
 
     if (this.proxy)
       this.listen = false;
@@ -4331,8 +4334,8 @@ class BroadcastItem extends EventEmitter {
  */
 
 class NonceList {
-  map: BufferMap;
-  hosts: Map<any, any>;
+  map: BufferMap<string>;
+  hosts: Map<string, Buffer>;
   /**
    * Create nonce list.
    * @constructor

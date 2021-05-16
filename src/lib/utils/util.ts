@@ -72,7 +72,7 @@ export function ms():number {
 
 export function date(time:number):string {
   if (time == null)
-    time = util.now();
+    time = now();
 
   return new Date(time * 1000).toISOString().slice(0, -5) + 'Z';
 };
@@ -85,7 +85,7 @@ export function date(time:number):string {
 
 export function time(date:string) {
   if (date == null)
-    return util.now();
+    return now();
 
   return +new Date(date) / 1000 | 0;
 };

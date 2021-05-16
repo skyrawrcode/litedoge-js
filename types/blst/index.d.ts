@@ -1,4 +1,5 @@
 declare module "blst/lib/list" {
+    export default List;
     /**
      * Double Linked List
      * @alias module:utils.List
@@ -35,19 +36,17 @@ declare module "blst/lib/list" {
         pop(): ListItem;
         /**
          * Insert item into the linked list.
-         * @private
          * @param {ListItem|null} ref
          * @param {ListItem} item
          * @returns {Boolean}
          */
-        private insert;
+        insert(ref: ListItem, item:ListItem):boolean;
         /**
          * Remove item from the linked list.
-         * @private
          * @param {ListItem}
          * @returns {Boolean}
          */
-        private remove;
+        remove(ref: ListItem): boolean;
         /**
          * Replace an item in-place.
          * @param {ListItem} ref
@@ -91,7 +90,7 @@ declare module "blst/lib/blst" {
     export = _exports;
 }
 declare module "blst" {
-    const _exports: typeof import("blst/lib/list");
-    export = _exports;
+    import blst from "blst/lib/list"
+    export default blst;
 }
 

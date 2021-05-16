@@ -19,7 +19,7 @@ import hash256 from 'bcrypto/lib/hash256';
  * @returns {Number} Nonce or -1.
  */
 
-function mine(data, target, min, max) {
+export function mine(data, target, min, max) {
   let nonce = min;
 
   data.writeUInt32LE(nonce, 76, true);
@@ -61,9 +61,3 @@ function rcmp(a, b) {
 
   return 0;
 }
-
-/*
- * Expose
- */
-
-module.exports = mine;

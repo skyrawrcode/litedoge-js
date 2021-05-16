@@ -8,6 +8,7 @@
 /* eslint prefer-arrow-callback: "off" */
 
 import {Network} from './protocol'
+import { NetworkType } from './types';
 
 'use strict';
 
@@ -22,7 +23,7 @@ import {Network} from './protocol'
 /**
  * Set the default network.
  */
-export function set(network: string) {
+export function set(network: NetworkType) {
   Network.set(network);
 }
 

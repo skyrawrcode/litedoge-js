@@ -7,22 +7,24 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const hash256 = require('bcrypto/lib/hash256');
-const merkle = require('bcrypto/lib/merkle');
-const random = require('bcrypto/lib/random');
-const util = require('../utils/util');
-const Address = require('../primitives/address');
-const TX = require('../primitives/tx');
-const Block = require('../primitives/block');
-const Input = require('../primitives/input');
-const Output = require('../primitives/output');
-const consensus = require('../protocol/consensus');
-const policy = require('../protocol/policy');
-const CoinView = require('../coins/coinview');
-const Script = require('../script/script');
-const common = require('./common');
+import assert from 'bsert';
+import bio from 'bufio';
+import hash256 from 'bcrypto/lib/hash256';
+import merkle from 'bcrypto/lib/merkle';
+import random from 'bcrypto/lib/random';
+import * as util from '../utils/util';
+import {Address} from '../primitives/address';
+  import {TX} from '../primitives/tx';
+import {Block} from '../primitives/block';
+import {Input} from '../primitives/input';
+import {Output} from '../primitives/output';
+import * as consensus from '../protocol/consensus';
+import * as policy from '../protocol/policy';
+import {CoinView} from '../coins/coinview';
+import {Script} from '../script/script';
+import * as common from './common';
+import BN from 'bcrypto/lib/native/bn';
+import { Rate } from '../types';
 
 /*
  * Constants
@@ -35,14 +37,34 @@ const DUMMY = Buffer.alloc(0);
  * @alias module:mining.BlockTemplate
  */
 
-class BlockTemplate {
+export class BlockTemplate {
+  
+  prevBlock:Buffer;
+  version:number;
+  height:number;
+  time:number;
+  bits:number;
+  target:Buffer;
+  locktime:number;
+  mtp:number;
+  flags:number;
+  coinbaseFlags: Buffer;
+  address:Address;
+  sigops:number;
+  weight:number;
+  fees:bigint;
+  tree:MerkleTree;
+  left:Buffer;
+  right:Buffer;
+  items:BlockEntry[];
+  pos: boolean;
   /**
    * Create a block template.
    * @constructor
    * @param {Object} options
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.prevBlock = consensus.ZERO_HASH;
     this.version = 1;
     this.height = 0;
@@ -229,7 +251,7 @@ class BlockTemplate {
 
     // Smaller nonce for good measure.
     const nonce = Buffer.allocUnsafe(4);
-    nonce.writeUInt32LE(random.randomInt(), 0, true);
+    nonce.writeUInt32LE(random.randomInt(), 0);
     input.script.pushData(nonce);
 
     // Extra nonce: incremented when
@@ -538,7 +560,16 @@ class BlockTemplate {
  * @property {Number} depCount
  */
 
-class BlockEntry {
+export class BlockEntry {
+  tx:TX;
+  hash:Buffer;
+  fee:bigint;
+  rate:Rate;
+  priority:number;
+  free:boolean;
+  sigops:number;
+  descRate:Rate;
+  depCount:number;
   /**
    * Create a block entry.
    * @constructor
@@ -548,12 +579,12 @@ class BlockEntry {
   constructor(tx) {
     this.tx = tx;
     this.hash = tx.hash();
-    this.fee = 0;
-    this.rate = 0;
+    this.fee = 0n;
+    this.rate = 0n;
     this.priority = 0;
     this.free = false;
     this.sigops = 0;
-    this.descRate = 0;
+    this.descRate = 0n;
     this.depCount = 0;
   }
 
@@ -600,6 +631,13 @@ class BlockEntry {
  */
 
 class BlockProof {
+
+  hash:Buffer;
+  root:Buffer;
+  nonce1:number;
+  nonce2:number;
+  time:number;
+  nonce:number;
   /**
    * Create a block proof.
    * @constructor
@@ -639,6 +677,7 @@ class BlockProof {
  */
 
 class MerkleTree {
+  steps:Buffer[];
   /**
    * Create a merkle tree.
    * @constructor
@@ -723,12 +762,4 @@ class MerkleTree {
   }
 }
 
-/*
- * Expose
- */
 
-exports = BlockTemplate;
-exports.BlockTemplate = BlockTemplate;
-exports.BlockEntry = BlockEntry;
-
-module.exports = exports;

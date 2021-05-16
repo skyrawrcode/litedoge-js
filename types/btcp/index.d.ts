@@ -1,10 +1,11 @@
-import EventEmitter from "node:events";
+
 
 declare module "btcp" {
     const _exports: typeof import("btcp/lib/btcp");
     export = _exports;
 }
 declare module "btcp/lib/tcp" {
+    import EventEmitter from "node:events";
     export var unsupported: boolean;
     export function createServer(handler: Function | null): any;
     /**
@@ -31,11 +32,12 @@ declare module "btcp/lib/tcp" {
         ref(): Server;
         unref(): Server;
     }
-    export { unknown as Socket, unknown as connect, unknown as createSocket, unknown as createConnection };
+    export { Socket, connect, createSocket, createConnection } from "btcp/lib/tcp-browser";
+    
 }
 declare module "btcp/lib/btcp" {
-    const _exports: typeof import("btcp/lib/tcp");
-    export = _exports;
+    import btc from "btcp/lib/tcp"
+    export default btc;
 }
 declare module "btcp/lib/tcp-browser" {
     export var unsupported: boolean;

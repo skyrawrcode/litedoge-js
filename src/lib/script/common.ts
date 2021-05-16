@@ -222,6 +222,12 @@ export enum VerifyFlags {
   | VerifyFlags.VERIFY_LOW_S
   | VerifyFlags.VERIFY_CONST_SCRIPTCODE,
 
+
+  /**
+ * Standard flags without mandatory bits.
+ * @const {VerifyFlags}
+ */
+  ONLY_STANDARD_VERIFY_FLAGS = VerifyFlags.STANDARD_VERIFY_FLAGS & ~VerifyFlags.MANDATORY_VERIFY_FLAGS
 }
 /**
  * Script and locktime flags. See {@link VerifyFlags}.
@@ -231,22 +237,6 @@ export type flags = VerifyFlags;
 
 
 
-/**
- * Standard verify flags (used for mempool validation).
- * @const {VerifyFlags}
- * @default
- */
-
-exports.flags.
-
-/**
- * Standard flags without mandatory bits.
- * @const {VerifyFlags}
- * @default
- */
-
-exports.flags.ONLY_STANDARD_VERIFY_FLAGS =
-  exports.flags.STANDARD_VERIFY_FLAGS & ~exports.flags.MANDATORY_VERIFY_FLAGS;
 
 /**
  * Sighash Types.
@@ -254,7 +244,7 @@ exports.flags.ONLY_STANDARD_VERIFY_FLAGS =
  * @default
  */
 
-export enum SighashType  {
+export enum SighashType {
   /*
    * Sign all outputs.
    */
@@ -265,19 +255,19 @@ export enum SighashType  {
    * Do not sign outputs (zero sequences).
    */
 
-  NONE= 2,
+  NONE = 2,
 
   /*
    * Sign output at the same index (zero sequences).
    */
 
-  SINGLE= 3,
+  SINGLE = 3,
 
   /*
    * Sign only the current input (mask).
    */
 
-  ANYONECANPAY= 0x80
+  ANYONECANPAY = 0x80
 };
 
 
@@ -335,7 +325,7 @@ export function isLowDER(sig) {
  * @returns {Boolean}
  */
 
-export  function isKeyEncoding(key:Buffer):boolean {
+export function isKeyEncoding(key: Buffer): boolean {
   assert(Buffer.isBuffer(key));
 
   if (key.length < 33)
@@ -360,7 +350,7 @@ export  function isKeyEncoding(key:Buffer):boolean {
  * @returns {Boolean}
  */
 
-export function isCompressedEncoding(key:Buffer):boolean {
+export function isCompressedEncoding(key: Buffer): boolean {
   assert(Buffer.isBuffer(key));
 
   if (key.length !== 33)
@@ -470,7 +460,7 @@ export function isSignatureEncoding(sig) {
  * @returns {String} Human-readable string.
  */
 
-export function toASM(item:Buffer, decode?:boolean):string {
+export function toASM(item: Buffer, decode?: boolean): string {
   if (item.length <= 4) {
     const num = ScriptNum.decode(item);
     return num.toString(10);

@@ -7,21 +7,29 @@
 
 'use strict';
 
-const assert = require('bsert');
-const path = require('path');
-const {Server} = require('bweb');
-const Validator = require('bval');
-const base58 = require('bcrypto/lib/encoding/base58');
-const {BloomFilter} = require('bfilter');
-const sha256 = require('bcrypto/lib/sha256');
-const random = require('bcrypto/lib/random');
-const {safeEqual} = require('bcrypto/lib/safe');
-const util = require('../utils/util');
-const Address = require('../primitives/address');
-const TX = require('../primitives/tx');
-const Outpoint = require('../primitives/outpoint');
-const Network = require('../protocol/network');
-const pkg = require('../pkg');
+import Logger from "blgr/lib/blgr";
+import { LoggerContext } from "blgr/lib/logger";
+import { Node } from "./node";
+
+import assert from 'bsert';
+import path from 'path';
+import { Server } from 'bweb';
+import Validator from 'bval';
+import base58 from 'bcrypto/lib/encoding/base58';
+import { BloomFilter } from 'bfilter';
+import sha256 from 'bcrypto/lib/sha256';
+import random from 'bcrypto/lib/random';
+import { safeEqual } from 'bcrypto/lib/safe';
+import * as util from '../utils/util';
+import {Address} from '../primitives/address';
+import {TX} from '../primitives/tx';
+import {Outpoint} from '../primitives/outpoint';
+import {Network} from '../protocol/network';
+import * as pkg from '../pkg';
+import { Chain } from "../blockchain";
+import { Mempool, PolicyEstimator } from "../mempool";
+import { Pool } from "../net/pool";
+import { Miner } from "../mining/miner";
 
 /**
  * HTTP
@@ -29,6 +37,14 @@ const pkg = require('../pkg');
  */
 
 export class HTTP extends Server {
+  network:Network;
+  logger:LoggerContext
+  node:Node;
+  chain:Chain;
+  mempool:Mempool;
+  pool:Pool;
+  fees:PolicyEstimator;
+  miner:Miner;
   /**
    * Create an http server.
    * @constructor
@@ -462,7 +478,7 @@ export class HTTP extends Server {
 
     socket.hook('add filter', (...args) => {
       const valid = new Validator(args);
-      const chunks = valid.array(0);
+      const chunks = valid.array(null);
 
       if (!chunks)
         throw new Error('Invalid parameter.');
@@ -494,7 +510,7 @@ export class HTTP extends Server {
 
     socket.hook('estimate fee', (...args) => {
       const valid = new Validator(args);
-      const blocks = valid.u32(0);
+      const blocks = valid.u32(null);
 
       if (!this.fees)
         return this.network.feeRate;
@@ -518,7 +534,7 @@ export class HTTP extends Server {
 
     socket.hook('rescan', (...args) => {
       const valid = new Validator(args);
-      const start = valid.uintbrhash(0);
+      const start = valid.uintbrhash(null);
 
       if (start == null)
         throw new Error('Invalid parameter.');
@@ -678,6 +694,20 @@ export class HTTP extends Server {
 }
 
 class HTTPOptions {
+  network:Network;
+  logger:Logger|LoggerContext;
+  node:Node;
+  apiKey: string;
+  apiHash:string;
+  noAuth:boolean;
+  cors:boolean;
+  maxTxs:number;
+  prefix:string;
+  host:string;
+  port:number;
+  ssl:boolean;
+  keyFile:string;
+  certFile:string;
   /**
    * HTTPOptions
    * @alias module:http.HTTPOptions
@@ -685,7 +715,7 @@ class HTTPOptions {
    * @param {Object} options
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.network = Network.primary;
     this.logger = null;
     this.node = null;
@@ -813,7 +843,7 @@ class HTTPOptions {
 function enforce(value, msg) {
   if (!value) {
     const err = new Error(msg);
-    err.statusCode = 400;
+    (err as any).statusCode = 400;
     throw err;
   }
 }

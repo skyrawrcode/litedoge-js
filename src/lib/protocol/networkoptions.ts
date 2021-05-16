@@ -13,7 +13,7 @@ export interface NetworkOptions {
   magic?: number;
   port?: number;
   checkpointMap?: { [key: number]: Buffer; };
-  type?: string;
+  type?: 'main' | 'testnet';
   seeds?: string[];
   lastCheckpoint?: number;
   halvingInterval?: number;

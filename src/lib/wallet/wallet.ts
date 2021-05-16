@@ -33,7 +33,7 @@ const { Mnemonic } = HD;
 import { inspectSymbol } from '../utils';
 import { BufferSet } from 'buffer-map';
 import { WalletDB } from './walletdb';
-import { Kernel } from '../staking/kernel';
+import { Kernel, StakeKernel } from '../staking/kernel';
 import { Lock } from 'bmutex';
 import { SighashType } from '../script/common';
 import { LoggerContext } from 'blgr/lib/logger';
@@ -2335,7 +2335,7 @@ export class Wallet extends EventEmitter {
 
       const interval = Math.min(searchInterval, maxStakeSearchInterval);
 
-      const kernel = this.findKernel(prev, bits, blockFrom, prevTx.tx, coin, time, interval)
+      const kernel = await this.findKernel(prev, bits, blockFrom, prevTx.tx, coin, time, interval)
       if (!kernel) break;
       logger.info("Woah! We found a kernel.")
 
@@ -2344,7 +2344,7 @@ export class Wallet extends EventEmitter {
       if (!walletKey) break;
       const scriptPubKeyOut = walletKey.getScript();
 
-      coinStakeTx.time -= n;
+      coinStakeTx.time -= kernel.interval;
       coinStakeTx.addInput(Input.fromCoin(coin));
       credit += coin.value;
       // vwtxPrev.push_back(pcoin.first); I'm not sure i need this.
@@ -2404,16 +2404,16 @@ export class Wallet extends EventEmitter {
    * @param {Output|Coin} coin
    * @param {number} time
    * @param {number} searchInterval
-   * @returns {{proofHash: Buffer, targetProofOfStake: Buffer}}
+   * @returns {}
    */
-  findKernel(prev, bits, blockFrom, prevTx, coin, time, searchInterval) {
+  async findKernel(prev, bits, blockFrom, prevTx, coin, time, searchInterval): Promise<{ interval: number; kernel: StakeKernel; }> {
     let kernelFound = false;
     for (let n = 0; n < searchInterval && !kernelFound && prev.height === this.wdb.state.height; n++) {
       // Search backward in time from the given txNew timestamp
       // Search nSearchInterval seconds back up to nMaxStakeSearchInterval
-      const kernel = this.kernel.checkStakeKernelHash(prev, bits, blockFrom, prevTx, coin, time - n)
+      const kernel = await this.kernel.checkStakeKernelHash(prev, bits, blockFrom, prevTx, coin, time - n)
       if (kernel != null) {
-        return kernel;
+        return {interval: n , kernel: kernel};
       }
     }
   }

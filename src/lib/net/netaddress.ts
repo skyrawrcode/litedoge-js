@@ -6,13 +6,13 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const IP = require('binet');
-const Network = require('../protocol/network');
-const util = require('../utils/util');
-const common = require('./common');
-const {inspectSymbol} = require('../utils');
+import assert from 'bsert';
+import bio from 'bufio';
+import IP from 'binet';
+import {Network} from '../protocol/network';
+import * as util from '../utils/util';
+import * as common from './common';
+import { inspectSymbol } from '../utils';
 
 /**
  * Net Address
@@ -24,7 +24,13 @@ const {inspectSymbol} = require('../utils');
  * @property {Number} time
  */
 
-class NetAddress {
+export class NetAddress {
+  host: string;
+  port: number;
+  services: common.ServiceBits;
+  time: number;
+  hostname: string;
+  raw= IP.ZERO_IP;
   /**
    * Create a network address.
    * @constructor
@@ -35,7 +41,7 @@ class NetAddress {
    * @param {Number?} options.port - Port.
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.host = '0.0.0.0';
     this.port = 0;
     this.services = 0;
@@ -240,7 +246,7 @@ class NetAddress {
     this.raw = IP.toBuffer(host);
     this.host = IP.toString(this.raw);
     this.port = port;
-    this.services = NetAddress.DEFAULT_SERVICES;
+    this.services = DEFAULT_SERVICES;
     this.time = network.now();
 
     this.hostname = IP.toHostname(this.host, this.port);
@@ -473,12 +479,6 @@ class NetAddress {
  * @default
  */
 
-NetAddress.DEFAULT_SERVICES = 0
-  | common.services.NETWORK
-  | common.services.BLOOM;
-
-/*
- * Expose
- */
-
-module.exports = NetAddress;
+export const DEFAULT_SERVICES = 0
+  | common.ServiceBits.NETWORK
+  | common.ServiceBits.BLOOM;

@@ -88,11 +88,11 @@ export  function parsePath(path, hard) {
       throw new Error('Path index out of range.');
 
     if (hardened) {
-      index |= common.HARDENED;
+      index |= HARDENED;
       index >>>= 0;
     }
 
-    if (!hard && (index & common.HARDENED))
+    if (!hard && (index & HARDENED))
       throw new Error('Path index cannot be hardened.');
 
     result.push(index);
@@ -122,11 +122,11 @@ export  function isMaster(key) {
 
 export function isAccount(key:HDPrivateKey|HDPublicKey, account?:number):boolean {
   if (account != null) {
-    const index = (common.HARDENED | account) >>> 0;
+    const index = (HARDENED | account) >>> 0;
     if (key.childIndex !== index)
       return false;
   }
-  return key.depth === 3 && (key.childIndex & common.HARDENED) !== 0;
+  return key.depth === 3 && (key.childIndex & HARDENED) !== 0;
 };
 
 /**

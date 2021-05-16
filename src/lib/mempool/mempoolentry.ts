@@ -6,11 +6,12 @@
 
 'use strict';
 
-const bio = require('bufio');
-const policy = require('../protocol/policy');
-const util = require('../utils/util');
-const Script = require('../script/script');
-const TX = require('../primitives/tx');
+import bio from 'bufio';
+import * as policy from '../protocol/policy';
+import * as util from '../utils/util';
+import {Script} from '../script/script';
+import {TX} from '../primitives/tx';
+import { Amount, Hash } from '../types';
 
 /**
  * Mempool Entry
@@ -24,6 +25,21 @@ const TX = require('../primitives/tx');
  */
 
 export class MempoolEntry {
+  tx: TX;
+  height:number;
+  priority:number;
+  time:number;
+  value:Amount;
+  size:number;
+  sigops:number;
+  fee:Amount;
+  deltaFee:Amount;
+
+  coinbase:boolean;
+  coinstake:boolean;
+  dependencies:boolean;
+  descFee:Amount;
+  descSize:number;
   /**
    * Create a mempool entry.
    * @constructor
@@ -35,7 +51,7 @@ export class MempoolEntry {
    * @param {Amount} options.value - Value of on-chain coins.
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.tx = null;
     this.height = -1;
     this.size = 0;
@@ -48,7 +64,7 @@ export class MempoolEntry {
     this.coinbase = false;
     this.coinstake = false;
     this.dependencies = false;
-    this.descFee = 0;
+    this.descFee = 0n;
     this.descSize = 0;
 
     if (options)
@@ -154,7 +170,9 @@ export class MempoolEntry {
    * @returns {Hash}
    */
 
-  hash(enc) {
+  hash():Buffer;
+  hash(enc: 'hex') : string;
+  hash(enc?:'hex'|null): Hash{
     return this.tx.hash(enc);
   }
 

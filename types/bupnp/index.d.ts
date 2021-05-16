@@ -19,7 +19,7 @@ declare module "bupnp/lib/upnp" {
          * @param {String[]?} targets - Target service types.
          * @returns {Promise} Service.
          */
-        static discover(host: string | null, port: number | null, gateway: string | null, targets: string[] | null): Promise<any>;
+        static discover(host?: string | null, port?: number | null, gateway?: string | null, targets?: string[] | null): Promise<any>;
         /**
          * Create a UPNP context.
          * @constructor

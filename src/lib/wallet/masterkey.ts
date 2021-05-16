@@ -14,6 +14,7 @@ import hash256 from 'bcrypto/lib/hash256';
 import secp256k1 from 'bcrypto/lib/secp256k1';
 import pbkdf2 from 'bcrypto/lib/pbkdf2';
 import scrypt from 'bcrypto/lib/scrypt';
+import {random} from 'bcrypto'
 import * as  util from '../utils/util';
 import { HDPrivateKey } from '../hd/private';
 import { Mnemonic } from '../hd/mnemonic';

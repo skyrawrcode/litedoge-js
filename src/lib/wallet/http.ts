@@ -29,6 +29,7 @@ import { WalletDB } from './walletdb';
 import { Node, RPC } from '../node';
 import { LoggerContext } from 'blgr/lib/logger';
 import { Server } from 'bweb/lib/bweb';
+import path from 'path';
 
 
 export interface HttpOptionsOptions {

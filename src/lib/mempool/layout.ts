@@ -6,8 +6,16 @@
 
 'use strict';
 
-const bdb = require('bdb');
+import bdb from 'bdb';
 
+
+interface layout{
+  V: bdb.Key;
+  v: bdb.Key;
+  R: bdb.Key;
+  F: bdb.Key;
+  e: bdb.Key;
+}
 /*
  * Database Layout:
  *   V -> db version
@@ -16,7 +24,7 @@ const bdb = require('bdb');
  *   e[hash] -> entry
  */
 
-const layout = {
+export const layout: layout = {
   V: bdb.key('V'),
   v: bdb.key('v'),
   R: bdb.key('R'),
@@ -24,8 +32,3 @@ const layout = {
   e: bdb.key('e', ['hash256'])
 };
 
-/*
- * Expose
- */
-
-module.exports = layout;

@@ -415,7 +415,7 @@ export class StakeKernel {
   /**
    *
    */
-  constructor(readonly proofHash:Buffer, readonly targetProofOfStake:BN ) {
+  constructor(readonly proofHash:Buffer, readonly targetProofOfStake: BN ) {
     
   }
 }

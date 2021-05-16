@@ -104,11 +104,24 @@ declare module "bcrypto/lib/murmur3" {
     export = _exports;
 }
 declare module "bfilter/lib/bloom" {
-    export = BloomFilter;
+    export default BloomFilter;
+    import {BufferReader, Struct} from "bufio";
     /**
      * Bloom Filter
      */
-    class BloomFilter {
+    export class BloomFilter extends Struct {
+        static MAX_BLOOM_FILTER_SIZE: number;
+        static MAX_HASH_FUNCS: number;
+        static flags: {
+             NONE: number;
+             ALL: number;
+             PUBKEY_ONLY: number;
+        }
+        static flagsByVal: string[];
+        /**
+         * *
+         */
+
         /**
          * Instantiate bloom filter from options.
          * @param {Number} size - Filter size in bits.
@@ -117,6 +130,7 @@ declare module "bfilter/lib/bloom" {
          * @param {Number|String} - Update type.
          * @returns {BloomFilter}
          */
+        static fromOptions(options: any, extra: any): Struct;
         static fromOptions(size: number, n: number, tweak: number, update: any): BloomFilter;
         /**
          * Create a filter from a false positive rate.
@@ -156,7 +170,8 @@ declare module "bfilter/lib/bloom" {
          * @param {Number|String} - Update type.
          * @returns {BloomFilter}
          */
-        private fromOptions;
+        
+         fromOptions(options: any, extra: any): Struct;
         /**
          * Perform the mumur3 hash on data.
          * @param {Buffer} value
@@ -206,28 +221,16 @@ declare module "bfilter/lib/bloom" {
         write(bw: any): any;
         /**
          * Inject properties from buffer reader.
-         * @private
          * @param {BufferReader} br
          */
-        private read;
+        read(br: BufferReader): any;
     }
-    namespace BloomFilter {
-        const MAX_BLOOM_FILTER_SIZE: number;
-        const MAX_HASH_FUNCS: number;
-        namespace flags {
-            const NONE: number;
-            const ALL: number;
-            const PUBKEY_ONLY: number;
-        }
-        /**
-         * *
-         */
-        type flags = number;
-        const flagsByVal: string[];
-    }
+
+  
 }
+
 declare module "bfilter/lib/rolling" {
-    export = RollingFilter;
+    export default RollingFilter;
     /**
      * Rolling Bloom Filter
      */
@@ -278,14 +281,14 @@ declare module "bfilter/lib/rolling" {
          * @param {Buffer|String}
          * @param {String?} enc - Can be any of the Buffer object's encodings.
          */
-        add(value: any, enc: string | null): void;
+        add(value: any, enc?: string | null): void;
         /**
          * Test whether data is present in the filter.
          * @param {Buffer|String} value
          * @param {String?} enc - Can be any of the Buffer object's encodings.
          * @returns {Boolean}
          */
-        test(value: any | string, enc: string | null): boolean;
+        test(value: any | string, enc?: string | null): boolean;
         /**
          * Test whether data is present in the
          * filter and potentially add data.
@@ -293,12 +296,12 @@ declare module "bfilter/lib/rolling" {
          * @param {String?} enc - Can be any of the Buffer object's encodings.
          * @returns {Boolean} Whether data was added.
          */
-        added(value: any | string, enc: string | null): boolean;
+        added(value: any | string, enc?: string | null): boolean;
     }
 }
 declare module "bfilter/lib/bfilter" {
-    import BloomFilter = require("bfilter/lib/bloom");
-    import RollingFilter = require("bfilter/lib/rolling");
+    import BloomFilter from "bfilter/lib/bloom";
+    import RollingFilter from "bfilter/lib/rolling";
     export { BloomFilter, RollingFilter };
 }
 declare module "bfilter" {

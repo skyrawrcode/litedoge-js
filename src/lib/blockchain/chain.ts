@@ -14,24 +14,23 @@ import Logger from 'blgr';
 import { Lock } from 'bmutex';
 import LRU from 'blru';
 import { BufferMap } from 'buffer-map';
-import {Network, NetworkPOS} from '../protocol/network';
-import {ChainDB} from './chaindb';
+import { Network, NetworkPOS } from '../protocol/network';
+import { ChainDB } from './chaindb';
 import * as consensus from '../protocol/consensus';
 import * as util from '../utils/util';
 import { BN } from 'bcrypto/lib/bcrypto';
-import {ChainEntry} from './chainentry';
-import {CoinView} from '../coins/coinview';
-import {Script} from '../script/script';
+import { ChainEntry } from './chainentry';
+import { CoinView } from '../coins/coinview';
+import { Script } from '../script/script';
 import { VerifyError } from '../protocol/errors';
-import {Block} from '../primitives/block';
+import { Block } from '../primitives/block';
 import { LoggerContext } from 'blgr/lib/logger';
 import { Kernel } from '../staking/kernel';
-import { VerifyFlags } from '../script/common';
-import { LockFlags, ThresholdStates } from './common';
+import { VerifyFlags ,LockFlags, ThresholdStates } from './common';
 import { WorkerPool } from '../workers';
 import { AbstractBlock, Headers, MemBlock } from '../primitives';
 import { AbstractBlockStore } from '../blockstore';
-
+import { VerifyFlags as ScriptVerifyFlags} from '../script/common'
 
 const ZERO = new BN(0);
 
@@ -49,10 +48,10 @@ const ZERO = new BN(0);
 
 export class Chain extends AsyncEmitter {
 
-  opened:boolean;
-  network:Network;
-  pos:NetworkPOS;
-  options:ChainOptions;
+  opened: boolean;
+  network: Network;
+  pos: NetworkPOS;
+  options: ChainOptions;
   logger: LoggerContext;
   kernel: Kernel;
   db: ChainDB;
@@ -64,7 +63,7 @@ export class Chain extends AsyncEmitter {
   synced: boolean;
   orphanMap: BufferMap<Orphan>;
   orphanPrev: BufferMap<Orphan>;
-  workers:WorkerPool;
+  workers: WorkerPool;
   blocks: AbstractBlockStore;
   /**
    * Create a blockchain.
@@ -72,7 +71,7 @@ export class Chain extends AsyncEmitter {
    * @param {Object} options
    */
 
-  constructor(options:ChainOptionsOptions) {
+  constructor(options: ChainOptionsOptions) {
     super();
 
     this.opened = false;
@@ -157,7 +156,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise} - Returns {@link ContextResult}.
    */
 
-  async verifyContext(block:AbstractBlock, prev:ChainEntry, flags:number):Promise<[CoinView, DeploymentState]> {
+  async verifyContext(block: AbstractBlock, prev: ChainEntry, flags: number): Promise<[CoinView, DeploymentState]> {
     // Initial non-contextual verification.
     const state = await this.verify(block, prev, flags);
 
@@ -207,7 +206,7 @@ export class Chain extends AsyncEmitter {
    */
 
   async _verifyBlock(block) {
-    const flags = common.flags.DEFAULT_FLAGS & ~common.flags.VERIFY_POW & ~common.flags.VERIFY_POS;
+    const flags = VerifyFlags.DEFAULT_FLAGS & ~VerifyFlags.VERIFY_POW & ~VerifyFlags.VERIFY_POS;
     return this.verifyContext(block, this.tip, flags);
   }
 
@@ -248,7 +247,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise} - Returns ChainEntry.
    */
 
-  getPrevious(entry:ChainEntry): Promise<ChainEntry> {
+  getPrevious(entry: ChainEntry): Promise<ChainEntry> {
     return this.db.getPrevious(entry);
   }
 
@@ -259,7 +258,7 @@ export class Chain extends AsyncEmitter {
    * @returns {ChainEntry|null}
    */
 
-  getPrevCache(entry:ChainEntry):ChainEntry|null {
+  getPrevCache(entry: ChainEntry): ChainEntry | null {
     return this.db.getPrevCache(entry);
   }
 
@@ -279,7 +278,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise} - Returns ChainEntry.
    */
 
-  getNextEntry(entry:ChainEntry):Promise<ChainEntry> {
+  getNextEntry(entry: ChainEntry): Promise<ChainEntry> {
     return this.db.getNextEntry(entry);
   }
 
@@ -315,10 +314,10 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise} - Returns Number.
    */
 
-  async getMedianTime(prev:ChainEntry, time?:number) :Promise<number> {
+  async getMedianTime(prev: ChainEntry, time?: number): Promise<number> {
     let timespan = consensus.MEDIAN_TIMESPAN;
 
-    const median :number[]= [];
+    const median: number[] = [];
 
     // In case we ever want to check
     // the MTP of the _current_ block
@@ -353,7 +352,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Boolean}
    */
 
-  isHistorical(prev:ChainEntry):boolean {
+  isHistorical(prev: ChainEntry): boolean {
     if (this.options.checkpoints) {
       if (prev.height + 1 <= this.network.lastCheckpoint)
         return true;
@@ -372,7 +371,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise} - Returns {@link DeploymentState}.
    */
 
-  async verify(block:AbstractBlock, prev:ChainEntry, flags:number):Promise<DeploymentState> {
+  async verify(block: AbstractBlock, prev: ChainEntry, flags: number): Promise<DeploymentState> {
     assert(typeof flags === 'number');
 
     // Extra sanity check.
@@ -397,9 +396,9 @@ export class Chain extends AsyncEmitter {
         return this.state;
 
       // Check merkle root.
-      if (flags & common.flags.VERIFY_BODY) {
+      if (flags & VerifyFlags.VERIFY_BODY) {
         assert(typeof (block as Block).createMerkleRoot === 'function');
-        
+
         const root = (block as Block).createMerkleRoot();
 
         if (!root || !block.merkleRoot.equals(root)) {
@@ -410,13 +409,13 @@ export class Chain extends AsyncEmitter {
             true);
         }
 
-        flags &= ~common.flags.VERIFY_BODY;
+        flags &= ~VerifyFlags.VERIFY_BODY;
       }
 
     }
 
     // Non-contextual checks.
-    if (flags & common.flags.VERIFY_BODY) {
+    if (flags & VerifyFlags.VERIFY_BODY) {
       const [valid, reason, score] = (block as Block).checkBody();
 
       if (!valid)
@@ -424,7 +423,7 @@ export class Chain extends AsyncEmitter {
     }
 
     // Check proof-of-work or proof-of-stake
-    const bits = await this.getTarget(block.time, prev, block.isProofOfStake());
+    const bits = await this.getTarget(prev, block.isProofOfStake());
 
     if (block.bits !== bits) {
       throw new VerifyError(block,
@@ -722,7 +721,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise}
    */
 
-  async findFork(fork:ChainEntry, longer:ChainEntry):Promise<ChainEntry> {
+  async findFork(fork: ChainEntry, longer: ChainEntry): Promise<ChainEntry> {
     while (!fork.hash.equals(longer.hash)) {
       while (longer.height > fork.height) {
         longer = await this.getPrevious(longer);
@@ -751,7 +750,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise}
    */
 
-  async reorganize(competitor:ChainEntry):Promise<void> {
+  async reorganize(competitor: ChainEntry): Promise<void> {
     const tip = this.tip;
     const fork = await this.findFork(tip, competitor);
 
@@ -808,7 +807,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise}
    */
 
-  async reorganizeSPV(competitor:ChainEntry):Promise<void> {
+  async reorganizeSPV(competitor: ChainEntry): Promise<void> {
     const tip = this.tip;
     const fork = await this.findFork(tip, competitor);
 
@@ -858,13 +857,13 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise}
    */
 
-  async disconnect(entry:ChainEntry):Promise<void> {
-    let block: AbstractBlock =  await this.getBlock(entry.hash);
+  async disconnect(entry: ChainEntry): Promise<void> {
+    let block: AbstractBlock = await this.getBlock(entry.hash);
 
     if (!block) {
       if (!this.options.spv)
         throw new Error('Block not found.');
-        block = entry.toHeaders();
+      block = entry.toHeaders();
     }
 
     const prev = await this.getPrevious(entry);
@@ -890,10 +889,10 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise}
    */
 
-  async reconnect(entry:ChainEntry):Promise<void> {
+  async reconnect(entry: ChainEntry): Promise<void> {
     const flags = VerifyFlags.VERIFY_NONE;
 
-    let block : Headers|Block = await this.getBlock(entry.hash);
+    let block: Headers | Block = await this.getBlock(entry.hash);
 
     if (!block) {
       if (!this.options.spv)
@@ -904,7 +903,7 @@ export class Chain extends AsyncEmitter {
     const prev = await this.getPrevious(entry);
     assert(prev);
 
-    let view:CoinView, state:DeploymentState;
+    let view: CoinView, state: DeploymentState;
     try {
       [view, state] = await this.verifyContext(block, prev, flags);
     } catch (err) {
@@ -1013,7 +1012,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise}
    */
 
-  async saveAlternate(entry:ChainEntry, block:AbstractBlock, prev:ChainEntry, flags:number):Promise<void> {
+  async saveAlternate(entry: ChainEntry, block: AbstractBlock, prev: ChainEntry, flags: number): Promise<void> {
     // Do not accept forked chain older than the
     // last checkpoint.
     if (this.options.checkpoints) {
@@ -1221,7 +1220,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise}
    */
 
-  async add(block, flags, id) {
+  async add(block: Block, flags?: number, id?: number) {
     const hash = block.hash();
     const unlock = await this.locker.lock(hash);
     try {
@@ -1240,11 +1239,11 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise}
    */
 
-  async _add(block:AbstractBlock|MemBlock, flags:number, id:number):Promise<ChainEntry> {
+  async _add(block: AbstractBlock | MemBlock, flags: number, id: number): Promise<ChainEntry> {
     const hash = block.hash();
 
     if (flags == null)
-      flags = common.flags.DEFAULT_FLAGS;
+      flags = VerifyFlags.DEFAULT_FLAGS;
 
     if (id == null)
       id = -1;
@@ -1279,12 +1278,12 @@ export class Chain extends AsyncEmitter {
       block = (block as MemBlock).toBlock();
     }
     // Check the POW before doing anything.
-    if (flags & common.flags.VERIFY_POW) {
+    if (flags & VerifyFlags.VERIFY_POW) {
       if (block.isProofOfWork() && !block.verifyPOW())
         throw new VerifyError(block, 'invalid', 'high-hash', 50);
     }
 
-    if (flags & common.flags.VERIFY_POS) {
+    if (flags & VerifyFlags.VERIFY_POS) {
       if (block.isProofOfStake() && !block.verifyPOS())
         throw new VerifyError(block, 'invalid', 'bad-pos', 50)
     }
@@ -1324,7 +1323,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise}
    */
 
-  async connect(prev:ChainEntry, block:AbstractBlock|MemBlock, flags:number):Promise<ChainEntry> {
+  async connect(prev: ChainEntry, block: AbstractBlock | MemBlock, flags: number): Promise<ChainEntry> {
     const start = util.bench();
 
     // Sanity check.
@@ -1359,7 +1358,7 @@ export class Chain extends AsyncEmitter {
 
     //ppcoin compute stake modifier
     try {
-      const {stakeModifier, generated} = await this.kernel.computeNextStakeModifier(prev);
+      const { stakeModifier, generated } = await this.kernel.computeNextStakeModifier(prev);
       entry.setStakeModifier(stakeModifier, generated)
     } catch (e) {
       this.logger.error(e);
@@ -1369,7 +1368,7 @@ export class Chain extends AsyncEmitter {
     //ppcoin proof hash
     if (entry.isProofOfStake()) {
       try {
-        let {proofHash} = await this.kernel.checkProofOfStake(prev, (block as Block).txs[1], entry.bits);
+        let { proofHash } = await this.kernel.checkProofOfStake(prev, (block as Block).txs[1], entry.bits);
         entry.proofHash = proofHash;
       } catch (e) {
         this.logger.error(e);
@@ -1409,7 +1408,7 @@ export class Chain extends AsyncEmitter {
     let orphan = this.resolveOrphan(entry.hash);
 
     while (orphan) {
-      const {block, flags, id} = orphan;
+      const { block, flags, id } = orphan;
 
       try {
         entry = await this.connect(entry, block, flags);
@@ -1534,7 +1533,7 @@ export class Chain extends AsyncEmitter {
    * @param {Number?} id
    */
 
-  storeOrphan(block:Block, flags?:number, id?:number) {
+  storeOrphan(block: Block, flags?: number, id?: number) {
     const height = block.getCoinbaseHeight();
     const orphan = this.orphanPrev.get(block.prevBlock);
 
@@ -1567,7 +1566,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Orphan}
    */
 
-  addOrphan(orphan:Orphan):Orphan {
+  addOrphan(orphan: Orphan): Orphan {
     const block = orphan.block;
     const hash = block.hash();
 
@@ -1914,7 +1913,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise} - Returns Boolean.
    */
 
-  hasPending(hash:Buffer):Promise<boolean> {
+  hasPending(hash: Buffer): Promise<boolean> {
     return this.locker.pending(hash);
   }
 
@@ -1993,7 +1992,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise} - Returns {@link Hash}[].
    */
 
-  async getLocator(start) {
+  async getLocator(start?: Buffer) {
     const unlock = await this.locker.lock();
     try {
       return await this._getLocator(start);
@@ -2064,7 +2063,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Hash}
    */
 
-  getOrphanRoot(hash:Buffer) {
+  getOrphanRoot(hash: Buffer) {
     let root = null;
 
     assert(hash);
@@ -2090,9 +2089,9 @@ export class Chain extends AsyncEmitter {
    * @returns {Number}
    */
 
-  getProofTime(to:ChainEntry, from:ChainEntry):number {
+  getProofTime(to: ChainEntry, from: ChainEntry): number {
     const pow = this.network.pow;
-    let sign:0|-1|1, work:BN;
+    let sign: 0 | -1 | 1, work: BN;
 
     if (to.chaintrust.gt(from.chaintrust)) {
       work = to.chaintrust.sub(from.chaintrust);
@@ -2119,7 +2118,7 @@ export class Chain extends AsyncEmitter {
    * (target is in compact/mantissa form).
    */
 
-  async getTarget(_, prev:ChainEntry, isProofOfStake:boolean):Promise<number> {
+  async getTarget(prev: ChainEntry, isProofOfStake: boolean): Promise<number> {
     const pow = this.network.pow;
     const pos = this.network.pos;
 
@@ -2187,7 +2186,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise} - Returns Number.
    */
 
-  async isActive(prev:ChainEntry, deployment:string):Promise<boolean> {
+  async isActive(prev: ChainEntry, deployment: string): Promise<boolean> {
     const state = await this.getState(prev, deployment);
     return state === ThresholdStates.ACTIVE;
   }
@@ -2329,7 +2328,7 @@ export class Chain extends AsyncEmitter {
    * @returns {Promise} - Returns Number.
    */
 
-  async computeBlockVersion(prev:ChainEntry):Promise<number> {
+  async computeBlockVersion(prev: ChainEntry): Promise<number> {
     let version = 0;
 
     for (const deployment of this.network.deploys) {
@@ -2383,7 +2382,7 @@ export class Chain extends AsyncEmitter {
     if (tx.locktime < consensus.LOCKTIME_THRESHOLD)
       return tx.isFinal(height, -1);
 
-    if (flags & common.lockFlags.MEDIAN_TIME_PAST) {
+    if (flags & LockFlags.MEDIAN_TIME_PAST) {
       const time = await this.getMedianTime(prev);
       return tx.isFinal(height, time);
     }
@@ -2406,7 +2405,7 @@ export class Chain extends AsyncEmitter {
     const TYPE_FLAG = consensus.SEQUENCE_TYPE_FLAG;
     const MASK = consensus.SEQUENCE_MASK;
 
-    if (!(flags & common.lockFlags.VERIFY_SEQUENCE))
+    if (!(flags & LockFlags.VERIFY_SEQUENCE))
       return [-1, -1];
 
     if (tx.isCoinbase() || tx.version < 2)
@@ -2415,7 +2414,7 @@ export class Chain extends AsyncEmitter {
     let minHeight = -1;
     let minTime = -1;
 
-    for (const {prevout, sequence} of tx.inputs) {
+    for (const { prevout, sequence } of tx.inputs) {
       if (sequence & DISABLE_FLAG)
         continue;
 
@@ -2476,21 +2475,21 @@ export class Chain extends AsyncEmitter {
 export interface ChainOptionsOptions {
   network: Network;
   blocks: boolean;
-  logger?: Logger|LoggerContext;
+  logger?: Logger | LoggerContext;
   workers?: undefined;
   kernel?: Kernel;
   spv?: boolean;
-  prefix?:string;
-  location?:string;
-  memory?:boolean;
-  maxFiles?:number;
-  cacheSize?:number;
-  compression?:boolean;
+  prefix?: string;
+  location?: string;
+  memory?: boolean;
+  maxFiles?: number;
+  cacheSize?: number;
+  compression?: boolean;
   prune?: boolean;
-  forceFlags?:boolean;
-  entryCache?:number;
-  maxOrphans?:number;
-  checkpoints?:boolean;
+  forceFlags?: boolean;
+  entryCache?: number;
+  maxOrphans?: number;
+  checkpoints?: boolean;
 }
 
 /**
@@ -2500,7 +2499,7 @@ export interface ChainOptionsOptions {
 
 export class ChainOptions {
   network: Network;
-  logger:LoggerContext |Logger;
+  logger: LoggerContext | Logger;
   blocks;
   workers;
   kernel: Kernel;
@@ -2510,19 +2509,19 @@ export class ChainOptions {
   entryCache: number;
   prefix: string;
   location: string;
-  memory:boolean;
-  maxFiles:number;
-  cacheSize:number;
-  compression:boolean;
-  maxOrphans:number;
-  checkpoints:boolean;
+  memory: boolean;
+  maxFiles: number;
+  cacheSize: number;
+  compression: boolean;
+  maxOrphans: number;
+  checkpoints: boolean;
   /**
    * Create chain options.
    * @constructor
    * @param {Object} options
    */
 
-  constructor(options ?: ChainOptionsOptions) {
+  constructor(options?: ChainOptionsOptions) {
     this.network = Network.primary;
     this.logger = Logger.global;
     this.blocks = null;
@@ -2555,7 +2554,7 @@ export class ChainOptions {
    * @returns {ChainOptions}
    */
 
-  fromOptions(options:ChainOptionsOptions):ChainOptions {
+  fromOptions(options: ChainOptionsOptions): ChainOptions {
     if (!options.spv) {
       assert(options.blocks && typeof options.blocks === 'object',
         'Chain requires a blockstore.');
@@ -2669,7 +2668,7 @@ export class ChainOptions {
  */
 
 class DeploymentState {
-  flags: VerifyFlags;
+  flags: ScriptVerifyFlags;
   lockFlags: LockFlags;
   /**
    * Create a deployment state.
@@ -2687,7 +2686,7 @@ class DeploymentState {
    * @returns {Boolean}
    */
 
-  hasP2SH():boolean {
+  hasP2SH(): boolean {
     return (this.flags & Script.flags.VERIFY_P2SH) !== 0;
   }
 
@@ -2696,7 +2695,7 @@ class DeploymentState {
    * @returns {Boolean}
    */
 
-  hasCLTV():boolean {
+  hasCLTV(): boolean {
     return (this.flags & Script.flags.VERIFY_CHECKLOCKTIMEVERIFY) !== 0;
   }
 
@@ -2705,8 +2704,8 @@ class DeploymentState {
    * @returns {Boolean}
    */
 
-  hasMTP() :boolean{
-    return (this.lockFlags & common.lockFlags.MEDIAN_TIME_PAST) !== 0;
+  hasMTP(): boolean {
+    return (this.lockFlags & LockFlags.MEDIAN_TIME_PAST) !== 0;
   }
 
   /**
@@ -2714,7 +2713,7 @@ class DeploymentState {
    * @returns {Boolean}
    */
 
-  hasCSV() :boolean{
+  hasCSV(): boolean {
     return (this.flags & Script.flags.VERIFY_CHECKSEQUENCEVERIFY) !== 0;
   }
 
@@ -2729,7 +2728,7 @@ class Orphan {
   block: AbstractBlock;
   time: number;
   flags: undefined;
-  id:undefined;
+  id: undefined;
   /**
    * Create an orphan.
    * @constructor

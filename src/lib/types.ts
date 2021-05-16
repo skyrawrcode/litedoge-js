@@ -55,6 +55,8 @@
  * @typedef {Buffer|String} Hash
  * @global
  */
+ export type Hash = Buffer|string;
+
 
 /**
  * Signature hash type. One of `all`, `single`, `none`, or
@@ -72,12 +74,14 @@
  * @typedef {Number} Amount
  * @global
  */
+export type Amount = bigint;
 
 /**
  * Rate of satoshis per kB.
  * @typedef {Amount} Rate
  * @global
  */
+export type Rate = Amount;
 
 /**
  * One of `main`, `testnet`, `regtest`, `simnet`.

@@ -7,23 +7,25 @@
 
 'use strict';
 
-const assert = require('bsert');
-const Network = require('../protocol/network');
-const hash256 = require('bcrypto/lib/hash256');
+import assert from 'bsert';
+import {Network} from '../protocol/network';
+import hash256 from 'bcrypto/lib/hash256';
 
 /**
  * Protocol Message Framer
  * @alias module:net.Framer
  */
 
-class Framer {
+export class Framer {
+  
+  network:Network;
   /**
    * Create a framer.
    * @constructor
    * @param {Network} network
    */
 
-  constructor(network) {
+  constructor(network:Network) {
     this.network = Network.get(network);
   }
 
@@ -43,7 +45,7 @@ class Framer {
     const msg = Buffer.allocUnsafe(24 + payload.length);
 
     // Magic value
-    msg.writeUInt32LE(this.network.magic, 0, true);
+    msg.writeUInt32LE(this.network.magic, 0);
 
     // Command
     msg.write(cmd, 4, 'ascii');
@@ -52,7 +54,7 @@ class Framer {
       msg[i] = 0;
 
     // Payload length
-    msg.writeUInt32LE(payload.length, 16, true);
+    msg.writeUInt32LE(payload.length, 16);
 
     if (!checksum)
       checksum = hash256.digest(payload);
@@ -66,8 +68,3 @@ class Framer {
   }
 }
 
-/*
- * Expose
- */
-
-module.exports = Framer;

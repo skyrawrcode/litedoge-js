@@ -6,21 +6,23 @@
 
 'use strict';
 
-const assert = require('bsert');
-const path = require('path');
-const fs = require('bfile');
-const IP = require('binet');
-const dns = require('bdns');
-const Logger = require('blgr');
-const murmur3 = require('bcrypto/lib/murmur3');
-const List = require('blst');
-const {randomRange} = require('bcrypto/lib/random');
-const util = require('../utils/util');
-const Network = require('../protocol/network');
-const NetAddress = require('./netaddress');
-const common = require('./common');
-const seeds = require('./seeds');
-const {inspectSymbol} = require('../utils');
+import assert from 'bsert';
+import path from 'path';
+import fs from 'bfile';
+import IP from 'binet';
+import dns from 'bdns';
+import Logger from 'blgr';
+import murmur3 from 'bcrypto/lib/murmur3';
+import List from 'blst';
+import { randomRange } from 'bcrypto/lib/random';
+import * as util from '../utils/util';
+import {Network} from '../protocol/network';
+import {NetAddress} from './netaddress';
+import * as common from './common';
+import * as seeds from './seeds';
+import { inspectSymbol } from '../utils';
+import { LoggerContext } from 'blgr/lib/logger';
+import { node } from '..';
 
 /*
  * Constants
@@ -33,7 +35,29 @@ const POOL32 = Buffer.allocUnsafe(32);
  * @alias module:net.HostList
  */
 
-class HostList {
+export class HostList {
+  static MAX_REFS: number;
+  options:HostListOptions;
+  network:Network;
+  logger:LoggerContext|Logger;
+  timer: NodeJS.Timeout;
+  address:NetAddress;
+  resolve: Function;
+  dnsSeeds:string[];
+  dnsNodes: any[];
+  map: Map<string, HostEntry>;
+  fresh: Map<string, HostEntry>[];
+  totalFresh:number;
+  used:List[];
+  totalUsed:number;
+  nodes:  NetAddress[]
+  local: Map<string,LocalAddress>;
+  needsFlush: boolean;
+  flushing:boolean;
+  /**
+   * Map< host name, time> 
+   */
+  banned:Map<string,number>;
   /**
    * Create a host list.
    * @constructor
@@ -73,7 +97,6 @@ class HostList {
 
   init() {
     const options = this.options;
-    const scores = HostList.scores;
 
     for (let i = 0; i < options.maxBuckets; i++)
       this.fresh.push(new Map());
@@ -404,7 +427,7 @@ class HostList {
    * @returns {Map}
    */
 
-  freshBucket(entry) {
+  freshBucket(entry:HostEntry) :Map<any,HostEntry>  {
     const addr = entry.addr;
     const src = entry.src;
     const data = concat32(addr.raw, src.raw);
@@ -434,7 +457,7 @@ class HostList {
    * @returns {Boolean}
    */
 
-  add(addr, src) {
+  add(addr:NetAddress, src?:NetAddress) {
     assert(addr.port !== 0);
 
     let entry = this.map.get(addr.hostname);
@@ -577,14 +600,14 @@ class HostList {
     if (entry.addr.time === 0)
       return true;
 
-    if (now - entry.addr.time > HostList.HORIZON_DAYS * 24 * 60 * 60)
+    if (now - entry.addr.time > HORIZON_DAYS * 24 * 60 * 60)
       return true;
 
-    if (entry.lastSuccess === 0 && entry.attempts >= HostList.RETRIES)
+    if (entry.lastSuccess === 0 && entry.attempts >= RETRIES)
       return true;
 
-    if (now - entry.lastSuccess > HostList.MIN_FAIL_DAYS * 24 * 60 * 60) {
-      if (entry.attempts >= HostList.MAX_FAILURES)
+    if (now - entry.lastSuccess > MIN_FAIL_DAYS * 24 * 60 * 60) {
+      if (entry.attempts >= MAX_FAILURES)
         return true;
     }
 
@@ -1071,7 +1094,7 @@ class HostList {
     }
 
     return {
-      version: HostList.VERSION,
+      version: VERSION,
       network: this.network.type,
       addrs: addrs,
       fresh: fresh,
@@ -1100,7 +1123,7 @@ class HostList {
     assert(!json.network || json.network === this.network.type,
       'Network mistmatch.');
 
-    assert(json.version === HostList.VERSION,
+    assert(json.version === VERSION,
       'Bad address serialization version.');
 
     assert(Array.isArray(json.addrs));
@@ -1203,7 +1226,7 @@ class HostList {
  * @default
  */
 
-HostList.HORIZON_DAYS = 30;
+export const HORIZON_DAYS = 30;
 
 /**
  * Number of retries (without success)
@@ -1212,7 +1235,7 @@ HostList.HORIZON_DAYS = 30;
  * @default
  */
 
-HostList.RETRIES = 3;
+export const RETRIES = 3;
 
 /**
  * Number of days after reaching
@@ -1222,7 +1245,7 @@ HostList.RETRIES = 3;
  * @default
  */
 
-HostList.MIN_FAIL_DAYS = 7;
+export const MIN_FAIL_DAYS = 7;
 
 /**
  * Maximum number of failures
@@ -1232,7 +1255,7 @@ HostList.MIN_FAIL_DAYS = 7;
  * @default
  */
 
-HostList.MAX_FAILURES = 10;
+export const MAX_FAILURES = 10;
 
 /**
  * Maximum number of references
@@ -1241,7 +1264,7 @@ HostList.MAX_FAILURES = 10;
  * @default
  */
 
-HostList.MAX_REFS = 8;
+export const MAX_REFS = 8;
 
 /**
  * Serialization version.
@@ -1249,7 +1272,7 @@ HostList.MAX_REFS = 8;
  * @default
  */
 
-HostList.VERSION = 0;
+export const VERSION = 0;
 
 /**
  * Local address scores.
@@ -1257,14 +1280,14 @@ HostList.VERSION = 0;
  * @default
  */
 
-HostList.scores = {
-  NONE: 0,
-  IF: 1,
-  BIND: 2,
-  UPNP: 3,
-  DNS: 3,
-  MANUAL: 4,
-  MAX: 5
+export enum scores  {
+  NONE= 0,
+  IF= 1,
+  BIND= 2,
+  UPNP= 3,
+  DNS= 3,
+  MANUAL= 4,
+  MAX= 5
 };
 
 /**
@@ -1273,6 +1296,20 @@ HostList.scores = {
  */
 
 class HostEntry {
+
+  addr: NetAddress;
+  src: NetAddress;
+  
+
+  used:boolean;
+  
+  refCount: number
+  attempts:number;
+  lastSuccess:number;
+  lastAttempt:number;
+  prev: HostEntry;
+  next: HostEntry;
+  value: HostEntry;
   /**
    * Create a host entry.
    * @constructor
@@ -1280,7 +1317,7 @@ class HostEntry {
    * @param {NetAddress} src
    */
 
-  constructor(addr, src) {
+  constructor(addr?:NetAddress, src?:NetAddress) {
     this.addr = addr || new NetAddress();
     this.src = src || new NetAddress();
     this.prev = null;
@@ -1455,6 +1492,8 @@ class HostEntry {
  */
 
 class LocalAddress {
+  addr:NetAddress;
+  score:number;
   /**
    * Create a local address.
    * @constructor
@@ -1462,7 +1501,7 @@ class LocalAddress {
    * @param {Number?} score
    */
 
-  constructor(addr, score) {
+  constructor(addr:NetAddress, score?:number) {
     this.addr = addr;
     this.score = score || 0;
   }
@@ -1474,6 +1513,24 @@ class LocalAddress {
  */
 
 class HostListOptions {
+  
+  network:Network;
+  logger:LoggerContext|Logger;
+  resolve = dns.lookup;
+  host: string;
+  port: number;
+  services: common.ServiceBits
+  onion:boolean;
+  banTime:number;
+  address:NetAddress;
+  seeds: string[];
+  nodes: undefined[];
+  maxBuckets:number;
+  maxEntries:number;
+  prefix: string;
+  filename:string;
+  memory: boolean;
+  flushInterval:number;
   /**
    * Create host list options.
    * @constructor
@@ -1486,7 +1543,7 @@ class HostListOptions {
     this.resolve = dns.lookup;
     this.host = '0.0.0.0';
     this.port = this.network.port;
-    this.services = common.LOCAL_SERVICES;
+    this.services = common.ServiceBits.LOCAL_SERVICES;
     this.onion = false;
     this.banTime = common.BAN_TIME;
 
@@ -1639,8 +1696,3 @@ function random(max) {
   return randomRange(0, max);
 }
 
-/*
- * Expose
- */
-
-module.exports = HostList;

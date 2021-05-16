@@ -6,7 +6,7 @@
 
 'use strict';
 
-import { BufferReader, BufferWriter } from "bufio";
+import { BufferReader, BufferWriter, StaticWriter } from "bufio";
 import { NetworkType } from "../types";
 
 import assert from 'bsert';
@@ -568,7 +568,7 @@ export class HDPrivateKey {
    * @param {Network?} network
    */
 
-  fromBase58(xkey: Base58String, network: Network | null) {
+  fromBase58(xkey: string, network: Network | null) {
     assert(typeof xkey === 'string');
     return this.fromRaw(base58.decode(xkey), network);
   }
@@ -580,7 +580,7 @@ export class HDPrivateKey {
    * @param {(Network|NetworkType)?} network
    */
 
-  fromReader(br: BufferReader, network: (Network | NetworkType) | null) {
+  fromReader(br: BufferReader, network: (Network|NetworkType) | null) {
     const version = br.readU32BE();
 
     Network.fromPrivate(version, network);
@@ -615,7 +615,7 @@ export class HDPrivateKey {
    * @returns {Base58String}
    */
 
-  toBase58(network: (Network | NetworkType) | null): Base58String {
+  toBase58(network: (Network | NetworkType) | null): string {
     return base58.encode(this.toRaw(network));
   }
 
@@ -634,7 +634,7 @@ export class HDPrivateKey {
    * @param {(Network|NetworkType)?} network
    */
 
-  toWriter(bw: BufferWriter, network: (Network | NetworkType) | null) {
+  toWriter(bw: BufferWriter|StaticWriter, network: (Network | NetworkType) | null) {
     network = Network.get(network);
 
     bw.writeU32BE(network.keyPrefix.xprivkey);
@@ -710,7 +710,7 @@ export class HDPrivateKey {
    * @param {Network?} network
    */
 
-  fromJSON(json: object, network: Network | null) {
+  fromJSON(json: any, network: Network | null) {
     assert(json.xprivkey, 'Could not handle key JSON.');
 
     this.fromBase58(json.xprivkey, network);

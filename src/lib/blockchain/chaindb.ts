@@ -1803,7 +1803,7 @@ export class ChainState {
     this.tx -= BigInt(block.txs.length);
   }
 
-  add(coin:Coin) {
+  add(coin:Coin|Output) {
     this.coin += 1;
     this.value += coin.value;
   }

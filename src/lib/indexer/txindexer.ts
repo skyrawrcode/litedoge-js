@@ -6,7 +6,7 @@
 
 'use strict';
 
-import {Hash} from "crypto";
+import {Hash} from "../types";
 
 import pkg from 'bsert';
 
@@ -295,7 +295,7 @@ export class TXIndexer extends Indexer {
    * @returns {Promise} - Returns Boolean.
    */
 
-  async hasTX(hash) {
+  async hasTX(hash:Hash) {
     return this.db.has(layout.t.encode(hash));
   }
 
@@ -305,7 +305,7 @@ export class TXIndexer extends Indexer {
    * @returns {Promise} - Returns {@link CoinView}.
    */
 
-  async getSpentView(tx) {
+  async getSpentView(tx:TX) {
     const view = await this.chain.getCoinView(tx);
 
     for (const {prevout} of tx.inputs) {

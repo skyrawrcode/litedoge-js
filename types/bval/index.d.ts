@@ -122,7 +122,7 @@ declare module "bval/lib/validator" {
          * @param {Object?} fallback
          * @returns {Number|null}
          */
-        i32(key: string, fallback: any | null): number | null;
+        i32(key: string|number, fallback: any | null): number | null;
         /**
          * Get a value (as an int64).
          * @param {String} key
@@ -150,7 +150,7 @@ declare module "bval/lib/validator" {
          * @param {Object?} fallback
          * @returns {Number|null}
          */
-        u32(key: string, fallback: any | null): number | null;
+        u32(key: string, fallback?: any | null): number | null;
         /**
          * Get a value (as a uint64).
          * @param {String} key
@@ -213,7 +213,7 @@ declare module "bval/lib/validator" {
          * @param {Object?} fallback
          * @returns {Number|Buffer|null}
          */
-        uintbrhash(key: string, fallback: any | null): number | any | null;
+        uintbrhash(key: string|number, fallback?: any | null): number | any | null;
         /**
          * Get a value (as a boolean).
          * @param {String} key
@@ -235,7 +235,7 @@ declare module "bval/lib/validator" {
          * @param {Object?} fallback
          * @returns {Array|String[]|null}
          */
-        array(key: string, fallback: any | null): any[] | string[] | null;
+        array(key: string, fallback?: any | null): any[] | string[] | null;
         /**
          * Get a value (as an object).
          * @param {String} key
@@ -304,7 +304,7 @@ declare module "bval/lib/validator" {
         rhash(key: any, fallback: any): any;
         brhash(key: any, fallback?: any): any;
         uintrhash(key: any, fallback: any): any;
-        uintbrhash(key: any, fallback: any): any;
+        uintbrhash(key: any, fallback?: any): any;
         bool(key: any, fallback?: any): boolean;
         buf(key: any, fallback?: any, enc?: any): any;
         array(key: any, fallback: any): any[] | string[];

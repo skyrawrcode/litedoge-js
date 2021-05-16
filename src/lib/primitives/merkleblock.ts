@@ -7,18 +7,20 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const {BufferMap, BufferSet} = require('buffer-map');
-const util = require('../utils/util');
-const hash256 = require('bcrypto/lib/hash256');
-const consensus = require('../protocol/consensus');
-const AbstractBlock = require('./abstractblock');
-const TX = require('./tx');
-const Headers = require('./headers');
+import { CoinView } from "../coins";
+
+import assert from 'bsert';
+import bio from 'bufio';
+import { BufferMap, BufferSet } from 'buffer-map';
+import * as util from '../utils/util';
+import hash256 from 'bcrypto/lib/hash256';
+import * as consensus from '../protocol/consensus';
+import {AbstractBlock} from './abstractblock';
+import {TX} from './tx';
+import {Headers} from './headers';
 const DUMMY = Buffer.from([0]);
 const {encoding} = bio;
-const {inspectSymbol} = require('../utils');
+import { inspectSymbol } from '../utils';
 
 /**
  * Merkle Block
@@ -28,13 +30,20 @@ const {inspectSymbol} = require('../utils');
  */
 
 export class MerkleBlock extends AbstractBlock {
+  
+  txs: TX[]
+  hashes:Buffer[];
+  flags:Buffer;
+  totalTX: number;
+  _tree:PartialTree
   /**
    * Create a merkle block.
    * @constructor
    * @param {Object} options
    */
 
-  constructor(options) {
+
+  constructor(options?) {
     super();
 
     this.txs = [];
@@ -97,7 +106,7 @@ export class MerkleBlock extends AbstractBlock {
    * @param {Boolean?} all - Clear transactions.
    */
 
-  refresh(all) {
+  refresh(all?:boolean) {
     this._refresh();
     this._tree = null;
 
@@ -140,7 +149,7 @@ export class MerkleBlock extends AbstractBlock {
    * @returns {Boolean}
    */
 
-  verifyBody() {
+  verifyBody():boolean {
     const [valid] = this.checkBody();
     return valid;
   }
@@ -151,7 +160,7 @@ export class MerkleBlock extends AbstractBlock {
    * @returns {Array} [valid, reason, score]
    */
 
-  checkBody() {
+  checkBody():[boolean, string, number] {
     const tree = this.getTree();
 
     if (!tree.root.equals(this.merkleRoot))
@@ -300,7 +309,7 @@ export class MerkleBlock extends AbstractBlock {
    * @returns {Object}
    */
 
-  format(view, height) {
+  format(view?:CoinView, height?:number) {
     return {
       hash: this.rhash(),
       height: height != null ? height : -1,
@@ -537,7 +546,7 @@ export class MerkleBlock extends AbstractBlock {
    * @returns {Object}
    */
 
-  getJSON(network, view, height) {
+  getJSON(network?, view?, height?) {
     return {
       hash: this.rhash(),
       height: height,
@@ -747,7 +756,11 @@ export class MerkleBlock extends AbstractBlock {
  */
 
 class PartialTree {
-  constructor(root, matches, indexes, map) {
+  root:Buffer;
+  matches: [];
+  indexes:[];
+  map:BufferMap<undefined>;
+  constructor(root?:Buffer, matches?, indexes?, map?) {
     this.root = root || consensus.ZERO_HASH;
     this.matches = matches || [];
     this.indexes = indexes || [];

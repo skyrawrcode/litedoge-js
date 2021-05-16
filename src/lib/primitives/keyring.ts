@@ -20,6 +20,7 @@ import secp256k1 from 'bcrypto/lib/secp256k1';
 
 const {encoding} = bio;
 import {inspectSymbol} from '../utils';
+import { TX } from './tx';
 
 /*
  * Constants
@@ -584,7 +585,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Boolean}
    */
 
-  ownOutput(tx, index) {
+  ownOutput(tx:TX|Output, index?:number) {
     let output;
 
     if (tx instanceof Output) {

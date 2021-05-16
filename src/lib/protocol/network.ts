@@ -15,7 +15,7 @@ import { TimeData } from './timedata';
 import { inspectSymbol } from '../utils';
 import { NetworkOptions } from './networkoptions';
 import { NetworkType } from '../types'
-import { AbstractBlock } from '../primitives';
+import { AbstractBlock, BlockOptions } from '../primitives';
 const MODIFIER_INTERVAL_RATIO = 3;
 
 export interface NetworkPOS {
@@ -30,15 +30,15 @@ export interface NetworkPOS {
  * Network
  * Represents a network.
  * @alias module:protocol.Network
- * @property {'main'|'testnet'} type
+ * @property {NetworkType} type
  */
 
 export class Network {
   static main: Network;
   static primary: Network;
-  genesis: AbstractBlock;
+  genesis: BlockOptions;
   feeRate: any;
-  type: string;
+  type: NetworkType;
   seeds: string[];
   magic: number;
   port: number;
@@ -68,7 +68,7 @@ export class Network {
   time: TimeData;
   stakeModifierSelectionInterval: number;
   stakeModifierSections: any[];
-  static type: string;
+  static type:NetworkType;
   static testnet: any;
   static regtest: any;
   /**
@@ -333,7 +333,7 @@ export class Network {
    * @param  name
    */
 
-  static by(value: any, compare: Function, network: Network | null, name: string): Network {
+  static by(value: any, compare: Function, network: Network |NetworkType| null, name: string): Network {
     if (network) {
       network = Network.get(network);
       if (compare(network, value))
@@ -390,7 +390,7 @@ export class Network {
    * @returns {Network}
    */
 
-  static fromPrivate(prefix, network: Network | null): Network {
+  static fromPrivate(prefix, network: Network |NetworkType | null): Network {
     return Network.by(prefix, cmpPriv, network, 'xprivkey');
   }
 

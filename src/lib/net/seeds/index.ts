@@ -6,10 +6,11 @@
 
 'use strict';
 
-const main = require('./main');
-const testnet = require('./testnet');
+import { NetworkType } from '../../types';
+import main from './main';
+import testnet from './testnet';
 
-exports.get = function get(type) {
+export function get(type: NetworkType) {
   switch (type) {
     case 'main':
       return main;

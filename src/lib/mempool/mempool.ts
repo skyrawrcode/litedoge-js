@@ -6,31 +6,39 @@
 
 'use strict';
 
-const assert = require('bsert');
-const path = require('path');
-const EventEmitter = require('events');
-const bdb = require('bdb');
-const {RollingFilter} = require('bfilter');
-const Heap = require('bheep');
-const {BufferMap, BufferSet} = require('buffer-map');
-const common = require('../blockchain/common');
-const consensus = require('../protocol/consensus');
-const policy = require('../protocol/policy');
-const util = require('../utils/util');
-const random = require('bcrypto/lib/random');
-const {VerifyError} = require('../protocol/errors');
-const Script = require('../script/script');
-const Outpoint = require('../primitives/outpoint');
-const TX = require('../primitives/tx');
-const Coin = require('../primitives/coin');
-const TXMeta = require('../primitives/txmeta');
-const MempoolEntry = require('./mempoolentry');
-const Network = require('../protocol/network');
-const layout = require('./layout');
-const AddrIndexer = require('./addrindexer');
-const Fees = require('./fees');
-const CoinView = require('../coins/coinview');
-
+import assert from 'bsert';
+import path from 'path';
+import EventEmitter from 'events';
+import bdb from 'bdb';
+import { RollingFilter } from 'bfilter';
+import Heap from 'bheep';
+import { BufferMap, BufferSet } from 'buffer-map';
+import * as common from '../blockchain/common';
+import * as consensus from '../protocol/consensus';
+import * as policy from '../protocol/policy';
+import * as util from '../utils/util';
+import random from 'bcrypto/lib/random';
+import { VerifyError } from '../protocol/errors';
+import { Script } from '../script/script';
+import { Outpoint } from '../primitives/outpoint';
+import { TX } from '../primitives/tx';
+import { Coin } from '../primitives/coin';
+import { TXMeta } from '../primitives/txmeta';
+import { MempoolEntry } from './mempoolentry';
+import { Network } from '../protocol/network';
+import { layout } from './layout';
+import { AddrIndexer } from './addrindexer';
+import { PolicyEstimator } from './fees';
+import { CoinView } from '../coins/coinview';
+import { LoggerContext } from 'blgr/lib/logger';
+import { WorkerPool } from '../workers';
+import { Chain } from '../blockchain';
+import { Address } from '../primitives';
+import { Hash } from '../types';
+import Logger from 'blgr/lib/blgr';
+import { Batch } from 'bdb/lib/db';
+import { VerifyFlags } from '../script/common';
+import { Lock } from 'bmutex';
 /**
  * Mempool
  * Represents a mempool.
@@ -39,6 +47,30 @@ const CoinView = require('../coins/coinview');
  */
 
 export class Mempool extends EventEmitter {
+  opened: boolean;
+  options: MempoolOptions;
+  network: Network;
+  logger: LoggerContext;
+  workers: WorkerPool;
+  chain: Chain;
+  fees: PolicyEstimator;
+  locker:Lock;
+
+  cache: MempoolCache;
+
+  size: number;
+  freeCount: number;
+  lastTime: number;
+  lastFlush: number;
+  tip: Buffer;
+
+  waiting: BufferMap<BufferSet>;
+  orphans: BufferMap<Orphan>;
+  map: BufferMap<MempoolEntry>;
+  spents: BufferMap<MempoolEntry>;
+  rejects: RollingFilter;
+  addrindex: AddrIndexer;
+
   /**
    * Create a mempool.
    * @constructor
@@ -297,7 +329,7 @@ export class Mempool extends EventEmitter {
     const remove = [];
 
     for (const [hash, entry] of this.map) {
-      const {tx} = entry;
+      const { tx } = entry;
 
       if (!tx.isFinal(height, mtp)) {
         remove.push(hash);
@@ -307,7 +339,7 @@ export class Mempool extends EventEmitter {
       if (tx.version > 1) {
         let hasLocks = false;
 
-        for (const {sequence} of tx.inputs) {
+        for (const { sequence } of tx.inputs) {
           if (!(sequence & consensus.SEQUENCE_DISABLE_FLAG)) {
             hasLocks = true;
             break;
@@ -485,7 +517,7 @@ export class Mempool extends EventEmitter {
    * @returns {Coin}
    */
 
-  getCoin(hash, index) {
+  getCoin(hash:Buffer, index:number) {
     const entry = this.map.get(hash);
 
     if (!entry)
@@ -576,7 +608,7 @@ export class Mempool extends EventEmitter {
    * @returns {TX[]}
    */
 
-  getTXByAddress(addr, options) {
+  getTXByAddress(addr:Address, options): TX[] {
     return this.addrindex.get(addr, options);
   }
 
@@ -647,7 +679,7 @@ export class Mempool extends EventEmitter {
    * @returns {Boolean}
    */
 
-  exists(hash) {
+  exists(hash):boolean {
     if (this.locker.pending(hash))
       return true;
 
@@ -678,7 +710,7 @@ export class Mempool extends EventEmitter {
    * @returns {Promise}
    */
 
-  async addTX(tx, id) {
+  async addTX(tx:TX , id?:number) :Promise<any> {
     const hash = tx.hash();
     const unlock = await this.locker.lock(hash);
     try {
@@ -732,7 +764,7 @@ export class Mempool extends EventEmitter {
   async insertTX(tx, id) {
     assert(!tx.mutable, 'Cannot add mutable TX to mempool.');
 
-    const lockFlags = common.lockFlags.STANDARD_LOCKTIME_FLAGS;
+    const lockFlags = common.LockFlags.STANDARD_LOCKTIME_FLAGS;
     const height = this.chain.height;
     const hash = tx.hash();
 
@@ -861,9 +893,9 @@ export class Mempool extends EventEmitter {
    * @returns {Promise}
    */
 
-  async verify(entry, view) {
+  async verify(entry, view:CoinView) {
     const height = this.chain.height + 1;
-    const lockFlags = common.lockFlags.STANDARD_LOCKTIME_FLAGS;
+    const lockFlags = common.LockFlags.STANDARD_LOCKTIME_FLAGS;
     const tx = entry.tx;
 
     // Verify sequence locks.
@@ -1000,12 +1032,12 @@ export class Mempool extends EventEmitter {
    * @returns {Promise}
    */
 
-  async verifyInputs(tx, view, flags) {
+  async verifyInputs(tx:TX, view:CoinView, flags:VerifyFlags) {
     if (await tx.verifyAsync(view, flags, this.workers))
       return;
 
-    if (flags & Script.flags.ONLY_STANDARD_VERIFY_FLAGS) {
-      flags &= ~Script.flags.ONLY_STANDARD_VERIFY_FLAGS;
+    if (flags & VerifyFlags.ONLY_STANDARD_VERIFY_FLAGS) {
+      flags &= ~VerifyFlags.ONLY_STANDARD_VERIFY_FLAGS;
 
       if (await tx.verifyAsync(view, flags, this.workers)) {
         throw new VerifyError(tx,
@@ -1146,7 +1178,7 @@ export class Mempool extends EventEmitter {
   _countAncestors(entry, set, child, map) {
     const tx = entry.tx;
 
-    for (const {prevout} of tx.inputs) {
+    for (const { prevout } of tx.inputs) {
       const hash = prevout.hash;
       const parent = this.getEntry(hash);
 
@@ -1237,7 +1269,7 @@ export class Mempool extends EventEmitter {
   _getAncestors(entry, entries, set) {
     const tx = entry.tx;
 
-    for (const {prevout} of tx.inputs) {
+    for (const { prevout } of tx.inputs) {
       const hash = prevout.hash;
       const parent = this.getEntry(hash);
 
@@ -1324,7 +1356,7 @@ export class Mempool extends EventEmitter {
    */
 
   hasDepends(tx) {
-    for (const {prevout} of tx.inputs) {
+    for (const { prevout } of tx.inputs) {
       if (this.hasEntry(prevout.hash))
         return true;
     }
@@ -1338,7 +1370,7 @@ export class Mempool extends EventEmitter {
    */
 
   getBalance() {
-    let total = 0;
+    let total = 0n;
 
     for (const [hash, entry] of this.map) {
       const tx = entry.tx;
@@ -1369,10 +1401,10 @@ export class Mempool extends EventEmitter {
   /**
    * Retrieve an orphan transaction.
    * @param {Hash} hash
-   * @returns {TX}
+   * @returns {Orphan}
    */
 
-  getOrphan(hash) {
+  getOrphan(hash):Orphan {
     return this.orphans.get(hash);
   }
 
@@ -1394,9 +1426,9 @@ export class Mempool extends EventEmitter {
 
   maybeOrphan(tx, view, id) {
     const hashes = new BufferSet();
-    const missing = [];
+    const missing:Hash[] = [];
 
-    for (const {prevout} of tx.inputs) {
+    for (const { prevout } of tx.inputs) {
       if (view.hasEntry(prevout))
         continue;
 
@@ -1627,8 +1659,8 @@ export class Mempool extends EventEmitter {
    */
 
   isDoubleSpend(tx) {
-    for (const {prevout} of tx.inputs) {
-      const {hash, index} = prevout;
+    for (const { prevout } of tx.inputs) {
+      const { hash, index } = prevout;
       if (this.isSpent(hash, index))
         return true;
     }
@@ -1663,8 +1695,8 @@ export class Mempool extends EventEmitter {
   async _getSpentView(tx) {
     const view = new CoinView();
 
-    for (const {prevout} of tx.inputs) {
-      const {hash, index} = prevout;
+    for (const { prevout } of tx.inputs) {
+      const { hash, index } = prevout;
       const tx = this.getTX(hash);
 
       if (tx) {
@@ -1692,8 +1724,8 @@ export class Mempool extends EventEmitter {
   async getCoinView(tx) {
     const view = new CoinView();
 
-    for (const {prevout} of tx.inputs) {
-      const {hash, index} = prevout;
+    for (const { prevout } of tx.inputs) {
+      const { hash, index } = prevout;
       const tx = this.getTX(hash);
 
       if (tx) {
@@ -1756,7 +1788,7 @@ export class Mempool extends EventEmitter {
    * @param {CoinView} view
    */
 
-  trackEntry(entry, view) {
+  trackEntry(entry:MempoolEntry, view?:CoinView) {
     const tx = entry.tx;
     const hash = tx.hash();
 
@@ -1765,7 +1797,7 @@ export class Mempool extends EventEmitter {
 
     assert(!tx.isCoinbase());
 
-    for (const {prevout} of tx.inputs) {
+    for (const { prevout } of tx.inputs) {
       const key = prevout.toKey();
       this.spents.set(key, entry);
     }
@@ -1791,7 +1823,7 @@ export class Mempool extends EventEmitter {
 
     assert(!tx.isCoinbase());
 
-    for (const {prevout} of tx.inputs) {
+    for (const { prevout } of tx.inputs) {
       const key = prevout.toKey();
       this.spents.delete(key);
     }
@@ -1832,8 +1864,8 @@ export class Mempool extends EventEmitter {
    */
 
   removeDoubleSpends(tx) {
-    for (const {prevout} of tx.inputs) {
-      const {hash, index} = prevout;
+    for (const { prevout } of tx.inputs) {
+      const { hash, index } = prevout;
       const spent = this.getSpent(hash, index);
 
       if (!spent)
@@ -1893,42 +1925,52 @@ export class Mempool extends EventEmitter {
  */
 
 class MempoolOptions {
+  network: Network;
+  chain: Chain;
+  logger: LoggerContext;
+  workers: WorkerPool;
+  fees: PolicyEstimator;
+  
+  limitFree: boolean = true;
+  limitFreeRelay: number = 15;
+  relayPriority: boolean = true;
+
+  requireStandard:boolean;
+  rejectAbsurdFees:boolean = true;
+  paranoidChecks:boolean = false;
+  replaceByFee: boolean = false;
+
+  maxSize = policy.MEMPOOL_MAX_SIZE;
+  maxOrphans = policy.MEMPOOL_MAX_ORPHANS;
+  maxAncestors = policy.MEMPOOL_MAX_ANCESTORS;
+  expiryTime = policy.MEMPOOL_EXPIRY_TIME;
+  minRelay = Network.primary.minRelay;
+
+  prefix = null;
+  location = null;
+  memory = true;
+  maxFiles = 64;
+  cacheSize = 32 << 20;
+  compression = true;
+
+  persistent = false;
+
+  indexAddress: boolean;
   /**
    * Create mempool options.
    * @constructor
    * @param {Object}
    */
 
-  constructor(options) {
+  constructor(options?) {
     this.network = Network.primary;
     this.chain = null;
     this.logger = null;
     this.workers = null;
     this.fees = null;
 
-    this.limitFree = true;
-    this.limitFreeRelay = 15;
-    this.relayPriority = true;
     this.requireStandard = this.network.requireStandard;
-    this.rejectAbsurdFees = true;
-    this.paranoidChecks = false;
-    this.replaceByFee = false;
-
-    this.maxSize = policy.MEMPOOL_MAX_SIZE;
-    this.maxOrphans = policy.MEMPOOL_MAX_ORPHANS;
-    this.maxAncestors = policy.MEMPOOL_MAX_ANCESTORS;
-    this.expiryTime = policy.MEMPOOL_EXPIRY_TIME;
-    this.minRelay = this.network.minRelay;
-
-    this.prefix = null;
-    this.location = null;
-    this.memory = true;
-    this.maxFiles = 64;
-    this.cacheSize = 32 << 20;
-    this.compression = true;
-
-    this.persistent = false;
-
+  
     this.fromOptions(options);
   }
 
@@ -2090,15 +2132,18 @@ class MempoolOptions {
  */
 
 class Orphan {
+  raw: Buffer;
+  missing: number;
+  id: number;
   /**
    * Create an orphan.
    * @constructor
    * @param {TX} tx
-   * @param {Hash[]} missing
+   * @param {Number} missing
    * @param {Number} id
    */
 
-  constructor(tx, missing, id) {
+  constructor(tx:TX, missing:number, id:number) {
     this.raw = tx.toRaw();
     this.missing = missing;
     this.id = id;
@@ -2115,6 +2160,13 @@ class Orphan {
  */
 
 class MempoolCache {
+  static VERSION = 2;
+
+  logger: Logger|LoggerContext;
+  chain: Chain;
+  network:Network;
+  db: bdb.DB;
+  batch: Batch;
   /**
    * Create a mempool cache.
    * @constructor
@@ -2154,7 +2206,7 @@ class MempoolCache {
     let fees = null;
 
     try {
-      fees = Fees.fromRaw(data);
+      fees = PolicyEstimator.fromRaw(data);
     } catch (e) {
       this.logger.warning(
         'Fee data failed deserialization: %s.',
@@ -2306,7 +2358,7 @@ class MempoolCache {
   }
 }
 
-MempoolCache.VERSION = 2;
+
 
 /*
  * Helpers
@@ -2370,7 +2422,7 @@ function useDesc(a) {
 
 function fromU32(num) {
   const data = Buffer.allocUnsafe(4);
-  data.writeUInt32LE(num, 0, true);
+  data.writeUInt32LE(num, 0);
   return data;
 }
 

@@ -21,7 +21,7 @@ import {Network} from '../protocol/network';
 import * as  util from '../utils/util';
 const {encoding} = bio;
 import { inspectSymbol } from '../utils';
-import {GCSFilter} from '../golomb/golomb';
+import {Golomb} from '../golomb/golomb';
 import { opcodes } from '../script/common';
 import { CoinView } from '../coins/coinview';
 
@@ -724,7 +724,7 @@ export class Block extends AbstractBlock {
       }
     }
 
-    return GCSFilter.fromItems(19, key, items);
+    return Golomb.fromItems(19, key, items);
   }
 }
 

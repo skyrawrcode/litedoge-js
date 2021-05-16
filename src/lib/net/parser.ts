@@ -9,13 +9,13 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const {format} = require('util');
-const Network = require('../protocol/network');
-const hash256 = require('bcrypto/lib/hash256');
-const common = require('./common');
-const packets = require('./packets');
+import assert from 'bsert';
+import EventEmitter from 'events';
+import { format } from 'util';
+import {Network} from '../protocol/network';
+import hash256 from 'bcrypto/lib/hash256';
+import * as common from './common';
+import * as packets from './packets';
 
 /**
  * Protocol Message Parser
@@ -25,7 +25,12 @@ const packets = require('./packets');
  * @emits Parser#packet
  */
 
-class Parser extends EventEmitter {
+export class Parser extends EventEmitter {
+  network:Network;
+  total:number;
+  waiting:number;
+  pending: Buffer[];
+  header:Header
   /**
    * Create a parser.
    * @constructor
@@ -49,8 +54,8 @@ class Parser extends EventEmitter {
    * @param {...String} msg
    */
 
-  error() {
-    const msg = format.apply(null, arguments);
+  error(...args:string[]) {
+    const msg = format.apply(null, args);
     this.emit('error', new Error(msg));
   }
 
@@ -59,7 +64,7 @@ class Parser extends EventEmitter {
    * @param {Buffer} data
    */
 
-  feed(data) {
+  feed(data:Buffer) {
     this.total += data.length;
     this.pending.push(data);
 
@@ -169,7 +174,7 @@ class Parser extends EventEmitter {
    * @returns {Object}
    */
 
-  parsePayload(cmd, data) {
+  parsePayload(cmd, data:Buffer) {
     return packets.fromRaw(cmd, data);
   }
 }
@@ -180,6 +185,9 @@ class Parser extends EventEmitter {
  */
 
 class Header {
+  cmd:string;
+  size:number;
+  checksum:Buffer;
   /**
    * Create a header.
    * @constructor

@@ -27,7 +27,6 @@ import { Script } from '../script';
 import { SighashType, VerifyFlags } from '../script/common';
 import BufferReader from "bufio/lib/reader";
 import {WorkerPool} from "../workers";
-import { Verify } from 'node:crypto';
 import { KeyRing } from './keyring';
 
 export interface MTXOptions {
@@ -43,6 +42,8 @@ export interface MTXOptions {
 export interface MTXJson extends TXJson {
 
 }
+
+
 
 /**
  * MTX
@@ -63,7 +64,7 @@ export class MTX extends TX {
    * @param {Object} options
    */
 
-  constructor(options: MTXOptions = null) {
+  constructor(options?: MTXOptions) {
     super();
 
     this.mutable = true;
@@ -139,12 +140,12 @@ export class MTX extends TX {
    * this will not carry over the view.
    * @returns {MTX}
    */
-
+  //@ts-expect-error
   clone(): MTX {
     const mtx = new MTX();
     mtx.inject(this);
     mtx.changeIndex = this.changeIndex;
-    return mtx;
+    return mtx ;
   }
 
   /**
@@ -304,6 +305,7 @@ export class MTX extends TX {
    * @returns {Promise}
    */
 
+  //@ts-expect-error
   async verifyAsync(flags: VerifyFlags | any, pool: WorkerPool | null): Promise<any> {
     try {
       await this.checkAsync(flags, pool);
@@ -371,6 +373,8 @@ export class MTX extends TX {
    * @returns {Hash[]} hashes
    */
 
+  getHashes():Buffer[];
+  getHashes(enc:'hex'):string[];
   getHashes(enc?:'hex'|null): string[]|Buffer[] {
     return super.getHashes(this.view, enc);
   }
@@ -391,6 +395,7 @@ export class MTX extends TX {
    * @returns {Number} sigop count
    */
 
+  //@ts-expect-error
   getSigops(flags: VerifyFlags | null): number {
     return super.getSigops(this.view, flags);
   }
@@ -401,7 +406,8 @@ export class MTX extends TX {
    * @returns {Number} sigop weight
    */
 
-  getSigopsCost(flags: VerifyFlags | null): number {
+  //@ts-expect-error
+  getSigopsCost(flags?: VerifyFlags | null): number {
     return super.getSigopsCost(this.view, flags);
   }
 
@@ -427,6 +433,7 @@ export class MTX extends TX {
    * @returns {Boolean}
    */
 
+  //@ts-expect-error
   verifyInputs(height: number): boolean {
     const [fee] = this.checkInputs(height);
     return fee !== -1;
@@ -444,6 +451,7 @@ export class MTX extends TX {
    * @returns {Array} [fee, reason, score]
    */
 
+  //@ts-expect-error
   checkInputs(height: number): Array<any> {
     return super.checkInputs(this.view, height);
   }
@@ -1002,7 +1010,7 @@ export class MTX extends TX {
    * @returns {Number}
    */
 
-  async estimateSize(estimate: Function | null): number {
+  async estimateSize(estimate: Function | null): Promise<number> {
 
     let total = 0;
 
@@ -1100,9 +1108,9 @@ export class MTX extends TX {
    * @throws on not enough funds available.
    */
 
-  selectCoins(coins: Coin[], options: object | null): CoinSelection {
+  async selectCoins(coins: Coin[], options?: CoinSelectorOptions | null): Promise<CoinSelector> {
     const selector = new CoinSelector(this, options);
-    return selector.select(coins);
+    return await selector.select(coins);
   }
 
   /**
@@ -1183,7 +1191,7 @@ export class MTX extends TX {
    * @returns {CoinSelector}
    */
 
-  async fund(coins: Coin[], options: object): Promise<CoinSelector> {
+  async fund(coins: Coin[], options: CoinSelectorOptions): Promise<CoinSelector> {
     assert(options, 'Options are required.');
     assert(options.changeAddress, 'Change address is required.');
     assert(this.inputs.length === 0, 'TX is already funded.');
@@ -1329,8 +1337,8 @@ export class MTX extends TX {
    * @returns {Object}
    */
 
-  toJSON(): object {
-    return super.toJSON(null, this.view);
+  toJSON(): any {
+    return super.toJSON();
   }
 
   /**
@@ -1376,7 +1384,7 @@ export class MTX extends TX {
    * @returns {MTX}
    */
 
-  static fromJSON(json: object): MTX {
+  static fromJSON(json: MTXJson): MTX {
     return new this().fromJSON(json);
   }
 
@@ -1890,7 +1898,7 @@ export class CoinSelector {
  * @default
  */
 
-CoinSelector.FEE_RATE = 10000n;
+export const FEE_RATE = 10000n;
 
 /**
  * Minimum fee to start with
@@ -1899,7 +1907,7 @@ CoinSelector.FEE_RATE = 10000n;
  * @default
  */
 
-CoinSelector.MIN_FEE = 10000n;
+export const MIN_FEE = 10000n;
 
 /**
  * Maximum fee to allow
@@ -1908,7 +1916,7 @@ CoinSelector.MIN_FEE = 10000n;
  * @default
  */
 
-CoinSelector.MAX_FEE = consensus.COIN / 10n;
+export const MAX_FEE = consensus.COIN / 10n;
 
 /**
  * Funding Error

@@ -824,7 +824,7 @@ declare module "bcrypto/lib/native/hash" {
         update(data: any): HMAC;
         final(): any;
     }
-    export { hashes };
+    export const  hashes: Hash[];
 }
 declare module "bcrypto/lib/native/sha512" {
     export = SHA512;
@@ -1235,11 +1235,11 @@ declare module "bcrypto/lib/internal/custom" {
     export var custom: any;
 }
 declare module "bcrypto/lib/native/bn" {
-    export default BN;
+    
     /**
      * BN
      */
-    export class BN {
+    export  class BN {
         static min(...args: any[]): any;
         static max(...args: any[]): any;
         static cmp(a: any, b: any): any;
@@ -1581,6 +1581,7 @@ declare module "bcrypto/lib/native/bn" {
         fermat(a: any): any;
         invertAll(elems: any): any[];
     }
+
 }
 declare module "bcrypto/lib/js/bn" {
      
@@ -1985,8 +1986,8 @@ declare module "bcrypto/lib/js/bn" {
     }
 }
 declare module "bcrypto/lib/bn" {
-    import BN from "bcrypto/lib/native/bn"
-    export = BN;
+    import {BN} from "bcrypto/lib/native/bn"
+    export default BN;
 }
 
 declare module "bcrypto/lib/js/salsa20" {
@@ -2400,7 +2401,7 @@ declare module "bcrypto/lib/js/elliptic" {
      * MontPoint
      */
     export class MontPoint extends Point {
-        static decode(curve: any, bytes: any, sign: any): any;
+        static decode(curve: any, bytes: any, sign?: any): any;
         static fromJSON(curve: any, json: any): any;
         constructor(curve: any, x: any, y: any);
         x: any;
@@ -2804,7 +2805,7 @@ declare module "bcrypto/lib/x25519" {
 declare module "bcrypto/lib/box" {
     export function seal(msg: any, pub: any, priv?: any): any;
     export function open(msg: any, priv: any): any;
-    export { native };
+    export const native:any;
 }
 declare module "bcrypto/lib/native/chacha20" {
     export = ChaCha20;
@@ -8613,7 +8614,7 @@ declare module "bcrypto/lib/bcrypto" {
     export var x25519: typeof import("bcrypto/lib/js/ecdh") | typeof import("bcrypto/lib/native/ecdh");
     export var x448: typeof import("bcrypto/lib/js/ecdh") | typeof import("bcrypto/lib/native/ecdh");
     export var version: string;
-    export { native };
+
 }
 declare module "bcrypto/lib/blake2b-browser" {
     const _exports: typeof import("bcrypto/lib/js/blake2b");

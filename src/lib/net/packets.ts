@@ -11,22 +11,24 @@
  * @module net/packets
  */
 
-const assert = require('bsert');
-const bio = require('bufio');
-const {BloomFilter} = require('bfilter');
-const common = require('./common');
-const util = require('../utils/util');
-const bip152 = require('./bip152');
-const NetAddress = require('./netaddress');
-const consensus = require('../protocol/consensus');
-const Headers = require('../primitives/headers');
-const InvItem = require('../primitives/invitem');
-const MemBlock = require('../primitives/memblock');
-const MerkleBlock = require('../primitives/merkleblock');
-const TX = require('../primitives/tx');
+import assert from 'bsert';
+import bio, { BufferReader } from 'bufio';
+import { BloomFilter } from 'bfilter';
+import * as common from './common';
+import * as util from '../utils/util';
+import {NetAddress} from './netaddress';
+import * as consensus from '../protocol/consensus';
+import {Headers} from '../primitives/headers';
+import {InvItem} from '../primitives/invitem';
+import {MemBlock} from '../primitives/memblock';
+import {Block} from '../primitives';
+import {MerkleBlock} from '../primitives/merkleblock';
+import {TX} from '../primitives/tx';
 const {encoding} = bio;
 const DUMMY = Buffer.alloc(0);
-const {inspectSymbol} = require('../utils');
+import { inspectSymbol } from '../utils';
+import { Hash, Rate } from '../types';
+import { CompactBlock, TXRequest, TXResponse } from './bip152';
 
 /**
  * Packet types.
@@ -34,91 +36,53 @@ const {inspectSymbol} = require('../utils');
  * @default
  */
 
-exports.types = {
-  VERSION: 0,
-  VERACK: 1,
-  PING: 2,
-  PONG: 3,
-  GETADDR: 4,
-  ADDR: 5,
-  INV: 6,
-  GETDATA: 7,
-  NOTFOUND: 8,
-  GETBLOCKS: 9,
-  GETHEADERS: 10,
-  HEADERS: 11,
-  SENDHEADERS: 12,
-  BLOCK: 13,
-  TX: 14,
-  REJECT: 15,
-  MEMPOOL: 16,
-  FILTERLOAD: 17,
-  FILTERADD: 18,
-  FILTERCLEAR: 19,
-  MERKLEBLOCK: 20,
-  FEEFILTER: 21,
-  SENDCMPCT: 22,
-  CMPCTBLOCK: 23,
-  GETBLOCKTXN: 24,
-  BLOCKTXN: 25,
-  UNKNOWN: 26,
+export enum PacketTypes {
+  VERSION= 0,
+  VERACK= 1,
+  PING= 2,
+  PONG= 3,
+  GETADDR= 4,
+  ADDR= 5,
+  INV= 6,
+  GETDATA= 7,
+  NOTFOUND= 8,
+  GETBLOCKS= 9,
+  GETHEADERS= 10,
+  HEADERS= 11,
+  SENDHEADERS= 12,
+  BLOCK= 13,
+  TX= 14,
+  REJECT= 15,
+  MEMPOOL= 16,
+  FILTERLOAD= 17,
+  FILTERADD= 18,
+  FILTERCLEAR= 19,
+  MERKLEBLOCK= 20,
+  FEEFILTER= 21,
+  SENDCMPCT= 22,
+  CMPCTBLOCK= 23,
+  GETBLOCKTXN= 24,
+  BLOCKTXN= 25,
+  UNKNOWN= 26,
   // Internal
-  INTERNAL: 27,
-  DATA: 28
+  INTERNAL= 27,
+  DATA= 28
 };
 
-/**
- * Packet types by value.
- * @const {Object}
- * @default
- */
-
-exports.typesByVal = [
-  'VERSION',
-  'VERACK',
-  'PING',
-  'PONG',
-  'GETADDR',
-  'ADDR',
-  'INV',
-  'GETDATA',
-  'NOTFOUND',
-  'GETBLOCKS',
-  'GETHEADERS',
-  'HEADERS',
-  'SENDHEADERS',
-  'BLOCK',
-  'TX',
-  'REJECT',
-  'MEMPOOL',
-  'FILTERLOAD',
-  'FILTERADD',
-  'FILTERCLEAR',
-  'MERKLEBLOCK',
-  'FEEFILTER',
-  'SENDCMPCT',
-  'CMPCTBLOCK',
-  'GETBLOCKTXN',
-  'BLOCKTXN',
-  'UNKNOWN',
-  // Internal
-  'INTERNAL',
-  'DATA'
-];
 
 /**
  * Base Packet
  */
 
-class Packet {
+export class Packet {
+  type = -1;
+  cmd = '';
   /**
    * Create a base packet.
    * @constructor
    */
 
   constructor() {
-    this.type = -1;
-    this.cmd = '';
   }
 
   /**
@@ -182,7 +146,16 @@ class Packet {
  * should be relayed immediately.
  */
 
-class VersionPacket extends Packet {
+export class VersionPacket extends Packet {
+  version: number;
+  services: any;
+  time: number;
+  remote: NetAddress;
+  local: NetAddress;
+  nonce: Buffer;
+  agent: string;
+  height: number;
+  noRelay: boolean;
   /**
    * Create a version packet.
    * @constructor
@@ -199,14 +172,14 @@ class VersionPacket extends Packet {
    * should be relayed immediately.
    */
 
-  constructor(options) {
+  constructor(options?) {
     super();
 
     this.cmd = 'version';
-    this.type = exports.types.VERSION;
+    this.type = PacketTypes.VERSION;
 
     this.version = common.PROTOCOL_VERSION;
-    this.services = common.LOCAL_SERVICES;
+    this.services = common.ServiceBits.LOCAL_SERVICES;
     this.time = util.now();
     this.remote = new NetAddress();
     this.local = new NetAddress();
@@ -382,10 +355,10 @@ class VersionPacket extends Packet {
    * @returns {VersionPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
-    return new this().fromRaw(data, enc);
+    return new this().fromRaw(data);
   }
 }
 
@@ -394,7 +367,7 @@ class VersionPacket extends Packet {
  * @extends Packet
  */
 
-class VerackPacket extends Packet {
+export class VerackPacket extends Packet {
   /**
    * Create a `verack` packet.
    * @constructor
@@ -403,7 +376,7 @@ class VerackPacket extends Packet {
   constructor() {
     super();
     this.cmd = 'verack';
-    this.type = exports.types.VERACK;
+    this.type = PacketTypes.VERACK;
   }
 
   /**
@@ -423,7 +396,7 @@ class VerackPacket extends Packet {
    * @returns {VerackPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -436,18 +409,19 @@ class VerackPacket extends Packet {
  * @property {Buffer|null} nonce
  */
 
-class PingPacket extends Packet {
+export class PingPacket extends Packet {
+  nonce: Buffer;
   /**
    * Create a `ping` packet.
    * @constructor
    * @param {Buffer?} nonce
    */
 
-  constructor(nonce) {
+  constructor(nonce?) {
     super();
 
     this.cmd = 'ping';
-    this.type = exports.types.PING;
+    this.type = PacketTypes.PING;
 
     this.nonce = nonce || null;
   }
@@ -521,7 +495,7 @@ class PingPacket extends Packet {
    * @returns {PingPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -534,18 +508,19 @@ class PingPacket extends Packet {
  * @property {BN} nonce
  */
 
-class PongPacket extends Packet {
+export class PongPacket extends Packet {
+  nonce: Buffer;
   /**
    * Create a `pong` packet.
    * @constructor
    * @param {BN?} nonce
    */
 
-  constructor(nonce) {
+  constructor(nonce?) {
     super();
 
     this.cmd = 'pong';
-    this.type = exports.types.PONG;
+    this.type = PacketTypes.PONG;
 
     this.nonce = nonce || common.ZERO_NONCE;
   }
@@ -616,7 +591,7 @@ class PongPacket extends Packet {
    * @returns {VerackPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -628,7 +603,7 @@ class PongPacket extends Packet {
  * @extends Packet
  */
 
-class GetAddrPacket extends Packet {
+export class GetAddrPacket extends Packet {
   /**
    * Create a `getaddr` packet.
    * @constructor
@@ -637,7 +612,7 @@ class GetAddrPacket extends Packet {
   constructor() {
     super();
     this.cmd = 'getaddr';
-    this.type = exports.types.GETADDR;
+    this.type = PacketTypes.GETADDR;
   }
 
   /**
@@ -657,7 +632,7 @@ class GetAddrPacket extends Packet {
    * @returns {GetAddrPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -670,18 +645,19 @@ class GetAddrPacket extends Packet {
  * @property {NetAddress[]} items
  */
 
-class AddrPacket extends Packet {
+export class AddrPacket extends Packet {
+  items: NetAddress[];
   /**
    * Create a `addr` packet.
    * @constructor
    * @param {(NetAddress[])?} items
    */
 
-  constructor(items) {
+  constructor(items?) {
     super();
 
     this.cmd = 'addr';
-    this.type = exports.types.ADDR;
+    this.type = PacketTypes.ADDR;
 
     this.items = items || [];
   }
@@ -755,7 +731,7 @@ class AddrPacket extends Packet {
    * @returns {AddrPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -768,18 +744,20 @@ class AddrPacket extends Packet {
  * @property {InvItem[]} items
  */
 
-class InvPacket extends Packet {
+export class InvPacket extends Packet {
+
+  items: InvItem[];
   /**
    * Create a `inv` packet.
    * @constructor
    * @param {(InvItem[])?} items
    */
 
-  constructor(items) {
+  constructor(items?) {
     super();
 
     this.cmd = 'inv';
-    this.type = exports.types.INV;
+    this.type = PacketTypes.INV;
 
     this.items = items || [];
   }
@@ -866,7 +844,7 @@ class InvPacket extends Packet {
    * @returns {InvPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -878,17 +856,17 @@ class InvPacket extends Packet {
  * @extends InvPacket
  */
 
-class GetDataPacket extends InvPacket {
+export class GetDataPacket extends InvPacket {
   /**
    * Create a `getdata` packet.
    * @constructor
    * @param {(InvItem[])?} items
    */
 
-  constructor(items) {
+  constructor(items?) {
     super(items);
     this.cmd = 'getdata';
-    this.type = exports.types.GETDATA;
+    this.type = PacketTypes.GETDATA;
   }
 
   /**
@@ -908,7 +886,7 @@ class GetDataPacket extends InvPacket {
    * @returns {GetDataPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -920,17 +898,17 @@ class GetDataPacket extends InvPacket {
  * @extends InvPacket
  */
 
-class NotFoundPacket extends InvPacket {
+export class NotFoundPacket extends InvPacket {
   /**
    * Create a `notfound` packet.
    * @constructor
    * @param {(InvItem[])?} items
    */
 
-  constructor(items) {
+  constructor(items?) {
     super(items);
     this.cmd = 'notfound';
-    this.type = exports.types.NOTFOUND;
+    this.type = PacketTypes.NOTFOUND;
   }
 
   /**
@@ -950,7 +928,7 @@ class NotFoundPacket extends InvPacket {
    * @returns {NotFoundPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -964,7 +942,11 @@ class NotFoundPacket extends InvPacket {
  * @property {Hash|null} stop
  */
 
-class GetBlocksPacket extends Packet {
+export class GetBlocksPacket extends Packet {
+  
+  version: number;
+  locator:Buffer[];
+  stop: Buffer;
   /**
    * Create a `getblocks` packet.
    * @constructor
@@ -972,11 +954,11 @@ class GetBlocksPacket extends Packet {
    * @param {Hash?} stop
    */
 
-  constructor(locator, stop) {
+  constructor(locator?, stop?) {
     super();
 
     this.cmd = 'getblocks';
-    this.type = exports.types.GETBLOCKS;
+    this.type = PacketTypes.GETBLOCKS;
 
     this.version = common.PROTOCOL_VERSION;
     this.locator = locator || [];
@@ -1067,7 +1049,7 @@ class GetBlocksPacket extends Packet {
    * @returns {GetBlocksPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -1079,7 +1061,7 @@ class GetBlocksPacket extends Packet {
  * @extends GetBlocksPacket
  */
 
-class GetHeadersPacket extends GetBlocksPacket {
+export class GetHeadersPacket extends GetBlocksPacket {
   /**
    * Create a `` packet.
    * @constructor
@@ -1087,10 +1069,10 @@ class GetHeadersPacket extends GetBlocksPacket {
    * @param {Hash?} stop
    */
 
-  constructor(locator, stop) {
+  constructor(locator?, stop?) {
     super(locator, stop);
     this.cmd = 'getheaders';
-    this.type = exports.types.GETHEADERS;
+    this.type = PacketTypes.GETHEADERS;
   }
 
   /**
@@ -1110,7 +1092,7 @@ class GetHeadersPacket extends GetBlocksPacket {
    * @returns {GetHeadersPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -1123,18 +1105,19 @@ class GetHeadersPacket extends GetBlocksPacket {
  * @property {Headers[]} items
  */
 
-class HeadersPacket extends Packet {
+export class HeadersPacket extends Packet {
+  items:Headers[];
   /**
    * Create a `headers` packet.
    * @constructor
    * @param {(Headers[])?} items
    */
 
-  constructor(items) {
+  constructor(items?) {
     super();
 
     this.cmd = 'headers';
-    this.type = exports.types.HEADERS;
+    this.type = PacketTypes.HEADERS;
 
     this.items = items || [];
   }
@@ -1216,7 +1199,7 @@ class HeadersPacket extends Packet {
    * @returns {VerackPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -1228,7 +1211,7 @@ class HeadersPacket extends Packet {
  * @extends Packet
  */
 
-class SendHeadersPacket extends Packet {
+export class SendHeadersPacket extends Packet {
   /**
    * Create a `sendheaders` packet.
    * @constructor
@@ -1237,7 +1220,7 @@ class SendHeadersPacket extends Packet {
   constructor() {
     super();
     this.cmd = 'sendheaders';
-    this.type = exports.types.SENDHEADERS;
+    this.type = PacketTypes.SENDHEADERS;
   }
 
   /**
@@ -1257,7 +1240,7 @@ class SendHeadersPacket extends Packet {
    * @returns {SendHeadersPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -1270,20 +1253,21 @@ class SendHeadersPacket extends Packet {
  * @property {Block} block
  */
 
-class BlockPacket extends Packet {
+export class BlockPacket extends Packet {
+  block:Block;
   /**
    * Create a `block` packet.
    * @constructor
    * @param {Block|null} block
    */
 
-  constructor(block) {
+  constructor(block?:Block) {
     super();
 
     this.cmd = 'block';
-    this.type = exports.types.BLOCK;
+    this.type = PacketTypes.BLOCK;
 
-    this.block = block || new MemBlock();
+    this.block = block || new Block();
   }
 
   /**
@@ -1292,7 +1276,7 @@ class BlockPacket extends Packet {
    */
 
   getSize() {
-    return this.block.getBaseSize();
+    return this.block.getSize();
   }
 
   /**
@@ -1352,7 +1336,7 @@ class BlockPacket extends Packet {
    * @returns {BlockPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -1365,18 +1349,19 @@ class BlockPacket extends Packet {
  * @property {TX} block
  */
 
-class TXPacket extends Packet {
+export class TXPacket extends Packet {
+  tx: TX;
   /**
    * Create a `tx` packet.
    * @constructor
    * @param {TX|null} tx
    */
 
-  constructor(tx) {
+  constructor(tx?:TX) {
     super();
 
     this.cmd = 'tx';
-    this.type = exports.types.TX;
+    this.type = PacketTypes.TX;
 
     this.tx = tx || new TX();
   }
@@ -1447,7 +1432,7 @@ class TXPacket extends Packet {
    * @returns {TXPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -1464,20 +1449,24 @@ class TXPacket extends Packet {
  * @property {(Hash|Buffer)?} data - Transaction or block hash.
  */
 
-class RejectPacket extends Packet {
+export class RejectPacket extends Packet {
+  message:string;
+  code: RejectPacketCodes;
+  reason: string;
+  hash: Buffer;
   /**
    * Create reject packet.
    * @constructor
    */
 
-  constructor(options) {
+  constructor(options?) {
     super();
 
     this.cmd = 'reject';
-    this.type = exports.types.REJECT;
+    this.type = PacketTypes.REJECT;
 
     this.message = '';
-    this.code = RejectPacket.codes.INVALID;
+    this.code = RejectPacketCodes.INVALID;
     this.reason = '';
     this.hash = null;
 
@@ -1499,10 +1488,10 @@ class RejectPacket extends Packet {
 
     if (code != null) {
       if (typeof code === 'string')
-        code = RejectPacket.codes[code.toUpperCase()];
+        code = RejectPacketCodes[code.toUpperCase()];
 
-      if (code >= RejectPacket.codes.INTERNAL)
-        code = RejectPacket.codes.INVALID;
+      if (code >= RejectPacketCodes.INTERNAL)
+        code = RejectPacketCodes.INVALID;
 
       this.code = code;
     }
@@ -1541,7 +1530,7 @@ class RejectPacket extends Packet {
    */
 
   getCode() {
-    const code = RejectPacket.codesByVal[this.code];
+    const code = RejectPacketCodes[this.code];
 
     if (!code)
       return this.code.toString(10);
@@ -1647,10 +1636,10 @@ class RejectPacket extends Packet {
    * @returns {RejectPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
-    return new this().fromRaw(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -1664,13 +1653,13 @@ class RejectPacket extends Packet {
 
   fromReason(code, reason, msg, hash) {
     if (typeof code === 'string')
-      code = RejectPacket.codes[code.toUpperCase()];
+      code = RejectPacketCodes[code.toUpperCase()];
 
     if (!code)
-      code = RejectPacket.codes.INVALID;
+      code = RejectPacketCodes.INVALID;
 
-    if (code >= RejectPacket.codes.INTERNAL)
-      code = RejectPacket.codes.INVALID;
+    if (code >= RejectPacketCodes.INTERNAL)
+      code = RejectPacketCodes.INVALID;
 
     this.message = '';
     this.code = code;
@@ -1694,7 +1683,7 @@ class RejectPacket extends Packet {
    * @returns {RejectPacket}
    */
 
-  static fromReason(code, reason, msg, hash) {
+  static fromReason(code, reason, msg, hash?:Buffer) {
     return new this().fromReason(code, reason, msg, hash);
   }
 
@@ -1715,7 +1704,7 @@ class RejectPacket extends Packet {
    */
 
   [inspectSymbol]() {
-    const code = RejectPacket.codesByVal[this.code] || this.code;
+    const code = RejectPacketCodes[this.code] || this.code;
     const hash = this.hash ? util.revHex(this.hash) : null;
     return '<Reject:'
       + ` msg=${this.message}`
@@ -1733,41 +1722,20 @@ class RejectPacket extends Packet {
  * @default
  */
 
-RejectPacket.codes = {
-  MALFORMED: 0x01,
-  INVALID: 0x10,
-  OBSOLETE: 0x11,
-  DUPLICATE: 0x12,
-  NONSTANDARD: 0x40,
-  DUST: 0x41,
-  INSUFFICIENTFEE: 0x42,
-  CHECKPOINT: 0x43,
+export enum RejectPacketCodes  {
+  MALFORMED= 0x01,
+  INVALID=  0x10,
+  OBSOLETE=  0x11,
+  DUPLICATE=  0x12,
+  NONSTANDARD=  0x40,
+  DUST= 0x41,
+  INSUFFICIENTFEE= 0x42,
+  CHECKPOINT= 0x43,
   // Internal codes (NOT FOR USE ON NETWORK)
-  INTERNAL: 0x100,
-  HIGHFEE: 0x101,
-  ALREADYKNOWN: 0x102,
-  CONFLICT: 0x103
-};
-
-/**
- * Reject codes by value.
- * @const {Object}
- */
-
-RejectPacket.codesByVal = {
-  0x01: 'MALFORMED',
-  0x10: 'INVALID',
-  0x11: 'OBSOLETE',
-  0x12: 'DUPLICATE',
-  0x40: 'NONSTANDARD',
-  0x41: 'DUST',
-  0x42: 'INSUFFICIENTFEE',
-  0x43: 'CHECKPOINT',
-  // Internal codes (NOT FOR USE ON NETWORK)
-  0x100: 'INTERNAL',
-  0x101: 'HIGHFEE',
-  0x102: 'ALREADYKNOWN',
-  0x103: 'CONFLICT'
+  INTERNAL= 0x100,
+  HIGHFEE= 0x101,
+  ALREADYKNOWN= 0x102,
+  CONFLICT= 0x103
 };
 
 /**
@@ -1775,7 +1743,7 @@ RejectPacket.codesByVal = {
  * @extends Packet
  */
 
-class MempoolPacket extends Packet {
+export class MempoolPacket extends Packet {
   /**
    * Create a `mempool` packet.
    * @constructor
@@ -1784,7 +1752,7 @@ class MempoolPacket extends Packet {
   constructor() {
     super();
     this.cmd = 'mempool';
-    this.type = exports.types.MEMPOOL;
+    this.type = PacketTypes.MEMPOOL;
   }
 
   /**
@@ -1804,7 +1772,7 @@ class MempoolPacket extends Packet {
    * @returns {VerackPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -1816,18 +1784,19 @@ class MempoolPacket extends Packet {
  * @extends Packet
  */
 
-class FilterLoadPacket extends Packet {
+export class FilterLoadPacket extends Packet {
+  filter: BloomFilter;
   /**
    * Create a `filterload` packet.
    * @constructor
    * @param {BloomFilter|null} filter
    */
 
-  constructor(filter) {
+  constructor(filter?) {
     super();
 
     this.cmd = 'filterload';
-    this.type = exports.types.FILTERLOAD;
+    this.type = PacketTypes.FILTERLOAD;
 
     this.filter = filter || new BloomFilter();
   }
@@ -1898,7 +1867,7 @@ class FilterLoadPacket extends Packet {
    * @returns {FilterLoadPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -1920,18 +1889,19 @@ class FilterLoadPacket extends Packet {
  * @property {Buffer} data
  */
 
-class FilterAddPacket extends Packet {
+export class FilterAddPacket extends Packet {
+  data: Buffer;
   /**
    * Create a `filteradd` packet.
    * @constructor
    * @param {Buffer?} data
    */
 
-  constructor(data) {
+  constructor(data?) {
     super();
 
     this.cmd = 'filteradd';
-    this.type = exports.types.FILTERADD;
+    this.type = PacketTypes.FILTERADD;
 
     this.data = data || DUMMY;
   }
@@ -1993,7 +1963,7 @@ class FilterAddPacket extends Packet {
    * @returns {FilterAddPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -2005,7 +1975,7 @@ class FilterAddPacket extends Packet {
  * @extends Packet
  */
 
-class FilterClearPacket extends Packet {
+export class FilterClearPacket extends Packet {
   /**
    * Create a `filterclear` packet.
    * @constructor
@@ -2014,7 +1984,7 @@ class FilterClearPacket extends Packet {
   constructor() {
     super();
     this.cmd = 'filterclear';
-    this.type = exports.types.FILTERCLEAR;
+    this.type = PacketTypes.FILTERCLEAR;
   }
 
   /**
@@ -2024,7 +1994,7 @@ class FilterClearPacket extends Packet {
    * @returns {FilterClearPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -2037,18 +2007,19 @@ class FilterClearPacket extends Packet {
  * @property {MerkleBlock} block
  */
 
-class MerkleBlockPacket extends Packet {
+export class MerkleBlockPacket extends Packet {
+  block:MerkleBlock;
   /**
    * Create a `merkleblock` packet.
    * @constructor
    * @param {MerkleBlock?} block
    */
 
-  constructor(block) {
+  constructor(block?) {
     super();
 
     this.cmd = 'merkleblock';
-    this.type = exports.types.MERKLEBLOCK;
+    this.type = PacketTypes.MERKLEBLOCK;
 
     this.block = block || new MerkleBlock();
   }
@@ -2109,7 +2080,7 @@ class MerkleBlockPacket extends Packet {
    * @returns {MerkleBlockPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -2122,20 +2093,21 @@ class MerkleBlockPacket extends Packet {
  * @property {Rate} rate
  */
 
-class FeeFilterPacket extends Packet {
+export class FeeFilterPacket extends Packet {
+  rate:Rate;
   /**
    * Create a `feefilter` packet.
    * @constructor
    * @param {Rate?} rate
    */
 
-  constructor(rate) {
+  constructor(rate?) {
     super();
 
     this.cmd = 'feefilter';
-    this.type = exports.types.FEEFILTER;
+    this.type = PacketTypes.FEEFILTER;
 
-    this.rate = rate || 0;
+    this.rate = rate || 0n;
   }
 
   /**
@@ -2204,7 +2176,7 @@ class FeeFilterPacket extends Packet {
    * @returns {FeeFilterPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data:Buffer, enc?:'hex'):FeeFilterPacket {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -2218,7 +2190,9 @@ class FeeFilterPacket extends Packet {
  * @property {Number} version
  */
 
-class SendCmpctPacket extends Packet {
+export class SendCmpctPacket extends Packet {
+  mode:number;
+  version:number;
   /**
    * Create a `sendcmpct` packet.
    * @constructor
@@ -2226,11 +2200,11 @@ class SendCmpctPacket extends Packet {
    * @param {Number|null} version
    */
 
-  constructor(mode, version) {
+  constructor(mode?, version?) {
     super();
 
     this.cmd = 'sendcmpct';
-    this.type = exports.types.SENDCMPCT;
+    this.type = PacketTypes.SENDCMPCT;
 
     this.mode = mode || 0;
     this.version = version || 1;
@@ -2304,7 +2278,7 @@ class SendCmpctPacket extends Packet {
    * @returns {SendCmpctPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -2317,20 +2291,21 @@ class SendCmpctPacket extends Packet {
  * @property {Block} block
  */
 
-class CmpctBlockPacket extends Packet {
+export class CmpctBlockPacket extends Packet {
+  block:CompactBlock;
   /**
    * Create a `cmpctblock` packet.
    * @constructor
    * @param {Block|null} block
    */
 
-  constructor(block) {
+  constructor(block?) {
     super();
 
     this.cmd = 'cmpctblock';
-    this.type = exports.types.CMPCTBLOCK;
+    this.type = PacketTypes.CMPCTBLOCK;
 
-    this.block = block || new bip152.CompactBlock();
+    this.block = block || new CompactBlock();
   }
 
   /**
@@ -2367,7 +2342,7 @@ class CmpctBlockPacket extends Packet {
    */
 
   fromReader(br) {
-    this.block.fromReader(br);
+    this.block.fromRaw(br);
     return this;
   }
 
@@ -2389,7 +2364,7 @@ class CmpctBlockPacket extends Packet {
    */
 
   static fromReader(br) {
-    return new this().fromRaw(br);
+    return new this().fromReader(br);
   }
 
   /**
@@ -2399,7 +2374,7 @@ class CmpctBlockPacket extends Packet {
    * @returns {CmpctBlockPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -2412,20 +2387,21 @@ class CmpctBlockPacket extends Packet {
  * @property {TXRequest} request
  */
 
-class GetBlockTxnPacket extends Packet {
+export class GetBlockTxnPacket extends Packet {
+  request:TXRequest;
   /**
    * Create a `getblocktxn` packet.
    * @constructor
    * @param {TXRequest?} request
    */
 
-  constructor(request) {
+  constructor(request?:TXRequest) {
     super();
 
     this.cmd = 'getblocktxn';
-    this.type = exports.types.GETBLOCKTXN;
+    this.type = PacketTypes.GETBLOCKTXN;
 
-    this.request = request || new bip152.TXRequest();
+    this.request = request || new TXRequest();
   }
 
   /**
@@ -2483,7 +2459,7 @@ class GetBlockTxnPacket extends Packet {
    * @returns {GetBlockTxnPacket}
    */
 
-  static fromReader(br) {
+  static fromReader(br:BufferReader) {
     return new this().fromReader(br);
   }
 
@@ -2494,7 +2470,7 @@ class GetBlockTxnPacket extends Packet {
    * @returns {GetBlockTxnPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -2507,20 +2483,22 @@ class GetBlockTxnPacket extends Packet {
  * @property {TXResponse} response
  */
 
-class BlockTxnPacket extends Packet {
+export class BlockTxnPacket extends Packet {
+  response: TXResponse;
+
   /**
    * Create a `blocktxn` packet.
    * @constructor
    * @param {TXResponse?} response
    */
 
-  constructor(response) {
+  constructor(response?:TXResponse) {
     super();
 
     this.cmd = 'blocktxn';
-    this.type = exports.types.BLOCKTXN;
+    this.type = PacketTypes.BLOCKTXN;
 
-    this.response = response || new bip152.TXResponse();
+    this.response = response || new TXResponse();
   }
 
   /**
@@ -2589,7 +2567,7 @@ class BlockTxnPacket extends Packet {
    * @returns {BlockTxnPacket}
    */
 
-  static fromRaw(data, enc) {
+  static fromRaw(data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -2603,7 +2581,9 @@ class BlockTxnPacket extends Packet {
  * @property {Buffer} data
  */
 
-class UnknownPacket extends Packet {
+export class UnknownPacket extends Packet {
+  
+  data:Buffer;
   /**
    * Create an unknown packet.
    * @constructor
@@ -2611,11 +2591,11 @@ class UnknownPacket extends Packet {
    * @param {Buffer|null} data
    */
 
-  constructor(cmd, data) {
+  constructor(cmd?:string, data?:Buffer) {
     super();
 
     this.cmd = cmd;
-    this.type = exports.types.UNKNOWN;
+    this.type = PacketTypes.UNKNOWN;
     this.data = data;
   }
 
@@ -2653,7 +2633,7 @@ class UnknownPacket extends Packet {
    * @param {Buffer} data
    */
 
-  fromRaw(cmd, data) {
+  fromRaw(cmd, data?) {
     assert(Buffer.isBuffer(data));
     this.cmd = cmd;
     this.data = data;
@@ -2667,7 +2647,7 @@ class UnknownPacket extends Packet {
    * @returns {UnknownPacket}
    */
 
-  static fromRaw(cmd, data, enc) {
+  static fromRaw(cmd, data, enc?) {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(cmd, data);
@@ -2681,7 +2661,7 @@ class UnknownPacket extends Packet {
  * @returns {Packet}
  */
 
-exports.fromRaw = function fromRaw(cmd, data) {
+export  function fromRaw(cmd:string, data:Buffer) {
   switch (cmd) {
     case 'version':
       return VersionPacket.fromRaw(data);
@@ -2740,35 +2720,3 @@ exports.fromRaw = function fromRaw(cmd, data) {
   }
 };
 
-/*
- * Expose
- */
-
-exports.Packet = Packet;
-exports.VersionPacket = VersionPacket;
-exports.VerackPacket = VerackPacket;
-exports.PingPacket = PingPacket;
-exports.PongPacket = PongPacket;
-exports.GetAddrPacket = GetAddrPacket;
-exports.AddrPacket = AddrPacket;
-exports.InvPacket = InvPacket;
-exports.GetDataPacket = GetDataPacket;
-exports.NotFoundPacket = NotFoundPacket;
-exports.GetBlocksPacket = GetBlocksPacket;
-exports.GetHeadersPacket = GetHeadersPacket;
-exports.HeadersPacket = HeadersPacket;
-exports.SendHeadersPacket = SendHeadersPacket;
-exports.BlockPacket = BlockPacket;
-exports.TXPacket = TXPacket;
-exports.RejectPacket = RejectPacket;
-exports.MempoolPacket = MempoolPacket;
-exports.FilterLoadPacket = FilterLoadPacket;
-exports.FilterAddPacket = FilterAddPacket;
-exports.FilterClearPacket = FilterClearPacket;
-exports.MerkleBlockPacket = MerkleBlockPacket;
-exports.FeeFilterPacket = FeeFilterPacket;
-exports.SendCmpctPacket = SendCmpctPacket;
-exports.CmpctBlockPacket = CmpctBlockPacket;
-exports.GetBlockTxnPacket = GetBlockTxnPacket;
-exports.BlockTxnPacket = BlockTxnPacket;
-exports.UnknownPacket = UnknownPacket;

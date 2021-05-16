@@ -1,6 +1,6 @@
 declare module "binet" {
-    const _exports: typeof import("binet/lib/ip");
-    export = _exports;
+    import _exports from "binet/lib/ip";
+    export default _exports;
 }
 declare module "binet/lib/inet" {
     export function pton4(src: any, dst: any, off: any): number;
@@ -89,7 +89,7 @@ declare module "binet/lib/ip" {
     export function getLocal(family: string | null): string;
     export function getNonlocal(family: string | null): string;
     export function getPrivate(family: string | null): string;
-    export function getPublic(family: string | null): string;
+    export function getPublic(family?: string | null): string;
     export function type(str: string): number;
     export function family(str: string): number;
     export function test(str: string): number;
@@ -103,8 +103,8 @@ declare module "binet/lib/ip" {
     export function isV4String(str: string): boolean;
     export function isV6String(str: string): boolean;
     export function isDNSString(str: string): boolean;
-    export function fromHostname(addr: string, fport: number | null, fkey: any): any;
-    export function toHostname(host: string, port: number, key: any | null): string;
+    export function fromHostname(addr: string, fport?: number | null, fkey?: any): any;
+    export function toHostname(host: string, port: number, key?: any | null): string;
     export namespace IP {
         export { binet as ip };
         export { types };
@@ -117,8 +117,8 @@ declare module "binet/lib/ip" {
     /**
      * Address types.
      */
-    type types = number;
-    namespace types {
+    export type types = number;
+    export namespace types {
         const NAME: number;
         const DNS: number;
         const IPV4: number;
@@ -135,7 +135,7 @@ declare module "binet/lib/ip" {
         const ONION: number;
         const TEREDO: number;
     }
-    const ZERO_IP: any;
+    export const ZERO_IP: any;
     import onion = require("binet/lib/onion");
     import inet = require("binet/lib/inet");
     export {};

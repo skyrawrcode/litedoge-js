@@ -9,8 +9,8 @@
 
 import assert from 'bsert';
 import { BufferMap } from 'buffer-map';
-import { Address } from 'node:cluster';
 import { ChainEntry } from '..';
+import { Address } from '../primitives';
 import {TXMeta} from '../primitives/txmeta';
 import { Network } from '../protocol';
 
@@ -19,17 +19,17 @@ import { Network } from '../protocol';
  * @ignore
  */
 
-class AddrIndexer {
+export class AddrIndexer {
   network:Network;
-  index: BufferMap<ChainEntry>;
-  map: BufferMap<Address>;
+  index: BufferMap<BufferMap<ChainEntry[]>>;
+  map: BufferMap<Address[]>;
   /**
    * Create TX address index.
    * @constructor
    * @param {Network} network
    */
 
-  constructor(network) {
+  constructor(network:Network) {
     this.network = network;
 
     // Map of addr->entries.
@@ -113,7 +113,7 @@ class AddrIndexer {
    * @param {Buffer} options.after
    */
 
-  getEntries(addr, options: {limit?:any, reverse?:any, after?:any} = {}) {
+  getEntries(addr:Address, options: {limit?:any, reverse?:any, after?:any} = {}) {
     const {limit, reverse, after} = options;
     const key = this.getKey(addr);
 
@@ -204,7 +204,7 @@ class AddrIndexer {
       let items = this.index.get(key);
 
       if (!items) {
-        items = new BufferMap();
+        items = new BufferMap<ChainEntry[]>();
         this.index.set(key, items);
       }
 
@@ -242,8 +242,3 @@ class AddrIndexer {
   }
 }
 
-/*
- * Expose
- */
-
-module.exports = AddrIndexer;
