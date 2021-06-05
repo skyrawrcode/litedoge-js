@@ -13,7 +13,7 @@ import bio from "bufio";
 import {Script} from '../script/script';
 import {Output} from '../primitives/output';
 import {MTX} from '../primitives';
-import {TX} from '../primitives/tx';
+import {TX} from '../primitives';
 import {KeyRing} from '../primitives/keyring';
 import {CoinView} from '../coins/coinview';
 import {ScriptError} from '../script/scripterror';
@@ -23,7 +23,7 @@ const {encoding} = bio;
  * Constants
  */
 
-export enum packetTypes  {
+export enum WorkerPacketTypes  {
   ENV= 0,
   EVENT= 1,
   LOG= 2,
@@ -87,7 +87,7 @@ export class EnvPacket extends Packet {
   json: string;
   constructor(env = {}) {
     super();
-    this.cmd = packetTypes.ENV;
+    this.cmd = WorkerPacketTypes.ENV;
     this.env = env || {};
     this.json = JSON.stringify(this.env);
   }
@@ -122,7 +122,7 @@ export class EventPacket extends Packet {
   json: string;
   constructor(items = null) {
     super();
-    this.cmd = packetTypes.EVENT;
+    this.cmd = WorkerPacketTypes.EVENT;
     this.items = items || [];
     this.json = JSON.stringify(this.items);
   }
@@ -156,7 +156,7 @@ export class LogPacket extends Packet {
   text: any;
   constructor(text = null) {
     super();
-    this.cmd = packetTypes.LOG;
+    this.cmd = WorkerPacketTypes.LOG;
     this.text = text || '';
   }
 
@@ -188,7 +188,7 @@ export class ErrorPacket extends Packet {
   error: any;
   constructor(error= null) {
     super();
-    this.cmd = packetTypes.ERROR;
+    this.cmd = WorkerPacketTypes.ERROR;
     this.error = error || new Error();
   }
 
@@ -277,7 +277,7 @@ export class ErrorPacket extends Packet {
 export class ErrorResultPacket extends ErrorPacket {
   constructor(error=null) {
     super(error);
-    this.cmd = packetTypes.ERRORRESULT;
+    this.cmd = WorkerPacketTypes.ERRORRESULT;
   }
 
   static fromRaw(data) {
@@ -295,7 +295,7 @@ export class CheckPacket extends Packet {
   flags: any;
   constructor(tx?:TX, view?, flags?) {
     super();
-    this.cmd = packetTypes.CHECK;
+    this.cmd = WorkerPacketTypes.CHECK;
     this.tx = tx || null;
     this.view = view || null;
     this.flags = flags != null ? flags : null;
@@ -338,7 +338,7 @@ export class CheckResultPacket extends Packet {
   error: any;
   constructor(error?) {
     super();
-    this.cmd = packetTypes.CHECKRESULT;
+    this.cmd = WorkerPacketTypes.CHECKRESULT;
     this.error = error || null;
   }
 
@@ -420,7 +420,7 @@ export class SignPacket extends Packet {
   type: any;
   constructor(tx?, rings?, type?) {
     super();
-    this.cmd = packetTypes.SIGN;
+    this.cmd = WorkerPacketTypes.SIGN;
     this.tx = tx || null;
     this.rings = rings || [];
     this.type = type != null ? type : 1;
@@ -487,7 +487,7 @@ export class SignResultPacket extends Packet {
   script: any;
   constructor(total?, script?) {
     super();
-    this.cmd = packetTypes.SIGNRESULT;
+    this.cmd = WorkerPacketTypes.SIGNRESULT;
     this.total = total || 0;
     this.script = script || [];
   }
@@ -571,7 +571,7 @@ export class CheckInputPacket extends Packet {
   flags: any;
   constructor(tx?, index?, coin?, flags?) {
     super();
-    this.cmd = packetTypes.CHECKINPUT;
+    this.cmd = WorkerPacketTypes.CHECKINPUT;
     this.tx = tx || null;
     this.index = index;
     this.coin = coin || null;
@@ -627,7 +627,7 @@ export class CheckInputPacket extends Packet {
 export class CheckInputResultPacket extends CheckResultPacket {
   constructor(error?) {
     super(error);
-    this.cmd = packetTypes.CHECKINPUTRESULT;
+    this.cmd = WorkerPacketTypes.CHECKINPUTRESULT;
   }
 
   static fromRaw(data) {
@@ -647,7 +647,7 @@ export class SignInputPacket extends Packet {
   type: any;
   constructor(tx?, index?, coin?, ring?, type?) {
     super();
-    this.cmd = packetTypes.SIGNINPUT;
+    this.cmd = WorkerPacketTypes.SIGNINPUT;
     this.tx = tx || null;
     this.index = index;
     this.coin = coin || null;
@@ -706,7 +706,7 @@ export class SignInputResultPacket extends Packet {
   script: any;
   constructor(value?, script?) {
     super();
-    this.cmd = packetTypes.SIGNINPUTRESULT;
+    this.cmd = WorkerPacketTypes.SIGNINPUTRESULT;
     this.value = value || false;
     this.script = script || null;
   }
@@ -764,7 +764,7 @@ export class ECVerifyPacket extends Packet {
   key: any;
   constructor(msg?, sig?, key?) {
     super();
-    this.cmd = packetTypes.ECVERIFY;
+    this.cmd = WorkerPacketTypes.ECVERIFY;
     this.msg = msg || null;
     this.sig = sig || null;
     this.key = key || null;
@@ -806,7 +806,7 @@ export class ECVerifyResultPacket extends Packet {
   value: any;
   constructor(value?) {
     super();
-    this.cmd = packetTypes.ECVERIFYRESULT;
+    this.cmd = WorkerPacketTypes.ECVERIFYRESULT;
     this.value = value;
   }
 
@@ -839,7 +839,7 @@ export class ECSignPacket extends Packet {
   key: any;
   constructor(msg?, key?) {
     super();
-    this.cmd = packetTypes.ECSIGN;
+    this.cmd = WorkerPacketTypes.ECSIGN;
     this.msg = msg || null;
     this.key = key || null;
   }
@@ -877,7 +877,7 @@ export class ECSignResultPacket extends Packet {
   sig: any;
   constructor(sig?) {
     super();
-    this.cmd = packetTypes.ECSIGNRESULT;
+    this.cmd = WorkerPacketTypes.ECSIGNRESULT;
     this.sig = sig;
   }
 
@@ -912,7 +912,7 @@ export class MinePacket extends Packet {
   max: any;
   constructor(data?, target?, min?, max?) {
     super();
-    this.cmd = packetTypes.MINE;
+    this.cmd = WorkerPacketTypes.MINE;
     this.data = data || null;
     this.target = target || null;
     this.min = min != null ? min : -1;
@@ -953,7 +953,7 @@ export class MineResultPacket extends Packet {
   nonce: any;
   constructor(nonce?) {
     super();
-    this.cmd = packetTypes.MINERESULT;
+    this.cmd = WorkerPacketTypes.MINERESULT;
     this.nonce = nonce != null ? nonce : -1;
   }
 
@@ -993,7 +993,7 @@ export class ScryptPacket extends Packet {
   len: any;
   constructor(passwd?, salt?, N?, r?, p?, len?) {
     super();
-    this.cmd = packetTypes.SCRYPT;
+    this.cmd = WorkerPacketTypes.SCRYPT;
     this.passwd = passwd || null;
     this.salt = salt || null;
     this.N = N != null ? N : -1;
@@ -1044,7 +1044,7 @@ export class ScryptResultPacket extends Packet {
   key: any;
   constructor(key =null) {
     super();
-    this.cmd = packetTypes.SCRYPTRESULT;
+    this.cmd = WorkerPacketTypes.SCRYPTRESULT;
     this.key = key || null;
   }
 

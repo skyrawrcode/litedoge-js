@@ -6,8 +6,10 @@
 
 'use strict';
 
-const assert = require('bsert');
-const AsyncEmitter = require('bevent');
+import assert from 'bsert';
+import AsyncEmitter from 'bevent';
+import {Network} from "../protocol";
+import {WalletNode} from "./node";
 
 /**
  * Node Client
@@ -15,6 +17,12 @@ const AsyncEmitter = require('bevent');
  */
 
 export class NodeClient extends AsyncEmitter {
+
+  node: WalletNode;
+  network: Network;
+  filter: null;
+  opened: boolean;
+
   /**
    * Create a node client.
    * @constructor

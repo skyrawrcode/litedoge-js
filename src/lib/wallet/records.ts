@@ -12,8 +12,6 @@ import bio from 'bufio';
 import * as util from '../utils/util';
 import {TX} from '../primitives/tx';
 import {consensus} from '../protocol';
-import { Block } from 'bcrypto/lib/js/ciphers/modes';
-import { AbstractBlock } from '../primitives';
 
 /**
  * Chain State

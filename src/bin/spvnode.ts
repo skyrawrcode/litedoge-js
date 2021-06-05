@@ -5,8 +5,8 @@
 process.title = 'bcoin';
 
 import assert from 'assert';
-import {SPVNode} from '../lib/node/spvnode';
-import {Outpoint} from '../lib/primitives/outpoint';
+import {Outpoint, SPVNode} from '../lib';
+import * as plugin from "../lib/wallet/plugin";
 
 const node = new SPVNode({
   file: true,
@@ -25,7 +25,6 @@ const node = new SPVNode({
 
 // Temporary hack
 if (!node.config.bool('no-wallet') && !node.has('walletdb')) {
-  const plugin = require('../../lib/wallet/plugin');
   node.use(plugin);
 }
 

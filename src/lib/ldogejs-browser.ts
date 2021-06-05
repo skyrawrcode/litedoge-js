@@ -5,7 +5,10 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
+import { networks } from "./protocol";
+import { Network } from "./protocol/network";
+import { NetworkType } from "./types";
+
 
 /**
  * A ldogejs "environment" which exposes all
@@ -13,20 +16,16 @@
  * mempool, wallet, etc. It also exposes a
  * global worker pool.
  *
- * @exports ldogejs
- * @type {Object}
  */
 
-const bcoin = exports;
 
 /**
  * Set the default network.
  * @param {String} network
  */
 
-bcoin.set = function set(network) {
-  bcoin.Network.set(network);
-  return bcoin;
+export function set(network: NetworkType) {
+  Network.set(network);
 };
 
 /*
@@ -34,9 +33,9 @@ bcoin.set = function set(network) {
  */
 
 // Blockchain
-bcoin.blockchain = require('./blockchain');
-bcoin.Chain = require('./blockchain/chain');
-bcoin.ChainEntry = require('./blockchain/chainentry');
+export * as blockchain from './blockchain';
+export { Chain } from './blockchain/chain';
+export { ChainEntry } from './blockchain/chainentry';
 
 // BTC
 bcoin.btc = require('./btc');
@@ -77,58 +76,58 @@ bcoin.mining = require('./mining');
 bcoin.Miner = require('./mining/miner');
 
 // Net
-bcoin.net = require('./net');
-bcoin.packets = require('./net/packets');
-bcoin.Peer = require('./net/peer');
-bcoin.Pool = require('./net/pool');
+export * as net from './net';
+export * as packets from './net/packets';
+export {Peer} from './net/peer';
+export {Pool} from './net/pool';
 
 // Node
-bcoin.node = require('./node');
-bcoin.Node = require('./node/node');
-bcoin.FullNode = require('./node/fullnode');
-bcoin.SPVNode = require('./node/spvnode');
+export * as node from './node';
+export {Node} from './node/node';
+export {FullNode}  from './node/fullnode';
+export {SPVNode} from './node/spvnode';
 
 // Primitives
-bcoin.primitives = require('./primitives');
-bcoin.Address = require('./primitives/address');
-bcoin.Block = require('./primitives/block');
-bcoin.Coin = require('./primitives/coin');
-bcoin.Headers = require('./primitives/headers');
-bcoin.Input = require('./primitives/input');
-bcoin.InvItem = require('./primitives/invitem');
-bcoin.KeyRing = require('./primitives/keyring');
-bcoin.MerkleBlock = require('./primitives/merkleblock');
-bcoin.MTX = require('./primitives/mtx');
-bcoin.Outpoint = require('./primitives/outpoint');
-bcoin.Output = require('./primitives/output');
-bcoin.TX = require('./primitives/tx');
+export * as primitives from './primitives';
+export { Address } from './primitives/address';
+export { Block } from './primitives/block';
+export { Coin } from './primitives/coin';
+export { Headers } from './primitives/headers';
+export { Input } from  './primitives/input';
+export { InvItem } from  './primitives/invitem';
+export { KeyRing } from './primitives/keyring';
+export { MerkleBlock } from './primitives/merkleblock';
+export { MTX } from './primitives/mtx';
+export { Outpoint } from './primitives/outpoint';
+export { Output } from './primitives/output';
+export { TX } from './primitives/tx';
 
 // Protocol
-bcoin.protocol = require('./protocol');
-bcoin.consensus = require('./protocol/consensus');
-bcoin.Network = require('./protocol/network');
-bcoin.networks = require('./protocol/networks');
-bcoin.policy = require('./protocol/policy');
+export * as protocol from './protocol';
+export * as consensus from './protocol/consensus';
+export { Network } from './protocol/network';
+export * as networks from './protocol/networks';
+export * as policy from './protocol/policy';
 
 // Script
-bcoin.script = require('./script');
-bcoin.Opcode = require('./script/opcode');
-bcoin.Script = require('./script/script');
-bcoin.ScriptNum = require('./script/scriptnum');
-bcoin.SigCache = require('./script/sigcache');
-bcoin.Stack = require('./script/stack');
+export * as script from './script';
+export { Opcode } from './script/opcode';
+export { Script } from './script/script';
+export { ScriptNum } from './script/scriptnum';
+export { SigCache } from './script/sigcache';
+export { Stack } from './script/stack';
 
 // Utils
-bcoin.utils = require('./utils');
-bcoin.util = require('./utils/util');
+export * as utils from './utils';
+export * as util from './utils/util';
 
 // Wallet
-bcoin.wallet = require('./wallet');
-bcoin.WalletDB = require('./wallet/walletdb');
+export * as wallet from './wallet';
+export { WalletDB } from './wallet/walletdb';
 
 // Workers
-bcoin.workers = require('./workers');
-bcoin.WorkerPool = require('./workers/workerpool');
+export * as workers from './workers';
+export { WorkerPool } from './workers/workerpool';
 
 // Package Info
-bcoin.pkg = require('./pkg');
+export * as pkg from './pkg';

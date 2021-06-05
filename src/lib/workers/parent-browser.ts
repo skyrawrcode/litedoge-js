@@ -6,8 +6,8 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
+import assert from 'bsert';
+import {EventEmitter} from 'events';
 
 /**
  * Parent
@@ -63,9 +63,11 @@ class Parent extends EventEmitter {
   write(data) {
     if (global.postMessage.length === 2) {
       data.__proto__ = Uint8Array.prototype;
+      // @ts-ignore
       global.postMessage({ data }, [data]);
     } else {
-      global.postMessage(data.toString('hex'));
+      //@ts-ignore
+      global.postMessage(data.toString('hex'), [data]);
     }
     return true;
   }
@@ -79,8 +81,3 @@ class Parent extends EventEmitter {
   }
 }
 
-/*
- * Expose
- */
-
-module.exports = Parent;

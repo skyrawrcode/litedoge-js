@@ -21,14 +21,14 @@ import {Framer} from './framer';
 import * as packets from './packets';
 import * as consensus from '../protocol/consensus';
 import * as common from './common';
-import {InvItem} from '../primitives/invitem';
+import {InvItem, InvType} from '../primitives/invitem';
 import * as bip152 from './bip152';
 import {Block} from '../primitives/block';
 import {TX} from '../primitives/tx';
 import {NetAddress} from './netaddress';
 import {Network} from '../protocol/network';
 const services = common.ServiceBits;
-const invTypes = InvItem.types;
+
 const packetTypes = packets.PacketTypes;
 import { inspectSymbol } from '../utils';
 import { PoolOptionsOptions } from './pool';
@@ -689,7 +689,7 @@ export class Peer extends EventEmitter {
     let hasBlock = false;
 
     for (const item of items) {
-      if (item.type === invTypes.BLOCK)
+      if (item.type === InvType.BLOCK)
         hasBlock = true;
       this.invQueue.push(item);
     }
@@ -1282,7 +1282,7 @@ export class Peer extends EventEmitter {
       const msg = err.code;
       err = new Error(msg);
       err.code = msg;
-      err.message = `Socket Error: ${msg}`;
+      err.message = `Socket Error: ${msg} ${err.stack}`;
     }
 
     err.message += ` (${this.hostname()})`;
@@ -1298,15 +1298,15 @@ export class Peer extends EventEmitter {
 
   blockType() {
     if (this.options.spv)
-      return invTypes.FILTERED_BLOCK;
+      return InvType.FILTERED_BLOCK;
 
     if (this.options.compact
       && this.hasCompactSupport()
       && this.hasCompact()) {
-      return invTypes.CMPCT_BLOCK;
+      return InvType.CMPCT_BLOCK;
     }
 
-    return invTypes.BLOCK;
+    return InvType.BLOCK;
   }
 
   /**
@@ -1315,7 +1315,7 @@ export class Peer extends EventEmitter {
    */
 
   txType() {
-    return invTypes.TX;
+    return InvType.TX;
   }
 
   /**
@@ -1371,7 +1371,7 @@ export class Peer extends EventEmitter {
   getFullBlock(hash) {
     assert(!this.options.spv);
 
-    let type = invTypes.BLOCK;
+    let type = InvType.BLOCK;
 
     this.getItems(type, [hash]);
   }

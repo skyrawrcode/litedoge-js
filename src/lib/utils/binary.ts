@@ -35,7 +35,7 @@ export function search(items:any[], key:any, compare:Function, insert?:boolean) 
     return -1;
 
   return start;
-};
+}
 
 /**
  * Perform a binary insert on a sorted array.
@@ -46,7 +46,7 @@ export function search(items:any[], key:any, compare:Function, insert?:boolean) 
  */
 
 export function insert(items, item, compare, uniq?) {
-  const i = exports.search(items, item, compare, true);
+  const i = search(items, item, compare, true);
 
   if (uniq && i < items.length) {
     if (compare(items[i], item) === 0)
@@ -72,7 +72,7 @@ export function insert(items, item, compare, uniq?) {
  */
 
 export function remove(items, item, compare) {
-  const i = exports.search(items, item, compare, false);
+  const i = search(items, item, compare, false);
 
   if (i === -1)
     return false;
@@ -80,7 +80,7 @@ export function remove(items, item, compare) {
   splice(items, i);
 
   return true;
-};
+}
 
 /*
  * Helpers

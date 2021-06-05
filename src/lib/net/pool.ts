@@ -27,10 +27,9 @@ import * as BIP152 from './bip152';
 import {Network} from '../protocol/network';
 import {Peer} from './peer';
 import {HostList, scores} from './hostlist';
-import {InvItem} from '../primitives/invitem';
+import {InvItem, InvType} from '../primitives/invitem';
 import * as  packets from './packets';
 const services = common.ServiceBits;
-const invTypes = InvItem.types;
 const packetTypes = packets.PacketTypes;
 import { inspectSymbol } from '../utils';
 import { Mempool } from '../mempool/mempool';
@@ -945,10 +944,10 @@ export class Pool extends EventEmitter {
 
     for (const item of this.invMap.values()) {
       switch (item.type) {
-        case invTypes.BLOCK:
+        case InvType.BLOCK:
           blocks.push(item.msg);
           break;
-        case invTypes.TX:
+        case InvType.TX:
           txs.push(item.msg);
           break;
         default:
@@ -973,7 +972,7 @@ export class Pool extends EventEmitter {
    */
 
   getBroadcasted(peer, item) {
-    const type = item.isTX() ? invTypes.TX : invTypes.BLOCK;
+    const type = item.isTX() ? InvType.TX : InvType.BLOCK;
     const entry = this.invMap.get(item.hash);
 
     if (!entry)
@@ -1581,10 +1580,10 @@ export class Pool extends EventEmitter {
 
     for (const item of items) {
       switch (item.type) {
-        case invTypes.BLOCK:
+        case InvType.BLOCK:
           blocks.push(item.hash);
           break;
-        case invTypes.TX:
+        case InvType.TX:
           txs.push(item.hash);
           break;
         default:
@@ -1763,7 +1762,7 @@ export class Pool extends EventEmitter {
       }
 
       switch (item.type) {
-        case invTypes.BLOCK: {
+        case InvType.BLOCK: {
           const result = await this.sendBlock(peer, item);
           if (!result) {
             notFound.push(item);
@@ -1772,7 +1771,7 @@ export class Pool extends EventEmitter {
           blocks += 1;
           break;
         }
-        case invTypes.FILTERED_BLOCK: {
+        case InvType.FILTERED_BLOCK: {
           if (!this.options.bip37) {
             this.logger.debug(
               'Peer requested a merkleblock without bip37 enabled (%s).',
@@ -1806,7 +1805,7 @@ export class Pool extends EventEmitter {
 
           break;
         }
-        case invTypes.CMPCT_BLOCK: {
+        case InvType.CMPCT_BLOCK: {
           const height = await this.chain.getHeight(item.hash);
 
           // Fallback to full block.
@@ -1846,7 +1845,7 @@ export class Pool extends EventEmitter {
       }
 
       if (peer.hashContinue && item.hash.equals(peer.hashContinue)) {
-        peer.sendInv([new InvItem(invTypes.BLOCK, this.chain.tip.hash)]);
+        peer.sendInv([new InvItem(InvType.BLOCK, this.chain.tip.hash)]);
         peer.hashContinue = null;
       }
 
@@ -1932,7 +1931,7 @@ export class Pool extends EventEmitter {
       if (packet.stop && hash.equals(packet.stop))
         break;
 
-      blocks.push(new InvItem(invTypes.BLOCK, hash));
+      blocks.push(new InvItem(InvType.BLOCK, hash));
 
       if (blocks.length === 500) {
         peer.hashContinue = hash;
@@ -2532,7 +2531,7 @@ export class Pool extends EventEmitter {
     const items = [];
 
     for (const hash of this.mempool.map.keys())
-      items.push(new InvItem(invTypes.TX, hash));
+      items.push(new InvItem(InvType.TX, hash));
 
     this.logger.debug(
       'Sending mempool snapshot (%s).',
@@ -2826,7 +2825,7 @@ export class Pool extends EventEmitter {
     if (this.options.selfish)
       return;
 
-    const item = new InvItem(invTypes.BLOCK, req.hash);
+    const item = new InvItem(InvType.BLOCK, req.hash);
 
     const block = await this.getItem(peer, item);
 
@@ -4266,10 +4265,10 @@ class BroadcastItem extends EventEmitter {
 
   announce() {
     switch (this.type) {
-      case invTypes.TX:
+      case InvType.TX:
         this.pool.announceTX(this.msg);
         break;
-      case invTypes.BLOCK:
+      case InvType.BLOCK:
         this.pool.announceBlock(this.msg);
         break;
       default:
@@ -4355,7 +4354,7 @@ class BroadcastItem extends EventEmitter {
    */
 
   [inspectSymbol]() {
-    const type = this.type === invTypes.TX ? 'tx' : 'block';
+    const type = this.type === InvType.TX ? 'tx' : 'block';
     const hash = util.revHex(this.hash);
     return `<BroadcastItem: type=${type} hash=${hash}>`;
   }

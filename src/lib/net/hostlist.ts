@@ -36,7 +36,6 @@ const POOL32 = Buffer.allocUnsafe(32);
  */
 
 export class HostList {
-  static MAX_REFS: number;
   options:HostListOptions;
   network:Network;
   logger:LoggerContext|Logger;
@@ -500,10 +499,10 @@ export class HostList {
 
       // Do not update if the max
       // reference count is reached.
-      if (entry.refCount === HostList.MAX_REFS)
+      if (entry.refCount === MAX_REFS)
         return false;
 
-      assert(entry.refCount < HostList.MAX_REFS);
+      assert(entry.refCount < MAX_REFS);
 
       // Stochastic test: previous refCount
       // N: 2^N times harder to increase it.

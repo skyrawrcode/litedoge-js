@@ -12,7 +12,7 @@ import hash256 from 'bcrypto/lib/hash256';
 import scrypt from 'bcrypto/lib/scrypt';
 import bio, { BufferReader } from 'bufio';
 import * as util from '../utils/util';
-import {InvItem} from './invitem';
+import {InvItem, InvType} from './invitem';
 import * as consensus from '../protocol/consensus';
 
 export interface BlockOptions {
@@ -294,7 +294,7 @@ export class AbstractBlock {
    */
 
   toInv():InvItem {
-    return new InvItem(InvItem.types.BLOCK, this.hash());
+    return new InvItem(InvType.BLOCK, this.hash());
   }
 
   /**

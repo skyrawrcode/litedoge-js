@@ -16,7 +16,7 @@ import assert from 'bsert';
  * @returns {String} Fixed number string.
  */
 
-export function encode(num: bigint, exp:number):string {
+export function encode(num: bigint, exp: number): string {
 
   let sign = '';
 
@@ -28,20 +28,20 @@ export function encode(num: bigint, exp:number):string {
   const mult = BigInt(pow10(exp));
 
   let lo: bigint = num % mult;
-  let hi:bigint = (num - lo) / mult;
+  let hi: bigint = (num - lo) / mult;
 
   let loStr = lo.toString(10);
   let hiStr = hi.toString(10);
 
   while (loStr.length < exp)
-  loStr = '0' + loStr;
+    loStr = '0' + loStr;
 
   loStr = loStr.replace(/0+$/, '');
 
   assert(loStr.length <= exp, 'Invalid integer value.');
 
   if (loStr.length === 0)
-  loStr = '0';
+    loStr = '0';
 
   if (exp === 0)
     return `${sign}${hiStr}`;
@@ -57,7 +57,7 @@ export function encode(num: bigint, exp:number):string {
  * @returns {Number} Integer.
  */
 
-export  function decode(str:string, exp:number):bigint {
+export function decode(str: string, exp: number): bigint {
   assert(typeof str === 'string');
   assert(str.length <= 32, 'Fixed number string too large.');
 
@@ -70,7 +70,7 @@ export  function decode(str:string, exp:number):bigint {
 
   let hiStr = str;
   let loStr = '0';
-  let hi:number;
+  let hi: number;
   let lo: number;
 
   const index = str.indexOf('.');
@@ -109,7 +109,7 @@ export  function decode(str:string, exp:number):bigint {
     'Fixed number string exceeds 2^53-1.');
 
   return BigInt(sign * (hi * mult + lo));
-};
+}
 
 /**
  * Convert int to float and reduce by a power
@@ -119,9 +119,9 @@ export  function decode(str:string, exp:number):bigint {
  * @returns {Number} Double float.
  */
 
-export  function toFloat(num:bigint, exp:number):number {
-  return parseFloat(exports.encode(num, exp));
-};
+export function toFloat(num: bigint, exp: number): number {
+  return parseFloat(encode(num, exp));
+}
 
 /**
  * Parse a double float number and multiply by a
@@ -131,10 +131,10 @@ export  function toFloat(num:bigint, exp:number):number {
  * @returns {Number} Integer.
  */
 
-export function fromFloat(num:number, exp:number):bigint {
+export function fromFloat(num: number, exp: number): bigint {
   assert(typeof num === 'number' && isFinite(num));
   assert(Number.isSafeInteger(exp));
-  return exports.decode(num.toFixed(exp), exp);
+  return decode(num.toFixed(exp), exp);
 };
 
 /*

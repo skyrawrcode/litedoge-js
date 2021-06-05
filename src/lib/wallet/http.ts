@@ -26,7 +26,7 @@ import { HDPublicKey } from '../hd/public';
 import * as common from './common';
 import * as pkg from '../pkg';
 import { WalletDB } from './walletdb';
-import { Node, RPC } from '../node';
+import { Node } from '../node';
 import { LoggerContext } from 'blgr/lib/logger';
 import { Server } from 'bweb/lib/bweb';
 import path from 'path';
@@ -35,7 +35,7 @@ import path from 'path';
 export interface HttpOptionsOptions {
   cors: boolean;
   walletAuth: boolean;
-  prefix: string;
+  prefix?: string;
   host: string;
   port: number;
   ssl: boolean;

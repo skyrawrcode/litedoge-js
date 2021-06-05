@@ -6,11 +6,13 @@
 
 'use strict';
 
-import EventEmitter from 'events';
+import {EventEmitter} from 'events';
 import path from 'path';
 import cp from 'child_process';
 import { SpawnOptions } from 'child_process';
-
+import { ChildProcess } from 'child_process';
+import {dirname} from 'path';
+import { fileURLToPath } from 'url';
 const children = new Set<Child>();
 
 let exitBound = false;
@@ -24,7 +26,7 @@ let exitBound = false;
  */
 
 export class Child extends EventEmitter {
-  child: any;
+  child: ChildProcess;
   /**
    * Represents a child process.
    * @constructor
@@ -57,15 +59,18 @@ export class Child extends EventEmitter {
 
   init(file) {
     const bin = process.argv[0];
+
+    const __filename = fileURLToPath(import.meta.url);
+    const __dirname = dirname(__filename);
     const filename = path.resolve(__dirname, file);
     const options:SpawnOptions = { stdio: 'pipe', env: process.env };
 
     this.child = cp.spawn(bin, [filename], options);
 
     this.child.unref();
-    this.child.stdin.unref();
-    this.child.stdout.unref();
-    this.child.stderr.unref();
+    (this.child.stdin as any).unref();
+    (this.child.stdout as any).unref();
+    (this.child.stderr as any).unref();
 
     this.child.on('error', (err) => {
       this.emit('error', err);

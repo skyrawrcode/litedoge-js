@@ -9,7 +9,7 @@
 import secp256k1 from 'bcrypto/lib/secp256k1';
 import { derive } from 'bcrypto/lib/scrypt';
 import {
-  packetTypes,
+  WorkerPacketTypes,
   CheckResultPacket,
   CheckInputResultPacket,
   SignResultPacket,
@@ -20,12 +20,11 @@ import {
   ScryptResultPacket,
   ErrorResultPacket
 } from './packets';
+import {mine} from "../mining";
 
 /**
  * @exports workers/jobs
  */
-
-const jobs = exports;
 
 /**
  * Execute a job on the worker.
@@ -35,9 +34,9 @@ const jobs = exports;
  * @throws on unknown command
  */
 
-jobs.execute = function execute(p) {
+export function execute(p) {
   try {
-    return jobs.handle(p);
+    return handle(p);
   } catch (e) {
     return new ErrorResultPacket(e);
   }
@@ -51,24 +50,24 @@ jobs.execute = function execute(p) {
  * @throws on unknown command
  */
 
-jobs.handle = function handle(p) {
+export  function handle(p) {
   switch (p.cmd) {
-    case packetTypes.CHECK:
-      return jobs.check(p.tx, p.view, p.flags);
-    case packetTypes.CHECKINPUT:
-      return jobs.checkInput(p.tx, p.index, p.coin, p.flags);
-    case packetTypes.SIGN:
-      return jobs.sign(p.tx, p.rings, p.type);
-    case packetTypes.SIGNINPUT:
-      return jobs.signInput(p.tx, p.index, p.coin, p.ring, p.type);
-    case packetTypes.ECVERIFY:
-      return jobs.ecVerify(p.msg, p.sig, p.key);
-    case packetTypes.ECSIGN:
-      return jobs.ecSign(p.msg, p.key);
-    case packetTypes.MINE:
-      return jobs.mine(p.data, p.target, p.min, p.max);
-    case packetTypes.SCRYPT:
-      return jobs.scrypt(p.passwd, p.salt, p.N, p.r, p.p, p.len);
+    case WorkerPacketTypes.CHECK:
+      return check(p.tx, p.view, p.flags);
+    case WorkerPacketTypes.CHECKINPUT:
+      return checkInput(p.tx, p.index, p.coin, p.flags);
+    case WorkerPacketTypes.SIGN:
+      return sign(p.tx, p.rings, p.type);
+    case WorkerPacketTypes.SIGNINPUT:
+      return signInput(p.tx, p.index, p.coin, p.ring, p.type);
+    case WorkerPacketTypes.ECVERIFY:
+      return ecVerify(p.msg, p.sig, p.key);
+    case WorkerPacketTypes.ECSIGN:
+      return ecSign(p.msg, p.key);
+    case WorkerPacketTypes.MINE:
+      return mine(p.data, p.target, p.min, p.max);
+    case WorkerPacketTypes.SCRYPT:
+      return scrypt(p.passwd, p.salt, p.N, p.r, p.p, p.len);
     default:
       throw new Error(`Unknown command: "${p.cmd}".`);
   }
@@ -83,7 +82,7 @@ jobs.handle = function handle(p) {
  * @returns {CheckResultPacket}
  */
 
-jobs.check = function check(tx, view, flags) {
+export function check(tx, view, flags) {
   try {
     tx.check(view, flags);
   } catch (err) {
@@ -104,7 +103,7 @@ jobs.check = function check(tx, view, flags) {
  * @returns {CheckInputResultPacket}
  */
 
-jobs.checkInput = function checkInput(tx, index, coin, flags) {
+export  function checkInput(tx, index, coin, flags) {
   try {
     tx.checkInput(index, coin, flags);
   } catch (err) {
@@ -123,7 +122,7 @@ jobs.checkInput = function checkInput(tx, index, coin, flags) {
  * @param {SighashType} type
  */
 
-jobs.sign = function sign(tx, ring, type) {
+export function sign(tx, ring, type) {
   const total = tx.sign(ring, type);
   return SignResultPacket.fromTX(tx, total);
 };
@@ -138,7 +137,7 @@ jobs.sign = function sign(tx, ring, type) {
  * @param {SighashType} type
  */
 
-jobs.signInput = function signInput(tx, index, coin, ring, type) {
+export function signInput(tx, index, coin, ring, type) {
   const result = tx.signInput(tx, index, coin, ring, type);
   return SignInputResultPacket.fromTX(tx, index, result);
 };
@@ -151,7 +150,7 @@ jobs.signInput = function signInput(tx, index, coin, ring, type) {
  * @returns {Boolean}
  */
 
-jobs.ecVerify = function ecVerify(msg, sig, key) {
+export function ecVerify(msg, sig, key) {
   const result = secp256k1.verifyDER(msg, sig, key);
   return new ECVerifyResultPacket(result);
 };
@@ -165,7 +164,7 @@ jobs.ecVerify = function ecVerify(msg, sig, key) {
  * @returns {Boolean}
  */
 
-jobs.ecSign = function ecSign(msg, key) {
+export function ecSign(msg, key) {
   const sig = secp256k1.signDER(msg, key);
   return new ECSignResultPacket(sig);
 };
@@ -196,7 +195,7 @@ jobs.ecSign = function ecSign(msg, key) {
  * @returns {Buffer}
  */
 
-jobs.scrypt = function scrypt(passwd, salt, N, r, p, len) {
+export function scrypt(passwd, salt, N, r, p, len) {
   const key = derive(passwd, salt, N, r, p, len);
   return new ScryptResultPacket(key);
 };

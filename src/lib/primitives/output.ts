@@ -12,7 +12,7 @@ import {Network} from '../protocol';
 
 const {assert} = bsert;
 import bio from 'bufio';
-import {Amount} from '../btc/amount';
+import {Amount} from '../btc';
 import {Address} from './address';
 import {Script} from '../script';
 

@@ -7,29 +7,30 @@
 
 'use strict';
 
-import { WalletDB } from "./walletdb";
+import {WalletDB} from "./walletdb";
 
 import assert from 'bsert';
 import bio from 'bufio';
 import bdb from "bdb";
-import Logger from 'blgr';
-import { BufferSet } from 'buffer-map/lib/buffer-map';
+import {BufferSet} from 'buffer-map/lib/buffer-map';
 import * as util from '../utils/util';
-import {Amount} from '../btc/amount';
-import {CoinView} from '../coins/coinview';
-import {Coin} from '../primitives/coin';
-import {Outpoint} from '../primitives/outpoint';
+import {Amount} from '../btc';
+import {CoinView} from '../coins';
+import {Coin} from '../primitives';
+import {Outpoint} from '../primitives';
 import * as records from './records';
-const layout = require('./layout').txdb;
 import * as consensus from '../protocol/consensus';
 import * as policy from '../protocol/policy';
-const { TXRecord } = records;
-import { inspectSymbol } from '../utils';
-import { Wallet } from "./wallet";
-import { Address, Input, Output, TX } from "../primitives";
-import { Path, PathJson } from "./path";
-import { LoggerContext } from "blgr/lib/logger";
-import { Network } from "../protocol";
+
+const {TXRecord} = records;
+import {inspectSymbol} from '../utils';
+import {Wallet} from "./wallet";
+import {Address, Input, Output, TX} from "../primitives";
+import {Path, PathJson} from "./path";
+import {LoggerContext} from "blgr/lib/logger";
+import {Network} from "../protocol";
+
+import {txdb as layout} from "./layout";
 
 /**
  * TXDB
@@ -44,6 +45,7 @@ export class TXDB {
   locked: BufferSet;
   wallet: Wallet;
   bucket: any;
+
   /**
    * Create a TXDB.
    * @constructor
@@ -124,7 +126,7 @@ export class TXDB {
    */
 
   async saveCredit(b, credit, path) {
-    const { coin } = credit;
+    const {coin} = credit;
 
     b.put(layout.c.encode(coin.hash, coin.index), credit.toRaw());
     b.put(layout.C.encode(path.account, coin.hash, coin.index), null);
@@ -139,7 +141,7 @@ export class TXDB {
    */
 
   async removeCredit(b, credit, path) {
-    const { coin } = credit;
+    const {coin} = credit;
 
     b.del(layout.c.encode(coin.hash, coin.index));
     b.del(layout.C.encode(path.account, coin.hash, coin.index));
@@ -332,7 +334,7 @@ export class TXDB {
    * @returns {Promise}
    */
 
-  async getBlock(height:number) {
+  async getBlock(height: number) {
     const data = await this.bucket.get(layout.b.encode(height));
 
     if (!data)
@@ -474,9 +476,9 @@ export class TXDB {
    * @returns {Promise}
    */
 
-  async insert(wtx:records.TXRecord, block) {
+  async insert(wtx: records.TXRecord, block) {
     const b = this.bucket.batch();
-    const { tx, hash } = wtx;
+    const {tx, hash} = wtx;
     const height = block ? block.height : -1;
     const details = new Details(wtx, block);
     const state = new BalanceDelta();
@@ -487,7 +489,7 @@ export class TXDB {
       // We need to potentially spend some coins here.
       for (let i = 0; i < tx.inputs.length; i++) {
         const input = tx.inputs[i];
-        const { hash, index } = input.prevout;
+        const {hash, index} = input.prevout;
         const credit = await this.getCredit(hash, index);
 
         if (!credit) {
@@ -632,7 +634,7 @@ export class TXDB {
 
   async confirm(wtx, block) {
     const b = this.bucket.batch();
-    const { tx, hash } = wtx;
+    const {tx, hash} = wtx;
     const height = block.height;
     const details = new Details(wtx, block);
     const state = new BalanceDelta();
@@ -648,7 +650,7 @@ export class TXDB {
       // from the utxo state.
       for (let i = 0; i < tx.inputs.length; i++) {
         const input = tx.inputs[i];
-        const { hash, index } = input.prevout;
+        const {hash, index} = input.prevout;
 
         let resolved = false;
 
@@ -797,7 +799,7 @@ export class TXDB {
 
   async erase(wtx, block) {
     const b = this.bucket.batch();
-    const { tx, hash } = wtx;
+    const {tx, hash} = wtx;
     const height = block ? block.height : -1;
     const details = new Details(wtx, block);
     const state = new BalanceDelta();
@@ -916,7 +918,7 @@ export class TXDB {
    */
 
   async removeRecursive(wtx) {
-    const { tx, hash } = wtx;
+    const {tx, hash} = wtx;
 
     if (!await this.hasTX(hash))
       return null;
@@ -989,7 +991,7 @@ export class TXDB {
 
   async disconnect(wtx, block) {
     const b = this.bucket.batch();
-    const { tx, hash, height } = wtx;
+    const {tx, hash, height} = wtx;
     const details = new Details(wtx, block);
     const state = new BalanceDelta();
 
@@ -1136,8 +1138,8 @@ export class TXDB {
     const spends = [];
 
     // Gather all spent records first.
-    for (const { prevout } of tx.inputs) {
-      const { hash, index } = prevout;
+    for (const {prevout} of tx.inputs) {
+      const {hash, index} = prevout;
 
       // Is it already spent?
       const spent = await this.getSpent(hash, index);
@@ -1430,7 +1432,7 @@ export class TXDB {
    * @returns {Promise} - Returns {@link Hash}[].
    */
 
-  getHeightRangeHashes(acct:number, options) {
+  getHeightRangeHashes(acct: number, options) {
     assert(typeof acct === 'number');
 
     if (acct !== -1)
@@ -1457,8 +1459,8 @@ export class TXDB {
    * @returns {Promise} - Returns {@link Hash}[].
    */
 
-  getHeightHashes(height:number):Promise<Buffer[]> {
-    return this.getHeightRangeHashes(-1, { start: height, end: height });
+  getHeightHashes(height: number): Promise<Buffer[]> {
+    return this.getHeightRangeHashes(-1, {start: height, end: height});
   }
 
   /**
@@ -1658,7 +1660,7 @@ export class TXDB {
     const outpoints = await this.getOutpoints(acct);
     const credits = [];
 
-    for (const { hash, index } of outpoints) {
+    for (const {hash, index} of outpoints) {
       const credit = await this.getCredit(hash, index);
       if (!credit)
         continue;
@@ -1778,8 +1780,8 @@ export class TXDB {
     if (tx.isCoinbase())
       return view;
 
-    for (const { prevout } of tx.inputs) {
-      const { hash, index } = prevout;
+    for (const {prevout} of tx.inputs) {
+      const {hash, index} = prevout;
       const coin = await this.getCoin(hash, index);
 
       if (!coin)
@@ -1850,9 +1852,9 @@ export class TXDB {
    * @param {TXRecord[]} wtxs
    * @returns {Promise}
    */
-  async toDetails(wtx:records.TXRecord): Promise<Details>
-  async toDetails(wtx:records.TXRecord[]): Promise<Details[]>
-  async toDetails(wtxs:records.TXRecord[]| records.TXRecord):(Promise<Details|Details[]>) {
+  async toDetails(wtx: records.TXRecord): Promise<Details>
+  async toDetails(wtx: records.TXRecord[]): Promise<Details[]>
+  async toDetails(wtxs: records.TXRecord[] | records.TXRecord): (Promise<Details | Details[]>) {
     const out = [];
 
     if (!Array.isArray(wtxs))
@@ -1877,7 +1879,7 @@ export class TXDB {
    * @returns {Promise}
    */
 
-  async _toDetails(wtx:records.TXRecord):Promise<Details> {
+  async _toDetails(wtx: records.TXRecord): Promise<Details> {
     const tx = wtx.tx;
     const block = wtx.getBlock();
     const details = new Details(wtx, block);
@@ -2052,7 +2054,7 @@ export class TXDB {
    * @returns {Promise} - Returns {@link Balance}.
    */
 
-  async getAccountBalance(acct:number) :Promise<Balance> {
+  async getAccountBalance(acct: number): Promise<Balance> {
     const data = await this.bucket.get(layout.r.encode(acct));
 
     if (!data)
@@ -2068,7 +2070,7 @@ export class TXDB {
    * @returns {Promise}
    */
 
-  async zap(acct:number, age:number) {
+  async zap(acct: number, age: number) {
     assert((age >>> 0) === age);
 
     const now = util.now();
@@ -2119,11 +2121,12 @@ export class TXDB {
  */
 
 export class Balance {
-  account:number;
-  tx:number;
-  coin:number;
-  unconfirmed:bigint;
+  account: number;
+  tx: number;
+  coin: number;
+  unconfirmed: bigint;
   confirmed: bigint;
+
   /**
    * Create a balance.
    * @constructor
@@ -2239,7 +2242,7 @@ export class Balance {
 class BalanceDelta {
   wallet: Balance;
   accounts: Map<number, Balance>;
-  
+
   /**
    * Create a balance delta.
    * @constructor
@@ -2310,7 +2313,7 @@ class Credit {
    * @param {Boolean?} spent
    */
 
-  constructor(coin?:Coin, spent?:boolean) {
+  constructor(coin?: Coin, spent?: boolean) {
     this.coin = coin || new Coin();
     this.spent = spent || false;
     this.own = false;
@@ -2409,9 +2412,10 @@ export class Details {
   time: number;
   inputs: DetailsMember[];
   outputs: DetailsMember[];
-  confirmations:number;
-  fee:bigint;
-  index:number;
+  confirmations: number;
+  fee: bigint;
+  index: number;
+
   /**
    * Create transaction details.
    * @constructor
@@ -2419,7 +2423,7 @@ export class Details {
    * @param {BlockMeta} block
    */
 
-  constructor(wtx:records.TXRecord, block:records.BlockMeta) {
+  constructor(wtx: records.TXRecord, block: records.BlockMeta) {
     this.hash = wtx.hash;
     this.tx = wtx.tx;
     this.mtime = wtx.mtime;
@@ -2582,9 +2586,9 @@ export class Details {
 }
 
 export interface DetailsMemberJson {
-  value:bigint;
-  address:string;
-  path:PathJson
+  value: bigint;
+  address: string;
+  path: PathJson
 }
 
 /**
@@ -2598,7 +2602,7 @@ class DetailsMember {
   value: bigint;
   address: Address;
   path: Path;
-  
+
   /**
    * Create details member.
    * @constructor
@@ -2615,7 +2619,7 @@ class DetailsMember {
    * @returns {Object}
    */
 
-  toJSON() :DetailsMemberJson {
+  toJSON(): DetailsMemberJson {
     return this.getJSON();
   }
 
@@ -2625,7 +2629,7 @@ class DetailsMember {
    * @returns {Object}
    */
 
-  getJSON(network?:Network):DetailsMemberJson {
+  getJSON(network?: Network): DetailsMemberJson {
     return {
       value: this.value,
       address: this.address
@@ -2645,8 +2649,8 @@ class DetailsMember {
 
 class BlockRecord {
   hash: Buffer;
-  height:number;
-  time:number;
+  height: number;
+  time: number;
   hashes: BufferSet;
 
   /**
@@ -2657,7 +2661,7 @@ class BlockRecord {
    * @param {Number} time
    */
 
-  constructor(hash? : Buffer, height?:number, time?:number) {
+  constructor(hash?: Buffer, height?: number, time?: number) {
     this.hash = hash || consensus.ZERO_HASH;
     this.height = height != null ? height : -1;
     this.time = time || 0;

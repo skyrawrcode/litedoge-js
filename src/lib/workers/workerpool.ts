@@ -12,7 +12,7 @@
 import assert from 'bsert';
 import EventEmitter from 'events';
 import os from 'os';
-import {Network} from '../protocol/network';
+import {Network} from '../protocol';
 import {Child} from './child';
 import * as jobs from './jobs';
 import {Parser} from './parser';
@@ -30,6 +30,13 @@ import * as packets from './packets';
  */
 
 export class WorkerPool extends EventEmitter {
+  enabled: boolean;
+  size: number;
+  timeout: number;
+  file: string;
+  children: Map<number, Worker>;
+  uid: number;
+
   /**
    * Create a worker pool.
    * @constructor
@@ -108,7 +115,7 @@ export class WorkerPool extends EventEmitter {
    * @returns {Worker}
    */
 
-  spawn(id) {
+  spawn(id): Worker {
     const child = new Worker(this.file);
 
     child.id = id;
@@ -164,7 +171,7 @@ export class WorkerPool extends EventEmitter {
     let result = true;
 
     for (const child of this.children.values()) {
-      if (!child.sendEvent.apply(child, arguments))
+      if (!child.sendEvent.apply(child, arguments as any))
         result = false;
     }
 
@@ -187,7 +194,7 @@ export class WorkerPool extends EventEmitter {
    * @returns {Promise}
    */
 
-  execute(packet, timeout) {
+  execute(packet, timeout): Promise<any> {
     if (!this.enabled || !Child.hasSupport()) {
       return new Promise((resolve, reject) => {
         setImmediate(() => {
@@ -362,6 +369,12 @@ export class WorkerPool extends EventEmitter {
  */
 
 class Worker extends EventEmitter {
+  id: number;
+  framer: Framer;
+  parser: Parser;
+  pending: Map<number, PendingJob>;
+  child: Child;
+
   /**
    * Create a worker.
    * @constructor
@@ -448,17 +461,17 @@ class Worker extends EventEmitter {
 
   handlePacket(packet) {
     switch (packet.cmd) {
-      case packets.types.EVENT:
+      case packets.WorkerPacketTypes.EVENT:
         this.emit('event', packet.items);
         this.emit(...packet.items);
         break;
-      case packets.types.LOG:
+      case packets.WorkerPacketTypes.LOG:
         this.emit('log', packet.text);
         break;
-      case packets.types.ERROR:
+      case packets.WorkerPacketTypes.ERROR:
         this.emit('error', packet.error);
         break;
-      case packets.types.ERRORRESULT:
+      case packets.WorkerPacketTypes.ERRORRESULT:
         this.rejectJob(packet.id, packet.error);
         break;
       default:
@@ -598,10 +611,10 @@ class Worker extends EventEmitter {
 
 class PendingJob {
 
-  worker:Worker;
+  worker: Worker;
   id: number;
-  job: {resolve:Function, reject:Function}|null;
-  timer: NodeJS.Timeout|null;
+  job: { resolve: Function, reject: Function } | null;
+  timer: NodeJS.Timeout | null;
 
   /**
    * Create a pending job.
@@ -615,7 +628,7 @@ class PendingJob {
   constructor(worker, id, resolve, reject) {
     this.worker = worker;
     this.id = id;
-    this.job = { resolve, reject };
+    this.job = {resolve, reject};
     this.timer = null;
   }
 
@@ -638,6 +651,7 @@ class PendingJob {
    */
 
   destroy() {
+    debugger;
     this.reject(new Error('Job was destroyed.'));
   }
 
@@ -679,7 +693,7 @@ class PendingJob {
    * @param {Error} err
    */
 
-  reject(err:Error) {
+  reject(err: Error) {
     const job = this.cleanup();
     job?.reject(err);
   }

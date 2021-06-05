@@ -14,8 +14,9 @@ import Logger from 'blgr';
 import Config from 'bcfg';
 import {Network} from '../protocol/network';
 import {WorkerPool} from '../workers/workerpool';
-import { RPC } from './rpc';
 import { TX, TXMeta } from '../primitives';
+import bweb from "bweb";
+const RPCBase = bweb.RPC;
 
 export interface Node {
   getBlockFilter?(hash:Buffer):Promise<any>;
@@ -37,7 +38,8 @@ export interface Node {
 export abstract class Node extends EventEmitter {
   config: Config;
   network:Network
-  rpc:RPC;
+  // @ts-ignore
+  rpc: any;
   memory:boolean;
   startTime:number;
   plugins: any;
@@ -413,14 +415,12 @@ export abstract class Node extends EventEmitter {
    * @private
    */
 
-  loadPlugins() {
+  async loadPlugins() {
     const plugins = this.config.array('plugins', []);
-    const loader = this.config.func('loader');
 
     for (let plugin of plugins) {
       if (typeof plugin === 'string') {
-        assert(loader, 'Must pass a loader function.');
-        plugin = loader(plugin);
+        plugin = await import(plugin);
       }
       this.use(plugin);
     }

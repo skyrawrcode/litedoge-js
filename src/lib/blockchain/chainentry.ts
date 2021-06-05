@@ -15,7 +15,7 @@ import hash256 from 'bcrypto/lib/hash256';
 import scrypt from 'bcrypto/lib/scrypt';
 import * as util from '../utils/util';
 import {Headers} from '../primitives/headers';
-import {InvItem} from '../primitives/invitem';
+import {InvItem, InvType} from '../primitives/invitem';
 import {Outpoint} from '../primitives/outpoint';
 import { inspectSymbol } from '../utils';
 import {Block} from '../primitives/block';
@@ -461,7 +461,7 @@ export class ChainEntry {
    */
 
   toInv() {
-    return new InvItem(InvItem.types.BLOCK, this.hash);
+    return new InvItem(InvType.BLOCK, this.hash);
   }
 
   /**

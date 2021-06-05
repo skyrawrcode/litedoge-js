@@ -19,7 +19,6 @@ import * as util from '../utils/util';
  */
 
 export class InvItem {
-  static types: any;
   type:number;
   hash:Buffer;
   /**
@@ -114,9 +113,9 @@ export class InvItem {
 
   isBlock() {
     switch (this.type) {
-      case InvItem.types.BLOCK:
-      case InvItem.types.FILTERED_BLOCK:
-      case InvItem.types.CMPCT_BLOCK:
+      case InvType.BLOCK:
+      case InvType.FILTERED_BLOCK:
+      case InvType.CMPCT_BLOCK:
         return true;
       default:
         return false;
@@ -130,7 +129,7 @@ export class InvItem {
 
   isTX() {
     switch (this.type) {
-      case InvItem.types.TX:
+      case InvType.TX:
         return true;
       default:
         return false;
@@ -154,7 +153,7 @@ export class InvItem {
  * @default
  */
 
-export enum types  {
+export enum InvType  {
   TX=  1,
   BLOCK=  2,
   FILTERED_BLOCK= 3,

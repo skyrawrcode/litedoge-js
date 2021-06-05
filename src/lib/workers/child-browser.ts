@@ -8,8 +8,8 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
+import assert from 'bsert';
+import {EventEmitter} from 'events';
 
 /**
  * Child
@@ -20,6 +20,8 @@ const EventEmitter = require('events');
  */
 
 class Child extends EventEmitter {
+  child: Worker;
+
   /**
    * Represents a child process.
    * @constructor
@@ -48,8 +50,9 @@ class Child extends EventEmitter {
    */
 
   init(file) {
-    if (process.env.BMOCHA)
+    if (process.env.BMOCHA) { // @ts-ignore
       register(file, [__dirname, file]);
+    }
 
     this.child = new global.Worker(file);
 
@@ -82,7 +85,7 @@ class Child extends EventEmitter {
   write(data) {
     if (this.child.postMessage.length === 2) {
       data.__proto__ = Uint8Array.prototype;
-      this.child.postMessage({ data }, [data]);
+      this.child.postMessage({data}, [data]);
     } else {
       this.child.postMessage(data.toString('hex'));
     }
@@ -99,8 +102,3 @@ class Child extends EventEmitter {
   }
 }
 
-/*
- * Expose
- */
-
-module.exports = Child;

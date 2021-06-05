@@ -14,7 +14,7 @@ import {Network} from '../protocol/network';
 import * as jobs from './jobs';
 import {Parser} from './parser';
 import {Framer} from './framer';
-import packets from './packets';
+import * as packets from './packets';
 import {Parent} from './parent';
 
 /**
@@ -25,6 +25,11 @@ import {Parent} from './parent';
  */
 
 export class Master extends EventEmitter {
+  parent:Parent;
+  framer:Framer;
+  parser:Parser;
+  listening:boolean;
+  color:boolean;
   /**
    * Create the master process.
    * @constructor
@@ -135,6 +140,7 @@ export class Master extends EventEmitter {
    */
 
   log() {
+    // @ts-ignore
     const text = format.apply(null, arguments);
     this.send(new packets.LogPacket(text));
   }
@@ -171,14 +177,14 @@ export class Master extends EventEmitter {
     let result;
 
     switch (packet.cmd) {
-      case packets.types.ENV:
+      case packets.WorkerPacketTypes.ENV:
         this.setEnv(packet.env);
         break;
-      case packets.types.EVENT:
+      case packets.WorkerPacketTypes.EVENT:
         this.emit('event', packet.items);
         this.emit(...packet.items);
         break;
-      case packets.types.ERROR:
+      case packets.WorkerPacketTypes.ERROR:
         this.emit('error', packet.error);
         break;
       default:

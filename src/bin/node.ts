@@ -15,7 +15,7 @@ if (process.argv.indexOf('--help') !== -1
 
 if (process.argv.indexOf('--version') !== -1
   || process.argv.indexOf('-v') !== -1) {
-  const pkg = require('../../package.json');
+  const pkg = await import('../../package.json');
   console.log(pkg.version);
   process.exit(0);
   throw new Error('Could not exit.');
@@ -30,8 +30,7 @@ export const node = new FullNode({
   logLevel: 'debug',
   memory: false,
   workers: true,
-  listen: true,
-  loader: require
+  listen: true
 });
 
 // Temporary hack

@@ -18,7 +18,7 @@ import {Network} from '../protocol/network';
 import {Script} from '../script/script';
 
 import {Outpoint} from './outpoint';
-import {InvItem} from './invitem';
+import {InvItem, InvType} from './invitem';
 import {consensus} from '../protocol';
 import {policy} from '../protocol';
 import {ScriptError} from '../script/scripterror';
@@ -1806,7 +1806,7 @@ export class TX {
    */
 
   toInv(): InvItem {
-    return new InvItem(InvItem.types.TX, this.hash());
+    return new InvItem(InvType.TX, this.hash());
   }
 
   /**

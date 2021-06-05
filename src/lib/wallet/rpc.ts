@@ -33,7 +33,7 @@ import { Network } from '../protocol';
 import { LoggerContext } from 'blgr/lib/logger';
 import { Wallet } from './wallet';
 import { WalletClient } from './client';
-import {RPC as NodeRPC} from '../node/rpc';
+import {WalletNode} from "./node";
 const RPCBase = bweb.RPC;
 const RPCError = bweb.RPCError;
 
@@ -78,10 +78,9 @@ export const errs = {
 /**
  * Wallet RPC
  * @alias module:wallet.RPC
- * @extends bweb.RPC
  */
 
-export class RPC extends NodeRPC {
+export class RPC extends RPCBase {
   wdb: WalletDB;
   network:Network;
   logger:LoggerContext;
@@ -90,10 +89,10 @@ export class RPC extends NodeRPC {
   wallet: Wallet;
   /**
    * Create an RPC.
-   * @param {WalletDB} wdb
+   * @param {WalletNode} node
    */
 
-  constructor(node) {
+  constructor(node:WalletNode) {
     super();
 
     assert(node, 'RPC requires a WalletDB.');

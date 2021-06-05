@@ -69,7 +69,6 @@ export class Account {
   id: string;
   initialized: boolean;
   static MAX_LOOKAHEAD: number;
-  static typesByVal: string[];
   static types = AccountTypes;
   watchOnly: boolean;
   type: AccountTypes;
@@ -161,7 +160,7 @@ export class Account {
       } else {
         assert(typeof options.type === 'number');
         this.type = options.type;
-        assert(Account.typesByVal[this.type]);
+        assert(AccountTypes[this.type]);
       }
     }
 
@@ -741,7 +740,7 @@ export class Account {
       network: this.network.type,
       initialized: this.initialized,
       watchOnly: this.watchOnly,
-      type: Account.typesByVal[this.type].toLowerCase(),
+      type: AccountTypes[this.type].toLowerCase(),
       m: this.m,
       n: this.n,
       accountIndex: this.accountIndex,
@@ -769,7 +768,7 @@ export class Account {
       name: this.name,
       initialized: this.initialized,
       watchOnly: this.watchOnly,
-      type: Account.typesByVal[this.type].toLowerCase(),
+      type: AccountTypes[this.type].toLowerCase(),
       m: this.m,
       n: this.n,
       accountIndex: this.accountIndex,
@@ -847,7 +846,7 @@ export class Account {
     this.lookahead = br.readU8();
     this.accountKey = readKey(br);
 
-    assert(this.type < Account.typesByVal.length);
+    assert(AccountTypes[this.type]);
 
     const count = br.readU8();
 

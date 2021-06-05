@@ -6,11 +6,14 @@
 
 'use strict';
 
-const assert = require('bsert');
-const bio = require('bufio');
-const util = require('../utils/util');
-const consensus = require('../protocol/consensus');
-const {inspectSymbol} = require('../utils');
+import assert from 'bsert';
+import bio from 'bufio';
+import * as util from "../utils/util";
+
+import * as consensus from "../protocol/consensus";
+
+import {inspectSymbol} from "../utils";
+
 
 /*
  * Constants
@@ -27,8 +30,8 @@ export const EMPTY_BUFFER = Buffer.alloc(0);
  */
 
 export class Filter {
-  filter:Buffer;
-  header:Buffer;
+  filter: Buffer;
+  header: Buffer;
 
   /**
    * Create an filter.

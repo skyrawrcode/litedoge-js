@@ -27,17 +27,11 @@ server.on('error', (err) => {
   console.error(err.stack);
 });
 
-server.get('/', (req, res) => {
-  res.send(200, index, 'html');
-});
+server.get('/');
 
-server.get('/app.js', (req, res) => {
-  res.send(200, app, 'js');
-});
+server.get('/app.js');
 
-server.get('/worker.js', (req, res) => {
-  res.send(200, worker, 'js');
-});
+server.get('/worker.js');
 
 proxy.attach(server.http);
 

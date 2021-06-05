@@ -298,13 +298,13 @@ export function isHashType(sig) {
   if (sig.length === 0)
     return false;
 
-  const type = sig[sig.length - 1] & ~exports.hashType.ANYONECANPAY;
+  const type = sig[sig.length - 1] & ~SighashType.ANYONECANPAY;
 
-  if (type < exports.hashType.ALL || type > exports.hashType.SINGLE)
+  if (type < SighashType.ALL || type > SighashType.SINGLE)
     return false;
 
   return true;
-};
+}
 
 /**
  * Test a signature to see whether it contains a low S value.
@@ -313,7 +313,7 @@ export function isHashType(sig) {
  */
 
 export function isLowDER(sig) {
-  if (!exports.isSignatureEncoding(sig))
+  if (!isSignatureEncoding(sig))
     return false;
 
   return secp256k1.isLowDER(sig.slice(0, -1));
@@ -342,7 +342,7 @@ export function isKeyEncoding(key: Buffer): boolean {
   }
 
   return true;
-};
+}
 
 /**
  * Test whether the data element is a compressed key.
@@ -466,13 +466,13 @@ export function toASM(item: Buffer, decode?: boolean): string {
     return num.toString(10);
   }
 
-  if (decode && exports.isSignatureEncoding(item)) {
+  if (decode && isSignatureEncoding(item)) {
     const type = item[item.length - 1];
 
-    let symbol = exports.hashTypeByVal[type & 0x1f] || '';
+    let symbol = SighashType[type & 0x1f] || '';
 
     if (symbol) {
-      if (type & exports.hashType.ANYONECANPAY)
+      if (type & SighashType.ANYONECANPAY)
         symbol += '|ANYONECANPAY';
       symbol = `[${symbol}]`;
     }

@@ -6,7 +6,7 @@
 
 'use strict';
 
-const EventEmitter = require('events');
+import {EventEmitter} from 'events';
 
 /**
  * Parent
@@ -15,7 +15,7 @@ const EventEmitter = require('events');
  * @extends EventEmitter
  */
 
-class Parent extends EventEmitter {
+export class Parent extends EventEmitter {
   /**
    * Create the parent process.
    * @constructor

@@ -12,3 +12,5 @@ webpack.*.js
 .idea/
 
 dist/
+
+tsconfig.tsbuildinfo

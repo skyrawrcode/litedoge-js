@@ -7,7 +7,7 @@
 
 'use strict';
 
-const bio = require('bufio');
+import bio from "bufio";
 
 /**
  * Framer
@@ -35,7 +35,7 @@ export class Framer {
     bw.writeU8(0x0a);
 
     const msg = bw.render();
-    msg.writeUInt32LE(msg.length - 10, 5, true);
+    msg.writeUInt32LE(msg.length - 10, 5);
 
     return msg;
   }

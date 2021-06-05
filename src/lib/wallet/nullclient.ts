@@ -175,12 +175,6 @@ export class NullClient extends EventEmitter {
    */
 
   async rescan(start) {
-    ;
   }
 }
 
-/*
- * Expose
- */
-
-module.exports = NullClient;

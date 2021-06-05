@@ -6,17 +6,18 @@
 
 'use strict';
 
-const EventEmitter = require('events');
-const WalletDB = require('./walletdb');
-const NodeClient = require('./nodeclient');
-const HTTP = require('./http');
-const RPC = require('./rpc');
-const Staker = require('../staking/staker')
-/**
- * @exports wallet/plugin
- */
-
-const plugin = exports;
+import EventEmitter from 'events';
+import {Staker} from "../staking";
+import {RPC} from "./rpc";
+import {HTTP} from "./http";
+import {NodeClient} from "./nodeclient";
+import {WalletDB} from "./walletdb";
+import {Kernel} from "../staking/kernel";
+import {WalletNode} from "./node";
+import Config from 'bcfg';
+import LoggerContext from "blgr/lib/logger";
+import {Network} from "../protocol";
+import {WorkerPool} from "../workers";
 
 /**
  * Plugin
@@ -24,15 +25,28 @@ const plugin = exports;
  */
 
 export class Plugin extends EventEmitter {
+
+  config: Config;
+  kernel: Kernel;
+  client: NodeClient;
+  network: Network;
+  logger: LoggerContext;
+  wdb: WalletDB;
+  workers: WorkerPool;
+  rpc: RPC;
+  http: HTTP;
+  staker: Staker;
+
   /**
    * Create a plugin.
    * @constructor
    * @param {Node} node
    */
 
-  constructor(node) {
+  constructor(node: WalletNode) {
     super();
 
+    
     this.config = node.config.filter('wallet');
 
     if (node.config.options.file)
@@ -59,12 +73,12 @@ export class Plugin extends EventEmitter {
       spv: node.spv
     });
 
-    this.rpc = new RPC(this);
+    this.rpc = new RPC(node);
 
     this.http = new HTTP({
       network: this.network,
       logger: this.logger,
-      node: this,
+      node: <any>this,
       ssl: this.config.bool('ssl'),
       keyFile: this.config.path('ssl-key'),
       certFile: this.config.path('ssl-cert'),
@@ -121,14 +135,13 @@ export class Plugin extends EventEmitter {
  * @const {String}
  */
 
-plugin.id = 'walletdb';
+export const id = 'walletdb';
 
 /**
  * Plugin initialization.
  * @param {Node} node
  * @returns {WalletDB}
  */
-
-plugin.init = function init(node) {
+export function init(node:WalletNode): Plugin {
   return new Plugin(node);
-};
+}

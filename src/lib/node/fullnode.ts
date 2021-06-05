@@ -276,7 +276,8 @@ export class FullNode extends Node {
       this.emit('reset', tip);
     });
 
-    this.loadPlugins();
+    this.loadPlugins().then();
+
   }
 
   /**

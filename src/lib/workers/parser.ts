@@ -7,9 +7,10 @@
 
 'use strict';
 
-const assert = require('bsert');
-const EventEmitter = require('events');
-const packets = require('./packets');
+import assert from 'bsert';
+import {EventEmitter} from 'events';
+import * as packets from './packets';
+import {WorkerPacketTypes} from "./packets";
 
 /**
  * Parser
@@ -18,6 +19,10 @@ const packets = require('./packets');
  */
 
 export class Parser extends EventEmitter {
+  waiting: number;
+  total: number;
+  header: Header;
+  pending: Buffer[];
   /**
    * Create a parser.
    * @constructor
@@ -32,7 +37,7 @@ export class Parser extends EventEmitter {
     this.total = 0;
   }
 
-  feed(data) {
+  feed(data: Buffer) {
     this.total += data.length;
     this.pending.push(data);
 
@@ -122,55 +127,55 @@ export class Parser extends EventEmitter {
   }
 
   parseHeader(data) {
-    const id = data.readUInt32LE(0, true);
-    const cmd = data.readUInt8(4, true);
-    const size = data.readUInt32LE(5, true);
+    const id = data.readUInt32LE(0);
+    const cmd = data.readUInt8(4);
+    const size = data.readUInt32LE(5);
     return new Header(id, cmd, size);
   }
 
   parsePacket(header, data) {
     switch (header.cmd) {
-      case packets.types.ENV:
+      case WorkerPacketTypes.ENV:
         return packets.EnvPacket.fromRaw(data);
-      case packets.types.EVENT:
+      case WorkerPacketTypes.EVENT:
         return packets.EventPacket.fromRaw(data);
-      case packets.types.LOG:
+      case WorkerPacketTypes.LOG:
         return packets.LogPacket.fromRaw(data);
-      case packets.types.ERROR:
+      case WorkerPacketTypes.ERROR:
         return packets.ErrorPacket.fromRaw(data);
-      case packets.types.ERRORRESULT:
+      case WorkerPacketTypes.ERRORRESULT:
         return packets.ErrorResultPacket.fromRaw(data);
-      case packets.types.CHECK:
+      case WorkerPacketTypes.CHECK:
         return packets.CheckPacket.fromRaw(data);
-      case packets.types.CHECKRESULT:
+      case WorkerPacketTypes.CHECKRESULT:
         return packets.CheckResultPacket.fromRaw(data);
-      case packets.types.SIGN:
+      case WorkerPacketTypes.SIGN:
         return packets.SignPacket.fromRaw(data);
-      case packets.types.SIGNRESULT:
+      case WorkerPacketTypes.SIGNRESULT:
         return packets.SignResultPacket.fromRaw(data);
-      case packets.types.CHECKINPUT:
+      case WorkerPacketTypes.CHECKINPUT:
         return packets.CheckInputPacket.fromRaw(data);
-      case packets.types.CHECKINPUTRESULT:
+      case WorkerPacketTypes.CHECKINPUTRESULT:
         return packets.CheckInputResultPacket.fromRaw(data);
-      case packets.types.SIGNINPUT:
+      case WorkerPacketTypes.SIGNINPUT:
         return packets.SignInputPacket.fromRaw(data);
-      case packets.types.SIGNINPUTRESULT:
+      case WorkerPacketTypes.SIGNINPUTRESULT:
         return packets.SignInputResultPacket.fromRaw(data);
-      case packets.types.ECVERIFY:
+      case WorkerPacketTypes.ECVERIFY:
         return packets.ECVerifyPacket.fromRaw(data);
-      case packets.types.ECVERIFYRESULT:
+      case WorkerPacketTypes.ECVERIFYRESULT:
         return packets.ECVerifyResultPacket.fromRaw(data);
-      case packets.types.ECSIGN:
+      case WorkerPacketTypes.ECSIGN:
         return packets.ECSignPacket.fromRaw(data);
-      case packets.types.ECSIGNRESULT:
+      case WorkerPacketTypes.ECSIGNRESULT:
         return packets.ECSignResultPacket.fromRaw(data);
-      case packets.types.MINE:
+      case WorkerPacketTypes.MINE:
         return packets.MinePacket.fromRaw(data);
-      case packets.types.MINERESULT:
+      case WorkerPacketTypes.MINERESULT:
         return packets.MineResultPacket.fromRaw(data);
-      case packets.types.SCRYPT:
+      case WorkerPacketTypes.SCRYPT:
         return packets.ScryptPacket.fromRaw(data);
-      case packets.types.SCRYPTRESULT:
+      case WorkerPacketTypes.SCRYPTRESULT:
         return packets.ScryptResultPacket.fromRaw(data);
       default:
         throw new Error('Unknown packet.');
