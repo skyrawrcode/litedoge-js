@@ -8,11 +8,11 @@
 'use strict';
 
 import bio from 'bufio';
-import * as util from '../utils/util';
-import {AbstractBlock} from './abstractblock';
-import { inspectSymbol } from '../utils';
-import { Network } from '../protocol';
-import { CoinView } from '../coins/coinview';
+import * as util from '../utils/util.js';
+import {AbstractBlock} from './abstractblock.js';
+import {inspectSymbol} from '../utils/index.js';
+import {Network} from '../protocol/index.js';
+import {CoinView} from '../coins/coinview.js';
 
 /**
  * Headers
@@ -36,9 +36,98 @@ export class Headers extends AbstractBlock {
       this.parseOptions(options);
   }
 
+  /**
+   * Instantiate headers from buffer reader.
+   * @param {BufferReader} br
+   * @returns {Headers}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate headers from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc - Encoding, can be `'hex'` or null.
+   * @returns {Headers}
+   */
+
+  static fromRaw(data, enc) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate headers from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc - Encoding, can be `'hex'` or null.
+   * @returns {Headers}
+   */
+
+  static fromHead(data: Buffer, enc?: 'hex'): Headers {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromHead(data);
+  }
+
+  /**
+   * Instantiate headers from a chain entry.
+   * @param {ChainEntry} entry
+   * @returns {Headers}
+   */
+
+  static fromEntry(entry) {
+    const headers = new this();
+    headers.version = entry.version;
+    headers.prevBlock = entry.prevBlock;
+    headers.merkleRoot = entry.merkleRoot;
+    headers.time = entry.time;
+    headers.bits = entry.bits;
+    headers.nonce = entry.nonce;
+    headers._hash = entry.hash;
+    headers._hhash = entry.hash;
+    return headers;
+  }
+
+  /**
+   * Convert the block to a headers object.
+   * @param {Block|MerkleBlock} block
+   * @returns {Headers}
+   */
+
+  static fromBlock(block) {
+    const headers = new this(block);
+    headers._hash = block._hash;
+    headers._hhash = block._hhash;
+    return headers;
+  }
+
+  /**
+   * Instantiate a merkle block from a jsonified block object.
+   * @param {Object} json - The jsonified block object.
+   * @returns {Headers}
+   */
+
+  static fromJSON(json) {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Test an object to see if it is a Headers object.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isHeaders(obj) {
+    return obj instanceof Headers;
+  }
+
   verify() {
     return true;
   }
+
   /**
    * Perform non-contextual
    * verification on the headers.
@@ -103,80 +192,12 @@ export class Headers extends AbstractBlock {
   }
 
   /**
-   * Instantiate headers from buffer reader.
-   * @param {BufferReader} br
-   * @returns {Headers}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate headers from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc - Encoding, can be `'hex'` or null.
-   * @returns {Headers}
-   */
-
-  static fromRaw(data, enc) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
-
-  /**
-   * Instantiate headers from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc - Encoding, can be `'hex'` or null.
-   * @returns {Headers}
-   */
-
-  static fromHead(data:Buffer, enc?:'hex'):Headers {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromHead(data);
-  }
-
-  /**
-   * Instantiate headers from a chain entry.
-   * @param {ChainEntry} entry
-   * @returns {Headers}
-   */
-
-  static fromEntry(entry) {
-    const headers = new this();
-    headers.version = entry.version;
-    headers.prevBlock = entry.prevBlock;
-    headers.merkleRoot = entry.merkleRoot;
-    headers.time = entry.time;
-    headers.bits = entry.bits;
-    headers.nonce = entry.nonce;
-    headers._hash = entry.hash;
-    headers._hhash = entry.hash;
-    return headers;
-  }
-
-  /**
    * Convert the block to a headers object.
    * @returns {Headers}
    */
 
   toHeaders() {
     return this;
-  }
-
-  /**
-   * Convert the block to a headers object.
-   * @param {Block|MerkleBlock} block
-   * @returns {Headers}
-   */
-
-  static fromBlock(block) {
-    const headers = new this(block);
-    headers._hash = block._hash;
-    headers._hhash = block._hhash;
-    return headers;
   }
 
   /**
@@ -200,7 +221,7 @@ export class Headers extends AbstractBlock {
    * @returns {Object}
    */
 
-  getJSON(network?:Network, view?:CoinView, height?:number) {
+  getJSON(network?: Network, view?: CoinView, height?: number) {
     return {
       hash: this.rhash(),
       height: height,
@@ -225,16 +246,6 @@ export class Headers extends AbstractBlock {
   }
 
   /**
-   * Instantiate a merkle block from a jsonified block object.
-   * @param {Object} json - The jsonified block object.
-   * @returns {Headers}
-   */
-
-  static fromJSON(json) {
-    return new this().fromJSON(json);
-  }
-
-  /**
    * Inspect the headers and return a more
    * user-friendly representation of the data.
    * @returns {Object}
@@ -252,7 +263,7 @@ export class Headers extends AbstractBlock {
    * @returns {Object}
    */
 
-  format(view?:CoinView, height?:number) {
+  format(view?: CoinView, height?: number) {
     return {
       hash: this.rhash(),
       height: height != null ? height : -1,
@@ -264,16 +275,6 @@ export class Headers extends AbstractBlock {
       bits: this.bits,
       nonce: this.nonce
     };
-  }
-
-  /**
-   * Test an object to see if it is a Headers object.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isHeaders(obj) {
-    return obj instanceof Headers;
   }
 }
 

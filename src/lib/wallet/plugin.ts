@@ -7,17 +7,17 @@
 'use strict';
 
 import EventEmitter from 'events';
-import {Staker} from "../staking";
-import {RPC} from "./rpc";
-import {HTTP} from "./http";
-import {NodeClient} from "./nodeclient";
-import {WalletDB} from "./walletdb";
-import {Kernel} from "../staking/kernel";
-import {WalletNode} from "./node";
 import Config from 'bcfg';
 import LoggerContext from "blgr/lib/logger";
-import {Network} from "../protocol";
-import {WorkerPool} from "../workers";
+import {Staker} from "../staking/index.js";
+import {RPC} from "./rpc.js";
+import {HTTP} from "./http.js";
+import {NodeClient} from "./nodeclient.js";
+import {WalletDB} from "./walletdb.js";
+import {Kernel} from "../staking/kernel.js";
+import {WalletNode} from "./node.js";
+import {Network} from "../protocol/index.js";
+import {WorkerPool} from "../workers/index.js";
 
 /**
  * Plugin
@@ -46,7 +46,7 @@ export class Plugin extends EventEmitter {
   constructor(node: WalletNode) {
     super();
 
-    
+
     this.config = node.config.filter('wallet');
 
     if (node.config.options.file)
@@ -142,6 +142,6 @@ export const id = 'walletdb';
  * @param {Node} node
  * @returns {WalletDB}
  */
-export function init(node:WalletNode): Plugin {
+export function init(node: WalletNode): Plugin {
   return new Plugin(node);
 }

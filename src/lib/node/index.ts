@@ -10,8 +10,8 @@
  * @module node
  */
 
-export * from './fullnode';
-export * from './http';
-export * from './node';
-export * from './rpc';
-export * from './spvnode';
+export * from './fullnode.js';
+export * from './http.js';
+export * from './node.js';
+export * from './rpc.js';
+export * from './spvnode.js';

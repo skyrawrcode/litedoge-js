@@ -8,9 +8,10 @@
 
 import bdb, { DB } from 'bdb';
 import assert from 'bsert';
-import {Indexer} from './indexer';
-import * as consensus from '../protocol/consensus';
-import {Filter} from '../primitives/filter';
+
+import {Indexer} from './indexer.js';
+import * as consensus from '../protocol/consensus.js';
+import {Filter} from '../primitives/filter.js';
 
 /**
  * FilterIndexer

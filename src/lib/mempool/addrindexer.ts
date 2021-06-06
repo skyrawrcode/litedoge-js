@@ -9,10 +9,9 @@
 
 import assert from 'bsert';
 import { BufferMap } from 'buffer-map';
-import { ChainEntry } from '..';
-import { Address } from '../primitives';
-import {TXMeta} from '../primitives/txmeta';
-import { Network } from '../protocol';
+import { ChainEntry } from '../blockchain/index.js';
+import { Address, TXMeta } from '../primitives/index.js';
+import { Network } from '../protocol/index.js';
 
 /**
  * Address Indexer

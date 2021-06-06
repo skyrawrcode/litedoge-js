@@ -8,19 +8,18 @@
 
 import assert from 'bsert';
 import bio from 'bufio';
-import { util } from '../utils';
-import { consensus } from '../protocol';
-import { inspectSymbol } from '../utils';
+import {inspectSymbol, util} from '../utils/index.js';
+import {consensus} from '../protocol/index.js';
 
 export interface OutpointOptions {
-  hash:Buffer;
+  hash: Buffer;
   index: number;
 
 }
 
-export interface OutpointJson{
-  hash:string;
-  index:number;
+export interface OutpointJson {
+  hash: string;
+  index: number;
 }
 
 /**
@@ -34,6 +33,7 @@ export interface OutpointJson{
 export class Outpoint {
   hash: Buffer;
   index: number;
+
   /**
    * Create an outpoint.
    * @constructor
@@ -54,21 +54,6 @@ export class Outpoint {
   }
 
   /**
-   * Inject properties from options object.
-   * @private
-   * @param {Object} options
-   */
-
-  fromOptions(options:OutpointOptions) {
-    assert(options, 'Outpoint data is required.');
-    assert(Buffer.isBuffer(options.hash));
-    assert((options.index >>> 0) === options.index, 'Index must be a uint32.');
-    this.hash = options.hash;
-    this.index = options.index;
-    return this;
-  }
-
-  /**
    * Instantate outpoint from options object.
    * @param {Object} options
    * @returns {Outpoint}
@@ -76,6 +61,94 @@ export class Outpoint {
 
   static fromOptions(options) {
     return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate outpoint from hash table key.
+   * @param {String} key
+   * @returns {Outpoint}
+   */
+
+  static fromKey(key) {
+    return new this().fromKey(key);
+  }
+
+  /**
+   * Instantiate outpoint from a buffer reader.
+   * @param {BufferReader} br
+   * @returns {Outpoint}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate outpoint from serialized data.
+   * @param {Buffer} data
+   * @returns {Outpoint}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate outpoint from json object.
+   * @param {Object} json
+   * @returns {Outpoint}
+   */
+
+  static fromJSON(json) {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Instantiate outpoint from tx.
+   * @param {TX} tx
+   * @param {Number} index
+   * @returns {Outpoint}
+   */
+
+  static fromTX(tx, index) {
+    return new this().fromTX(tx, index);
+  }
+
+  /**
+   * Serialize outpoint to a key
+   * suitable for a hash table.
+   * @param {Hash} hash
+   * @param {Number} index
+   * @returns {String}
+   */
+
+  static toKey(hash, index) {
+    return new Outpoint(hash, index).toKey();
+  }
+
+  /**
+   * Test an object to see if it is an outpoint.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isOutpoint(obj) {
+    return obj instanceof Outpoint;
+  }
+
+  /**
+   * Inject properties from options object.
+   * @private
+   * @param {Object} options
+   */
+
+  fromOptions(options: OutpointOptions) {
+    assert(options, 'Outpoint data is required.');
+    assert(Buffer.isBuffer(options.hash));
+    assert((options.index >>> 0) === options.index, 'Index must be a uint32.');
+    this.hash = options.hash;
+    this.index = options.index;
+    return this;
   }
 
   /**
@@ -171,16 +244,6 @@ export class Outpoint {
   }
 
   /**
-   * Instantiate outpoint from hash table key.
-   * @param {String} key
-   * @returns {Outpoint}
-   */
-
-  static fromKey(key) {
-    return new this().fromKey(key);
-  }
-
-  /**
    * Write outpoint to a buffer writer.
    * @param {BufferWriter} bw
    */
@@ -232,32 +295,12 @@ export class Outpoint {
   }
 
   /**
-   * Instantiate outpoint from a buffer reader.
-   * @param {BufferReader} br
-   * @returns {Outpoint}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate outpoint from serialized data.
-   * @param {Buffer} data
-   * @returns {Outpoint}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
-  }
-
-  /**
    * Inject properties from json object.
    * @private
    * @params {Object} json
    */
 
-  fromJSON(json :OutpointJson) {
+  fromJSON(json: OutpointJson) {
     assert(json, 'Outpoint data is required.');
     assert(typeof json.hash === 'string', 'Hash must be a string.');
     assert((json.index >>> 0) === json.index, 'Index must be a uint32.');
@@ -274,21 +317,11 @@ export class Outpoint {
    * @returns {Object}
    */
 
-  toJSON():OutpointJson {
+  toJSON(): OutpointJson {
     return {
       hash: util.revHex(this.hash),
       index: this.index
     };
-  }
-
-  /**
-   * Instantiate outpoint from json object.
-   * @param {Object} json
-   * @returns {Outpoint}
-   */
-
-  static fromJSON(json) {
-    return new this().fromJSON(json);
   }
 
   /**
@@ -308,45 +341,12 @@ export class Outpoint {
   }
 
   /**
-   * Instantiate outpoint from tx.
-   * @param {TX} tx
-   * @param {Number} index
-   * @returns {Outpoint}
-   */
-
-  static fromTX(tx, index) {
-    return new this().fromTX(tx, index);
-  }
-
-  /**
-   * Serialize outpoint to a key
-   * suitable for a hash table.
-   * @param {Hash} hash
-   * @param {Number} index
-   * @returns {String}
-   */
-
-  static toKey(hash, index) {
-    return new Outpoint(hash, index).toKey();
-  }
-
-  /**
    * Convert the outpoint to a user-friendly string.
    * @returns {String}
    */
 
   [inspectSymbol]() {
     return `<Outpoint: ${this.rhash()}/${this.index}>`;
-  }
-
-  /**
-   * Test an object to see if it is an outpoint.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isOutpoint(obj) {
-    return obj instanceof Outpoint;
   }
 }
 

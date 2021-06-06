@@ -4,18 +4,16 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
 
 import assert from 'bsert';
-import {Address} from '../primitives/address';
-import {Amount} from './amount';
-import { inspectSymbol } from '../utils';
-import { Network } from '../protocol';
+
+import {Address} from '../primitives/address.js';
+import {Amount} from './amount.js';
+import {inspectSymbol} from '../utils/index.js';
+import {Network} from '../protocol/index.js';
 
 
-interface URIOptions {
 
-}
 
 /**
  * URI
@@ -29,11 +27,12 @@ interface URIOptions {
  */
 
 export class URI {
-  address:Address;
-  amount:bigint;
-  label:string;
-  message:string;
-  request:string;
+  address: Address;
+  amount: bigint;
+  label: string;
+  message: string;
+  request: string;
+
   /**
    * Create a bitcoin URI.
    * @alias module:btc.URI
@@ -41,7 +40,7 @@ export class URI {
    * @param {Object|String} options
    */
 
-  constructor(options?:string) {
+  constructor(options?: string) {
     this.address = new Address();
     this.amount = -1n;
     this.label = null;
@@ -50,6 +49,27 @@ export class URI {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate URI from options.
+   * @param {Object|String} options
+   * @returns {URI}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate uri from string.
+   * @param {String} str
+   * @param {Network?} network
+   * @returns {URI}
+   */
+
+  static fromString(str, network) {
+    return new this().fromString(str, network);
   }
 
   /**
@@ -91,16 +111,6 @@ export class URI {
   }
 
   /**
-   * Instantiate URI from options.
-   * @param {Object|String} options
-   * @returns {URI}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
-  }
-
-  /**
    * Parse and inject properties from string.
    * @private
    * @param {String} str
@@ -108,7 +118,7 @@ export class URI {
    * @returns {URI}
    */
 
-  fromString(str:string, network?:Network):URI {
+  fromString(str: string, network?: Network): URI {
     assert(typeof str === 'string');
     assert(str.length > 8, 'Not a bitcoin URI.');
 
@@ -151,17 +161,6 @@ export class URI {
       this.request = query.r;
 
     return this;
-  }
-
-  /**
-   * Instantiate uri from string.
-   * @param {String} str
-   * @param {Network?} network
-   * @returns {URI}
-   */
-
-  static fromString(str, network) {
-    return new this().fromString(str, network);
   }
 
   /**
@@ -209,10 +208,11 @@ export class URI {
  */
 
 class BitcoinQuery {
-  amount:string;
-  label:string;
-  message:string;
+  amount: string;
+  label: string;
+  message: string;
   r: any;
+
   constructor() {
     this.amount = null;
     this.label = null;
@@ -221,7 +221,7 @@ class BitcoinQuery {
   }
 }
 
-function parsePairs(str:string):BitcoinQuery {
+function parsePairs(str: string): BitcoinQuery {
   const parts = str.split('&');
   const data = new BitcoinQuery();
 

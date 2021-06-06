@@ -4,7 +4,9 @@
  * https://github.com/bcoin-org/bcoin
  */
 
+import {createRequire} from "module";
 
+const require = createRequire(import.meta.url);
 /**
  * Package Name
  * @const {String}
@@ -13,67 +15,67 @@
 
 export const name = 'ldogejs';
 
- /**
-  * Project Name
-  * @const {String}
-  * @default
-  */
- 
-export const  core = 'ldogejs';
- 
- /**
-  * Organization Name
-  * @const {String}
-  * @default
-  */
- 
+/**
+ * Project Name
+ * @const {String}
+ * @default
+ */
+
+export const core = 'ldogejs';
+
+/**
+ * Organization Name
+ * @const {String}
+ * @default
+ */
+
 export const organization = 'ldoge';
- 
- /**
-  * Currency Name
-  * @const {String}
-  * @default
-  */
- 
- export const currency = 'litedoge';
- 
- /**
-  * Currency Unit
-  * @const {String}
-  * @default
-  */
- 
- export const unit = 'ldoge';
- 
- /**
-  * Base Unit
-  * @const {String}
-  * @default
-  */
- 
- export const base = 'ldogetoshi';
- 
- /**
-  * Config file name.
-  * @const {String}
-  * @default
-  */
- 
+
+/**
+ * Currency Name
+ * @const {String}
+ * @default
+ */
+
+export const currency = 'litedoge';
+
+/**
+ * Currency Unit
+ * @const {String}
+ * @default
+ */
+
+export const unit = 'ldoge';
+
+/**
+ * Base Unit
+ * @const {String}
+ * @default
+ */
+
+export const base = 'ldogetoshi';
+
+/**
+ * Config file name.
+ * @const {String}
+ * @default
+ */
+
 export const cfg = `${core}.conf`;
- 
- /**
-  * Repository URL.
-  * @const {String}
-  * @default
-  */
- 
-export const  url = `https://github.com/${organization}/${name}`;
- 
- /**
-  * Current version string.
-  * @const {String}
-  */
-  import pkg from '../../package.json';
-  const { version } = pkg;
+
+/**
+ * Repository URL.
+ * @const {String}
+ * @default
+ */
+
+export const url = `https://github.com/${organization}/${name}`;
+
+/**
+ * Current version string.
+ * @const {String}
+ */
+const pkg = require('../../package.json');
+const {version} = pkg;
 export {version};
  

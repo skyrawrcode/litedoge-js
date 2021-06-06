@@ -8,15 +8,16 @@
 
 import assert from 'bsert';
 import bio from 'bufio';
-import base58 from 'bcrypto/lib/encoding/base58';
-import sha512 from 'bcrypto/lib/sha512';
-import hash160 from 'bcrypto/lib/hash160';
-import hash256 from 'bcrypto/lib/hash256';
-import cleanse from 'bcrypto/lib/cleanse';
-import secp256k1 from 'bcrypto/lib/secp256k1';
-import {Network} from '../protocol/network';
-import * as consensus from '../protocol/consensus';
-import * as common from './common';
+import base58 from 'bcrypto/lib/encoding/base58.js';
+import sha512 from 'bcrypto/lib/sha512.js';
+import hash160 from 'bcrypto/lib/hash160.js';
+import hash256 from 'bcrypto/lib/hash256.js';
+import cleanse from 'bcrypto/lib/cleanse.js';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+
+import {Network} from '../protocol/network.js';
+import * as consensus from '../protocol/consensus.js';
+import * as common from './common.js';
 
 /**
  * HDPublicKey

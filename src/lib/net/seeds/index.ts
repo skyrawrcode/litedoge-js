@@ -6,9 +6,9 @@
 
 'use strict';
 
-import { NetworkType } from '../../types';
-import main from './main';
-import testnet from './testnet';
+import {NetworkType} from '../../types.js';
+import main from './main.js';
+import testnet from './testnet.js';
 
 export function get(type: NetworkType) {
   switch (type) {

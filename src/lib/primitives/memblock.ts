@@ -8,10 +8,10 @@
 'use strict';
 
 import bio from 'bufio';
-import {AbstractBlock} from './abstractblock';
-import {Block} from './block';
-import {Headers} from './headers';
-import {Script} from '../script/script';
+import {AbstractBlock} from './abstractblock.js';
+import {Block} from './block.js';
+import {Headers} from './headers.js';
+import {Script} from '../script/script.js';
 const DUMMY = Buffer.alloc(0);
 
 /**

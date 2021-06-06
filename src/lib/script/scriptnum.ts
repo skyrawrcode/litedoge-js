@@ -10,8 +10,8 @@ import assert from 'bsert';
 import {I64} from 'n64';
 
 
-import {ScriptError} from './scripterror';
-import {inspectSymbol} from '../utils';
+import {ScriptError} from './scripterror.js';
+import {inspectSymbol} from '../utils/index.js';
 
 /*
  * Constants
@@ -32,6 +32,7 @@ export class ScriptNum extends I64 {
   hi: number;
   lo: number;
   sign: number;
+
   /**
    * Create a script number.
    * @constructor
@@ -41,6 +42,52 @@ export class ScriptNum extends I64 {
 
   constructor(num = 0, base = undefined) {
     super(num, base);
+  }
+
+  /**
+   * Test wether a serialized script
+   * number is in its most minimal form.
+   * @param {Buffer} data
+   * @returns {Boolean}
+   */
+
+  static isMinimal(data) {
+    assert(Buffer.isBuffer(data));
+
+    if (data.length === 0)
+      return true;
+
+    if ((data[data.length - 1] & 0x7f) === 0) {
+      if (data.length === 1)
+        return false;
+
+      if ((data[data.length - 2] & 0x80) === 0)
+        return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Decode and verify script number.
+   * @param {Buffer} data
+   * @param {Boolean?} minimal - Require minimal encoding.
+   * @param {Number?} limit - Size limit.
+   * @returns {ScriptNum}
+   */
+
+  static decode(data: Buffer, minimal?: boolean, limit?: number) {
+    return new ScriptNum().decode(data, minimal, limit);
+  }
+
+  /**
+   * Test whether object is a script number.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isScriptNum(obj) {
+    return obj instanceof ScriptNum;
   }
 
   /**
@@ -210,52 +257,6 @@ export class ScriptNum extends I64 {
 
   [inspectSymbol]() {
     return `<ScriptNum: ${this.toString(10)}>`;
-  }
-
-  /**
-   * Test wether a serialized script
-   * number is in its most minimal form.
-   * @param {Buffer} data
-   * @returns {Boolean}
-   */
-
-  static isMinimal(data) {
-    assert(Buffer.isBuffer(data));
-
-    if (data.length === 0)
-      return true;
-
-    if ((data[data.length - 1] & 0x7f) === 0) {
-      if (data.length === 1)
-        return false;
-
-      if ((data[data.length - 2] & 0x80) === 0)
-        return false;
-    }
-
-    return true;
-  }
-
-  /**
-   * Decode and verify script number.
-   * @param {Buffer} data
-   * @param {Boolean?} minimal - Require minimal encoding.
-   * @param {Number?} limit - Size limit.
-   * @returns {ScriptNum}
-   */
-
-  static decode(data:Buffer, minimal?:boolean, limit?:number) {
-    return new ScriptNum().decode(data, minimal, limit);
-  }
-
-  /**
-   * Test whether object is a script number.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isScriptNum(obj) {
-    return obj instanceof ScriptNum;
   }
 }
 

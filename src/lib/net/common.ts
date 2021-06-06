@@ -11,8 +11,9 @@
  * @module net/common
  */
 
-import random from 'bcrypto/lib/random';
-import * as pkg from '../pkg';
+import random from 'bcrypto/lib/random.js';
+
+import * as pkg from '../pkg.js';
 
 /**
  * Default protocol version.

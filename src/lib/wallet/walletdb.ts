@@ -15,21 +15,21 @@ import {BloomFilter} from 'bfilter';
 import {Lock, MapLock} from 'bmutex';
 import bdb from 'bdb';
 import Logger from 'blgr';
-import {safeEqual} from 'bcrypto/lib/safe';
-import aes from 'bcrypto/lib/aes';
-import {Network} from '../protocol';
-import {Path} from './path';
-import * as common from './common';
-import {Wallet} from './wallet';
-import {Account} from './account';
-import {Outpoint} from '../primitives';
-import * as  layouts from './layout';
-import * as  records from './records';
-import {NullClient} from './nullclient';
-import {WorkerPool} from '../workers';
-import {Kernel} from '../staking/kernel';
-import {TX} from '../primitives';
-import { LoggerContext } from 'blgr/lib/logger';
+import {LoggerContext} from 'blgr/lib/logger';
+import {safeEqual} from 'bcrypto/lib/safe.js';
+import aes from 'bcrypto/lib/aes.js';
+
+import {Network} from '../protocol/index.js';
+import {Path} from './path.js';
+import * as common from './common.js';
+import {Wallet} from './wallet.js';
+import {Account} from './account.js';
+import {Outpoint, TX} from '../primitives/index.js';
+import * as  layouts from './layout.js';
+import * as  records from './records.js';
+import {NullClient} from './nullclient.js';
+import {WorkerPool} from '../workers/index.js';
+import {Kernel} from '../staking/kernel.js';
 
 const layout = layouts.wdb;
 const tlayout = layouts.txdb;
@@ -44,6 +44,7 @@ const {
 export interface WalletDBOptions {
 
 }
+
 /**
  * WalletDB
  * @property {Network} network
@@ -81,7 +82,7 @@ export class WalletDB extends EventEmitter {
    * @param {Object} options
    */
 
-  constructor(options:WalletOptionsOptions) {
+  constructor(options: WalletOptionsOptions) {
     super();
 
     this.options = new WalletOptions(options);
@@ -249,7 +250,7 @@ export class WalletDB extends EventEmitter {
    */
 
   async verifyNetwork() {
-    const raw:Buffer = await this.db.get(layout.O.encode());
+    const raw: Buffer = await this.db.get(layout.O.encode());
 
     if (!raw) {
       const b = this.db.batch();
@@ -618,7 +619,7 @@ export class WalletDB extends EventEmitter {
    * @returns {Promise}
    */
 
-  async wipe():Promise<void> {
+  async wipe(): Promise<void> {
     this.logger.warning('Wiping WalletDB TXDB...');
     this.logger.warning('I hope you know what you\'re doing.');
 
@@ -780,7 +781,7 @@ export class WalletDB extends EventEmitter {
    * @returns {Promise} - Returns {@link Wallet}.
    */
 
-  async get(id:number|string):Promise<Wallet> {
+  async get(id: number | string): Promise<Wallet> {
     const wid = await this.ensureWID(id);
 
     if (wid === -1)
@@ -1569,8 +1570,8 @@ export class WalletDB extends EventEmitter {
    * @returns {Promise}
    */
 
-  async getWalletsByTX(tx):Promise<Set<(string|number)>> {
-    const wids = new Set<string|number>();
+  async getWalletsByTX(tx): Promise<Set<(string | number)>> {
+    const wids = new Set<string | number>();
 
     if (!tx.isCoinbase()) {
       for (const {prevout} of tx.inputs) {
@@ -2322,6 +2323,16 @@ class WalletOptions {
   }
 
   /**
+   * Instantiate chain options from object.
+   * @param {Object} options
+   * @returns {WalletOptions}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
+  }
+
+  /**
    * Inject properties from object.
    * @private
    * @param {Object} options
@@ -2407,16 +2418,6 @@ class WalletOptions {
 
     return this;
   }
-
-  /**
-   * Instantiate chain options from object.
-   * @param {Object} options
-   * @returns {WalletOptions}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
-  }
 }
 
 /*
@@ -2436,7 +2437,7 @@ function fromString(str) {
   return buf;
 }
 
-function toString(buf:Buffer) {
+function toString(buf: Buffer) {
   assert(buf.length > 0);
   assert(buf[0] === buf.length - 1);
   return buf.toString('ascii', 1, buf.length);

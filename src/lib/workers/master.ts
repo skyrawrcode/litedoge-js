@@ -10,12 +10,12 @@
 import assert from 'bsert';
 import {EventEmitter} from 'events';
 import { format } from 'util';
-import {Network} from '../protocol/network';
-import * as jobs from './jobs';
-import {Parser} from './parser';
-import {Framer} from './framer';
-import * as packets from './packets';
-import {Parent} from './parent';
+import {Network} from '../protocol/index.js';
+import * as jobs from './jobs.js';
+import {Parser} from './parser.js';
+import {Framer} from './framer.js';
+import * as packets from './packets.js';
+import {Parent} from './parent.js';
 
 /**
  * Master

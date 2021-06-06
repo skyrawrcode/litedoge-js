@@ -7,28 +7,29 @@
 
 'use strict';
 
-import {Opcode} from "./opcode";
 
 import assert from 'bsert';
 import bio from 'bufio';
-import ripemd160 from 'bcrypto/lib/ripemd160';
-import sha1 from 'bcrypto/lib/sha1';
-import sha256 from 'bcrypto/lib/sha256';
-import hash160 from 'bcrypto/lib/hash160';
-import hash256 from 'bcrypto/lib/hash256';
-import secp256k1 from 'bcrypto/lib/secp256k1';
-import * as consensus from '../protocol/consensus';
-import * as policy from '../protocol/policy';
-import {Stack} from './stack';
-import {ScriptError} from './scripterror';
-import {ScriptNum} from './scriptnum';
-import * as common from './common';
-import {Address, TX} from '../primitives';
+import ripemd160 from 'bcrypto/lib/ripemd160.js';
+import sha1 from 'bcrypto/lib/sha1.js';
+import sha256 from 'bcrypto/lib/sha256.js';
+import hash160 from 'bcrypto/lib/hash160.js';
+import hash256 from 'bcrypto/lib/hash256.js';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+
+import {Opcode} from "./opcode.js";
+import * as consensus from '../protocol/consensus.js';
+import * as policy from '../protocol/policy.js';
+import {Stack} from './stack.js';
+import {ScriptError} from './scripterror.js';
+import {ScriptNum} from './scriptnum.js';
+import * as common from './common.js';
+import {Address, TX} from '../primitives/index.js';
+import {inspectSymbol} from '../utils/index.js';
 
 const opcodes = common.opcodes;
 const scriptTypes = common.ScriptTypes;
 const {encoding} = bio;
-import {inspectSymbol} from '../utils';
 
 /*
  * Constants
@@ -68,15 +69,9 @@ export class Script {
 
   static flags = common.VerifyFlags;
 
-  /**
-   * Sighash Types.
-   * @enum {SighashType}
-   * @default
-   */
 
-  static hashType = common.SighashType;
 
-  
+
   /**
    * Output script types.
    * @enum {Number}
@@ -84,7 +79,6 @@ export class Script {
 
   static types = common.ScriptTypes;
 
-  
 
   raw = EMPTY_BUFFER;
   code: Opcode[] = [];
@@ -119,6 +113,269 @@ export class Script {
   }
 
   /**
+   * Insantiate script from options object.
+   * @param {Object} options
+   * @returns {Script}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate script from an array
+   * of buffers and numbers.
+   * @param {Array} code
+   * @returns {Script}
+   */
+
+  static fromArray(code) {
+    return new this().fromArray(code);
+  }
+
+  /**
+   * Instantiate script from stack items.
+   * @param {Buffer[]} items
+   * @returns {Script}
+   */
+
+  static fromItems(items) {
+    return new this().fromItems(items);
+  }
+
+  /**
+   * Instantiate script from stack.
+   * @param {Stack} stack
+   * @returns {Script}
+   */
+
+  static fromStack(stack) {
+    return new this().fromStack(stack);
+  }
+
+  /**
+   * Instantiate script from a hex string.
+   * @params {String} json
+   * @returns {Script}
+   */
+
+  static fromJSON(json) {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Create a pay-to-pubkey script.
+   * @param {Buffer} key
+   * @returns {Script}
+   */
+
+  static fromPubkey(key) {
+    return new this().fromPubkey(key);
+  }
+
+  /**
+   * Create a pay-to-pubkeyhash script.
+   * @param {Buffer} hash
+   * @returns {Script}
+   */
+
+  static fromPubkeyhash(hash) {
+    return new this().fromPubkeyhash(hash);
+  }
+
+  /**
+   * Create a pay-to-multisig script.
+   * @param {Number} m
+   * @param {Number} n
+   * @param {Buffer[]} keys
+   * @returns {Script}
+   */
+
+  static fromMultisig(m, n, keys) {
+    return new this().fromMultisig(m, n, keys);
+  }
+
+  /**
+   * Create a pay-to-scripthash script.
+   * @param {Buffer} hash
+   * @returns {Script}
+   */
+
+  static fromScripthash(hash) {
+    return new this().fromScripthash(hash);
+  }
+
+  /**
+   * Create a nulldata/opreturn script.
+   * @param {Buffer} flags
+   * @returns {Script}
+   */
+
+  static fromNulldata(flags) {
+    return new this().fromNulldata(flags);
+  }
+
+  /**
+   * Create an output script from an address.
+   * @param {Address|AddressString} address
+   * @returns {Script}
+   */
+
+  static fromAddress(address) {
+    return new this().fromAddress(address);
+  }
+
+  /**
+   * Get coinbase height.
+   * @param {Buffer} raw - Raw script.
+   * @returns {Number} `-1` if not present.
+   */
+
+  static getCoinbaseHeight(raw: Buffer): number {
+    if (raw.length === 0)
+      return -1;
+
+    if (raw[0] >= opcodes.OP_1 && raw[0] <= opcodes.OP_16)
+      return raw[0] - 0x50;
+
+    if (raw[0] > 0x06)
+      return -1;
+
+    const op = Opcode.fromRaw(raw);
+    const num = op.toNum();
+
+    if (!num)
+      return 1;
+
+    if (num.isNeg())
+      return -1;
+
+    if (!op.equals(Opcode.fromNum(num)))
+      return -1;
+
+    return num.toDouble();
+  }
+
+  /**
+   * Parse a bitcoind test script
+   * string into a script object.
+   * @param {String} items - Script string.
+   * @returns {Script}
+   * @throws Parse error.
+   */
+
+  static fromString(code) {
+    return new this().fromString(code);
+  }
+
+  /**
+   * Verify an input and output script.
+   * @param {Script} input
+   * @param {Script} output
+   * @param {primitives.TX} tx
+   * @param {Number} index
+   * @param {BigInt|Amount} value
+   * @param {VerifyFlags} flags
+   * @throws {ScriptError}
+   */
+
+  static verify(input, output, tx, index, value, flags) {
+    if (flags == null)
+      flags = Script.flags.STANDARD_VERIFY_FLAGS;
+
+    if (flags & Script.flags.VERIFY_SIGPUSHONLY) {
+      if (!input.isPushOnly())
+        throw new ScriptError('SIG_PUSHONLY');
+    }
+
+    // Setup a stack.
+    let stack = new Stack();
+
+    // Execute the input script
+    input.execute(stack, flags, tx, index, value, 0);
+
+    // Copy the stack for P2SH
+    let copy;
+    if (flags & Script.flags.VERIFY_P2SH)
+      copy = stack.clone();
+
+    // Execute the previous output script.
+    output.execute(stack, flags, tx, index, value, 0);
+    // Verify the stack values.
+    if (stack.length === 0 || !stack.getBool(-1))
+      throw new ScriptError('EVAL_FALSE');
+
+    // If the script is P2SH, execute the real output script
+    if ((flags & Script.flags.VERIFY_P2SH) && output.isScripthash()) {
+      // P2SH can only have push ops in the scriptSig
+      if (!input.isPushOnly())
+        throw new ScriptError('SIG_PUSHONLY');
+
+      // Reset the stack
+      stack = copy;
+
+      // Stack should not be empty at this point
+      if (stack.length === 0)
+        throw new ScriptError('EVAL_FALSE');
+
+      // Grab the real redeem script
+      const raw = stack.pop();
+      const redeem = Script.fromRaw(raw);
+
+      // Execute the redeem script.
+      redeem.execute(stack, flags, tx, index, value, 0);
+
+      // Verify the the stack values.
+      if (stack.length === 0 || !stack.getBool(-1))
+        throw new ScriptError('EVAL_FALSE');
+
+
+    }
+
+    // Ensure there is nothing left on the stack.
+    if (flags & Script.flags.VERIFY_CLEANSTACK) {
+      assert((flags & Script.flags.VERIFY_P2SH) !== 0);
+      if (stack.length !== 1)
+        throw new ScriptError('CLEANSTACK');
+    }
+
+  }
+
+  /**
+   * Create a script from buffer reader.
+   * @param {BufferReader} br
+   * @param {String?} enc - Either `"hex"` or `null`.
+   * @returns {Script}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Create a script from a serialized buffer.
+   * @param {Buffer|String} data - Serialized script.
+   * @param {String?} enc - Either `"hex"` or `null`.
+   * @returns {Script}
+   */
+
+  static fromRaw(data, enc: 'hex' | null = null) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Test whether an object a Script.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isScript(obj) {
+    return obj instanceof Script;
+  }
+
+  /**
    * Inject properties from options object.
    * @private
    * @param {Object} options
@@ -148,16 +405,6 @@ export class Script {
     }
 
     return this;
-  }
-
-  /**
-   * Insantiate script from options object.
-   * @param {Object} options
-   * @returns {Script}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
   }
 
   /**
@@ -218,17 +465,6 @@ export class Script {
   }
 
   /**
-   * Instantiate script from an array
-   * of buffers and numbers.
-   * @param {Array} code
-   * @returns {Script}
-   */
-
-  static fromArray(code) {
-    return new this().fromArray(code);
-  }
-
-  /**
    * Convert script to stack items.
    * @returns {Buffer[]}
    */
@@ -267,16 +503,6 @@ export class Script {
   }
 
   /**
-   * Instantiate script from stack items.
-   * @param {Buffer[]} items
-   * @returns {Script}
-   */
-
-  static fromItems(items) {
-    return new this().fromItems(items);
-  }
-
-  /**
    * Convert script to stack.
    * @returns {Stack}
    */
@@ -294,16 +520,6 @@ export class Script {
 
   fromStack(stack) {
     return this.fromItems(stack.items);
-  }
-
-  /**
-   * Instantiate script from stack.
-   * @param {Stack} stack
-   * @returns {Script}
-   */
-
-  static fromStack(stack) {
-    return new this().fromStack(stack);
   }
 
   /**
@@ -453,7 +669,7 @@ export class Script {
    * @returns {String}
    */
 
-  toJSON():string {
+  toJSON(): string {
     return this.toRaw().toString('hex');
   }
 
@@ -466,16 +682,6 @@ export class Script {
   fromJSON(json) {
     assert(typeof json === 'string', 'Code must be a string.');
     return this.fromRaw(Buffer.from(json, 'hex'));
-  }
-
-  /**
-   * Instantiate script from a hex string.
-   * @params {String} json
-   * @returns {Script}
-   */
-
-  static fromJSON(json) {
-    return new this().fromJSON(json);
   }
 
   /**
@@ -555,7 +761,7 @@ export class Script {
    * @throws {ScriptError} Will be thrown on VERIFY failures.
    */
 
-  execute(stack:Stack, flags:number, tx:TX, index:number, value:bigint, version:number) {
+  execute(stack: Stack, flags: number, tx: TX, index: number, value: bigint, version: number) {
     if (flags == null)
       flags = Script.flags.STANDARD_VERIFY_FLAGS;
 
@@ -1466,16 +1672,6 @@ export class Script {
   }
 
   /**
-   * Create a pay-to-pubkey script.
-   * @param {Buffer} key
-   * @returns {Script}
-   */
-
-  static fromPubkey(key) {
-    return new this().fromPubkey(key);
-  }
-
-  /**
    * Inject properties from a pay-to-pubkeyhash script.
    * @private
    * @param {Buffer} hash
@@ -1502,16 +1698,6 @@ export class Script {
     this.code.push(Opcode.fromOp(opcodes.OP_CHECKSIG));
 
     return this;
-  }
-
-  /**
-   * Create a pay-to-pubkeyhash script.
-   * @param {Buffer} hash
-   * @returns {Script}
-   */
-
-  static fromPubkeyhash(hash) {
-    return new this().fromPubkeyhash(hash);
   }
 
   /**
@@ -1543,18 +1729,6 @@ export class Script {
   }
 
   /**
-   * Create a pay-to-multisig script.
-   * @param {Number} m
-   * @param {Number} n
-   * @param {Buffer[]} keys
-   * @returns {Script}
-   */
-
-  static fromMultisig(m, n, keys) {
-    return new this().fromMultisig(m, n, keys);
-  }
-
-  /**
    * Inject properties from a pay-to-scripthash script.
    * @private
    * @param {Buffer} hash
@@ -1580,16 +1754,6 @@ export class Script {
   }
 
   /**
-   * Create a pay-to-scripthash script.
-   * @param {Buffer} hash
-   * @returns {Script}
-   */
-
-  static fromScripthash(hash) {
-    return new this().fromScripthash(hash);
-  }
-
-  /**
    * Inject properties from a nulldata/opreturn script.
    * @private
    * @param {Buffer} flags
@@ -1605,17 +1769,6 @@ export class Script {
 
     return this.compile();
   }
-
-  /**
-   * Create a nulldata/opreturn script.
-   * @param {Buffer} flags
-   * @returns {Script}
-   */
-
-  static fromNulldata(flags) {
-    return new this().fromNulldata(flags);
-  }
-
 
   /**
    * Inject properties from an address.
@@ -1636,17 +1789,6 @@ export class Script {
 
     throw new Error('Unknown address type.');
   }
-
-  /**
-   * Create an output script from an address.
-   * @param {Address|AddressString} address
-   * @returns {Script}
-   */
-
-  static fromAddress(address) {
-    return new this().fromAddress(address);
-  }
-
 
   /**
    * Grab and deserialize the redeem script.
@@ -1767,7 +1909,7 @@ export class Script {
    * @returns {Address|null}
    */
 
-  getAddress() :Address {
+  getAddress(): Address {
     return Address.fromScript(this);
   }
 
@@ -1826,7 +1968,7 @@ export class Script {
    * @returns {Buffer|null}
    */
 
-  getPubkey(minimal?:boolean):Buffer {
+  getPubkey(minimal?: boolean): Buffer {
     if (!this.isPubkey(minimal))
       return null;
 
@@ -2015,7 +2157,6 @@ export class Script {
     return EMPTY_BUFFER;
   }
 
-
   /**
    * Test whether the output script is unspendable.
    * @returns {Boolean}
@@ -2049,7 +2190,6 @@ export class Script {
 
     return scriptTypes.NONSTANDARD;
   }
-
 
   /**
    * "Guess" whether the input script is an unknown/non-standard type.
@@ -2170,7 +2310,7 @@ export class Script {
    * @returns {Boolean}
    */
 
-  isScripthashInput():boolean {
+  isScripthashInput(): boolean {
     if (this.code.length < 1)
       return false;
 
@@ -2235,36 +2375,9 @@ export class Script {
     return Script.getCoinbaseHeight(this.raw);
   }
 
-  /**
-   * Get coinbase height.
-   * @param {Buffer} raw - Raw script.
-   * @returns {Number} `-1` if not present.
+  /*
+   * Mutation
    */
-
-  static getCoinbaseHeight(raw:Buffer):number {
-    if (raw.length === 0)
-      return -1;
-
-    if (raw[0] >= opcodes.OP_1 && raw[0] <= opcodes.OP_16)
-      return raw[0] - 0x50;
-
-    if (raw[0] > 0x06)
-      return -1;
-
-    const op = Opcode.fromRaw(raw);
-    const num = op.toNum();
-
-    if (!num)
-      return 1;
-
-    if (num.isNeg())
-      return -1;
-
-    if (!op.equals(Opcode.fromNum(num)))
-      return -1;
-
-    return num.toDouble();
-  }
 
   /**
    * Test the script against a bloom filter.
@@ -2293,7 +2406,7 @@ export class Script {
    * @returns {Boolean}
    */
 
-  isPushOnly():boolean {
+  isPushOnly(): boolean {
     for (const op of this.code) {
       if (op.value === -1)
         return false;
@@ -2379,10 +2492,6 @@ export class Script {
     return redeem.getSigops(true);
   }
 
-  /*
-   * Mutation
-   */
-
   get(index) {
     if (index < 0)
       index += this.code.length;
@@ -2402,6 +2511,10 @@ export class Script {
     const op = this.code.shift();
     return op || null;
   }
+
+  /*
+   * Op
+   */
 
   remove(index) {
     if (index < 0)
@@ -2454,10 +2567,6 @@ export class Script {
     return this;
   }
 
-  /*
-   * Op
-   */
-
   getOp(index) {
     const op = this.get(index);
     return op ? op.value : -1;
@@ -2472,6 +2581,10 @@ export class Script {
     const op = this.shift();
     return op ? op.value : -1;
   }
+
+  /*
+   * Data
+   */
 
   removeOp(index) {
     const op = this.remove(index);
@@ -2494,10 +2607,6 @@ export class Script {
     return this.insert(index, Opcode.fromOp(value));
   }
 
-  /*
-   * Data
-   */
-
   getData(index) {
     const op = this.get(index);
     return op ? op.data : null;
@@ -2513,10 +2622,18 @@ export class Script {
     return op ? op.data : null;
   }
 
+  /*
+   * Length
+   */
+
   removeData(index) {
     const op = this.remove(index);
     return op ? op.data : null;
   }
+
+  /*
+   * Push
+   */
 
   setData(index, data) {
     return this.set(index, Opcode.fromData(data));
@@ -2534,18 +2651,10 @@ export class Script {
     return this.insert(index, Opcode.fromData(data));
   }
 
-  /*
-   * Length
-   */
-
   getLength(index) {
     const op = this.get(index);
     return op ? op.toLength() : -1;
   }
-
-  /*
-   * Push
-   */
 
   getPush(index) {
     const op = this.get(index);
@@ -2561,6 +2670,10 @@ export class Script {
     const op = this.shift();
     return op ? op.toPush() : null;
   }
+
+  /*
+   * String
+   */
 
   removePush(index) {
     const op = this.remove(index);
@@ -2583,10 +2696,6 @@ export class Script {
     return this.insert(index, Opcode.fromPush(data));
   }
 
-  /*
-   * String
-   */
-
   getString(index, enc) {
     const op = this.get(index);
     return op ? op.toString(enc) : null;
@@ -2601,6 +2710,10 @@ export class Script {
     const op = this.shift();
     return op ? op.toString(enc) : null;
   }
+
+  /*
+   * Small
+   */
 
   removeString(index, enc) {
     const op = this.remove(index);
@@ -2623,10 +2736,6 @@ export class Script {
     return this.insert(index, Opcode.fromString(str, enc));
   }
 
-  /*
-   * Small
-   */
-
   getSmall(index) {
     const op = this.get(index);
     return op ? op.toSmall() : -1;
@@ -2641,6 +2750,10 @@ export class Script {
     const op = this.shift();
     return op ? op.toSmall() : -1;
   }
+
+  /*
+   * Num
+   */
 
   removeSmall(index) {
     const op = this.remove(index);
@@ -2663,10 +2776,6 @@ export class Script {
     return this.insert(index, Opcode.fromSmall(num));
   }
 
-  /*
-   * Num
-   */
-
   getNum(index, minimal, limit) {
     const op = this.get(index);
     return op ? op.toNum(minimal, limit) : null;
@@ -2681,6 +2790,10 @@ export class Script {
     const op = this.shift();
     return op ? op.toNum(minimal, limit) : null;
   }
+
+  /*
+   * Int
+   */
 
   removeNum(index, minimal, limit) {
     const op = this.remove(index);
@@ -2703,10 +2816,6 @@ export class Script {
     return this.insert(index, Opcode.fromNum(num));
   }
 
-  /*
-   * Int
-   */
-
   getInt(index, minimal, limit) {
     const op = this.get(index);
     return op ? op.toInt(minimal, limit) : -1;
@@ -2721,6 +2830,10 @@ export class Script {
     const op = this.shift();
     return op ? op.toInt(minimal, limit) : -1;
   }
+
+  /*
+   * Bool
+   */
 
   removeInt(index, minimal, limit) {
     const op = this.remove(index);
@@ -2743,10 +2856,6 @@ export class Script {
     return this.insert(index, Opcode.fromInt(num));
   }
 
-  /*
-   * Bool
-   */
-
   getBool(index) {
     const op = this.get(index);
     return op ? op.toBool() : false;
@@ -2761,6 +2870,10 @@ export class Script {
     const op = this.shift();
     return op ? op.toBool() : false;
   }
+
+  /*
+   * Symbol
+   */
 
   removeBool(index) {
     const op = this.remove(index);
@@ -2782,10 +2895,6 @@ export class Script {
   insertBool(index, value) {
     return this.insert(index, Opcode.fromBool(value));
   }
-
-  /*
-   * Symbol
-   */
 
   getSym(index) {
     const op = this.get(index);
@@ -2830,7 +2939,7 @@ export class Script {
    * @throws Parse error.
    */
 
-  fromString(code:string) {
+  fromString(code: string) {
     assert(typeof code === 'string');
 
     code = code.trim();
@@ -2887,91 +2996,6 @@ export class Script {
   }
 
   /**
-   * Parse a bitcoind test script
-   * string into a script object.
-   * @param {String} items - Script string.
-   * @returns {Script}
-   * @throws Parse error.
-   */
-
-  static fromString(code) {
-    return new this().fromString(code);
-  }
-
-  /**
-   * Verify an input and output script.
-   * @param {Script} input
-   * @param {Script} output
-   * @param {primitives.TX} tx
-   * @param {Number} index
-   * @param {BigInt|Amount} value
-   * @param {VerifyFlags} flags
-   * @throws {ScriptError}
-   */
-
-  static verify(input, output, tx, index, value, flags) {
-    if (flags == null)
-      flags = Script.flags.STANDARD_VERIFY_FLAGS;
-
-    if (flags & Script.flags.VERIFY_SIGPUSHONLY) {
-      if (!input.isPushOnly())
-        throw new ScriptError('SIG_PUSHONLY');
-    }
-
-    // Setup a stack.
-    let stack = new Stack();
-
-    // Execute the input script
-    input.execute(stack, flags, tx, index, value, 0);
-
-    // Copy the stack for P2SH
-    let copy;
-    if (flags & Script.flags.VERIFY_P2SH)
-      copy = stack.clone();
-
-    // Execute the previous output script.
-    output.execute(stack, flags, tx, index, value, 0);
-    // Verify the stack values.
-    if (stack.length === 0 || !stack.getBool(-1))
-      throw new ScriptError('EVAL_FALSE');
-
-    // If the script is P2SH, execute the real output script
-    if ((flags & Script.flags.VERIFY_P2SH) && output.isScripthash()) {
-      // P2SH can only have push ops in the scriptSig
-      if (!input.isPushOnly())
-        throw new ScriptError('SIG_PUSHONLY');
-
-      // Reset the stack
-      stack = copy;
-
-      // Stack should not be empty at this point
-      if (stack.length === 0)
-        throw new ScriptError('EVAL_FALSE');
-
-      // Grab the real redeem script
-      const raw = stack.pop();
-      const redeem = Script.fromRaw(raw);
-
-      // Execute the redeem script.
-      redeem.execute(stack, flags, tx, index, value, 0);
-
-      // Verify the the stack values.
-      if (stack.length === 0 || !stack.getBool(-1))
-        throw new ScriptError('EVAL_FALSE');
-
-
-    }
-
-    // Ensure there is nothing left on the stack.
-    if (flags & Script.flags.VERIFY_CLEANSTACK) {
-      assert((flags & Script.flags.VERIFY_P2SH) !== 0);
-      if (stack.length !== 1)
-        throw new ScriptError('CLEANSTACK');
-    }
-
-  }
-
-  /**
    * Inject properties from buffer reader.
    * @private
    * @param {BufferReader} br
@@ -2998,40 +3022,6 @@ export class Script {
     return this;
   }
 
-  /**
-   * Create a script from buffer reader.
-   * @param {BufferReader} br
-   * @param {String?} enc - Either `"hex"` or `null`.
-   * @returns {Script}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Create a script from a serialized buffer.
-   * @param {Buffer|String} data - Serialized script.
-   * @param {String?} enc - Either `"hex"` or `null`.
-   * @returns {Script}
-   */
-
-  static fromRaw(data, enc: 'hex' | null = null) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
-
-  /**
-   * Test whether an object a Script.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isScript(obj) {
-    return obj instanceof Script;
-  }
-
 
 }
 
@@ -3053,7 +3043,7 @@ function sortKeys(keys) {
  * @throws {ScriptError}
  */
 
-function validateKey(key:Buffer, flags:common.VerifyFlags, version:number) :boolean{
+function validateKey(key: Buffer, flags: common.VerifyFlags, version: number): boolean {
   assert(Buffer.isBuffer(key));
   assert(typeof flags === 'number');
   assert(typeof version === 'number');
@@ -3115,6 +3105,6 @@ function validateSignature(sig, flags) {
  * @returns {Boolean}
  */
 
-function checksig(msg:Buffer, sig:Buffer, key:Buffer):boolean {
+function checksig(msg: Buffer, sig: Buffer, key: Buffer): boolean {
   return secp256k1.verifyDER(msg, sig.slice(0, -1), key);
 }

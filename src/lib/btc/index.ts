@@ -10,5 +10,5 @@
  * @module btc
  */
 
-export * from './amount';
-export * as URI from './uri'
+export * from './amount.js';
+export * as URI from './uri.js'

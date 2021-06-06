@@ -4,8 +4,6 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
-
 import bdb from 'bdb';
 
 /*

@@ -5,8 +5,8 @@
 process.title = 'bcoin';
 
 import assert from 'assert';
-import {Outpoint, SPVNode} from '../lib';
-import * as plugin from "../lib/wallet/plugin";
+import {Outpoint, SPVNode} from '../lib/index.js';
+import * as plugin from "../lib/wallet/plugin.js";
 
 const node = new SPVNode({
   file: true,

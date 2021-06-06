@@ -12,12 +12,12 @@
 import assert from 'bsert';
 import EventEmitter from 'events';
 import os from 'os';
-import {Network} from '../protocol';
-import {Child} from './child';
-import * as jobs from './jobs';
-import {Parser} from './parser';
-import {Framer} from './framer';
-import * as packets from './packets';
+import {Network} from '../protocol/index.js';
+import {Child} from './child.js';
+import * as jobs from './jobs.js';
+import {Parser} from './parser.js';
+import {Framer} from './framer.js';
+import * as packets from './packets.js';
 
 /**
  * Worker Pool

@@ -12,25 +12,24 @@ import {WalletDB} from "./walletdb";
 import assert from 'bsert';
 import bio from 'bufio';
 import bdb from "bdb";
-import {BufferSet} from 'buffer-map/lib/buffer-map';
-import * as util from '../utils/util';
-import {Amount} from '../btc';
-import {CoinView} from '../coins';
-import {Coin} from '../primitives';
-import {Outpoint} from '../primitives';
-import * as records from './records';
-import * as consensus from '../protocol/consensus';
-import * as policy from '../protocol/policy';
+import {BufferSet} from 'buffer-map';
+import {LoggerContext} from "blgr/lib/logger";
+
+import * as util from '../utils/util.js';
+import {Amount} from '../btc/index.js';
+import {CoinView} from '../coins/index.js';
+import {Address, Coin, Outpoint, Output, TX} from '../primitives/index.js';
+import * as records from './records.js';
+import * as consensus from '../protocol/consensus.js';
+import * as policy from '../protocol/policy.js';
+import {inspectSymbol} from '../utils/index.js';
+import {Wallet} from "./wallet.js";
+import {Path, PathJson} from "./path.js";
+import {Network} from "../protocol/index.js";
+
+import {txdb as layout} from "./layout.js";
 
 const {TXRecord} = records;
-import {inspectSymbol} from '../utils';
-import {Wallet} from "./wallet";
-import {Address, Input, Output, TX} from "../primitives";
-import {Path, PathJson} from "./path";
-import {LoggerContext} from "blgr/lib/logger";
-import {Network} from "../protocol";
-
-import {txdb as layout} from "./layout";
 
 /**
  * TXDB
@@ -2144,6 +2143,17 @@ export class Balance {
   }
 
   /**
+   * Instantiate balance from serialized data.
+   * @param {Number} acct
+   * @param {Buffer} data
+   * @returns {TXDBState}
+   */
+
+  static fromRaw(acct, data) {
+    return new this(acct).fromRaw(data);
+  }
+
+  /**
    * Apply delta.
    * @param {Balance} balance
    */
@@ -2190,17 +2200,6 @@ export class Balance {
     this.unconfirmed = br.readU64BI();
     this.confirmed = br.readU64BI();
     return this;
-  }
-
-  /**
-   * Instantiate balance from serialized data.
-   * @param {Number} acct
-   * @param {Buffer} data
-   * @returns {TXDBState}
-   */
-
-  static fromRaw(acct, data) {
-    return new this(acct).fromRaw(data);
   }
 
   /**
@@ -2320,6 +2319,27 @@ class Credit {
   }
 
   /**
+   * Instantiate credit from serialized data.
+   * @param {Buffer} data
+   * @returns {Credit}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate credit from transaction.
+   * @param {TX} tx
+   * @param {Number} index
+   * @returns {Credit}
+   */
+
+  static fromTX(tx, index, height) {
+    return new this().fromTX(tx, index, height);
+  }
+
+  /**
    * Inject properties from serialized data.
    * @private
    * @param {Buffer} data
@@ -2331,16 +2351,6 @@ class Credit {
     this.spent = br.readU8() === 1;
     this.own = br.readU8() === 1;
     return this;
-  }
-
-  /**
-   * Instantiate credit from serialized data.
-   * @param {Buffer} data
-   * @returns {Credit}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
   }
 
   /**
@@ -2379,18 +2389,6 @@ class Credit {
     this.spent = false;
     this.own = false;
     return this;
-  }
-
-
-  /**
-   * Instantiate credit from transaction.
-   * @param {TX} tx
-   * @param {Number} index
-   * @returns {Credit}
-   */
-
-  static fromTX(tx, index, height) {
-    return new this().fromTX(tx, index, height);
   }
 
 
@@ -2669,6 +2667,26 @@ class BlockRecord {
   }
 
   /**
+   * Instantiate wallet block from serialized data.
+   * @param {Buffer} data
+   * @returns {BlockRecord}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate wallet block from block meta.
+   * @param {BlockMeta} block
+   * @returns {BlockRecord}
+   */
+
+  static fromMeta(block) {
+    return new this().fromMeta(block);
+  }
+
+  /**
    * Add transaction to block record.
    * @param {Hash} hash
    * @returns {Boolean}
@@ -2714,16 +2732,6 @@ class BlockRecord {
     }
 
     return this;
-  }
-
-  /**
-   * Instantiate wallet block from serialized data.
-   * @param {Buffer} data
-   * @returns {BlockRecord}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
   }
 
   /**
@@ -2793,16 +2801,6 @@ class BlockRecord {
     this.height = block.height;
     this.time = block.time;
     return this;
-  }
-
-  /**
-   * Instantiate wallet block from block meta.
-   * @param {BlockMeta} block
-   * @returns {BlockRecord}
-   */
-
-  static fromMeta(block) {
-    return new this().fromMeta(block);
   }
 }
 

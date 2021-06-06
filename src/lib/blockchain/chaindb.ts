@@ -9,23 +9,22 @@
 
 import assert from 'bsert';
 import bdb, {DB} from 'bdb';
+import Logger, {LoggerContext} from 'blgr/lib/logger';
+import {Batch} from 'bdb/lib/db';
 import bio from 'bufio';
 import LRU from 'blru';
 import {BufferMap} from 'buffer-map';
-import {Amount} from '../btc/amount';
-import {Network} from '../protocol/network';
-import {CoinView} from '../coins/coinview';
-import {UndoCoins} from '../coins/undocoins';
-import {layout} from './layout';
-import * as consensus from '../protocol/consensus';
-import {Block} from '../primitives/block';
-import {Outpoint} from '../primitives/outpoint';
-import {ChainEntry} from './chainentry';
-import {CoinEntry} from '../coins/coinentry';
-import Logger, {LoggerContext} from 'blgr/lib/logger';
-import {AbstractBlock, Coin, Output} from '../primitives';
-import {Batch} from 'bdb/lib/db';
-import {AbstractBlockStore} from '../blockstore';
+
+import {Amount} from '../btc/amount.js';
+import {Network} from '../protocol/network.js';
+import {CoinView} from '../coins/coinview.js';
+import {UndoCoins} from '../coins/undocoins.js';
+import {layout} from './layout.js';
+import * as consensus from '../protocol/consensus.js';
+import {ChainEntry} from './chainentry.js';
+import {CoinEntry} from '../coins/coinentry.js';
+import {AbstractBlock, Block, Coin, Outpoint, Output} from '../primitives/index.js';
+import {AbstractBlockStore} from '../blockstore/index.js';
 
 export interface ChainDBOptions {
   forceFlags: any;

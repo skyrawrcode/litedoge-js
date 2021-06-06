@@ -10,9 +10,9 @@
  * @module protocol
  */
 
-export * as consensus from './consensus';
-export * as errors from './errors';
-export * from './network';
-export * as networks from './networks';
-export * as policy from './policy';
-export * as timedata from './timedata';
+export * as consensus from './consensus.js';
+export * as errors from './errors.js';
+export * from './network.js';
+export * as networks from './networks.js';
+export * as policy from './policy.js';
+export * as timedata from './timedata.js';

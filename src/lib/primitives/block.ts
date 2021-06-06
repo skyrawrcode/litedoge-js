@@ -9,21 +9,23 @@
 
 import assert from 'bsert';
 import bio from 'bufio';
-import { BufferSet } from 'buffer-map';
-import hash256 from 'bcrypto/lib/hash256';
-import merkle from 'bcrypto/lib/merkle';
-import * as consensus from '../protocol/consensus';
-import {AbstractBlock} from './abstractblock';
-  import {TX} from './tx';
-import {MerkleBlock} from './merkleblock';
-import {Headers} from './headers';
-import {Network} from '../protocol/network';
-import * as  util from '../utils/util';
+import {BufferSet} from 'buffer-map';
+import hash256 from 'bcrypto/lib/hash256.js';
+import merkle from 'bcrypto/lib/merkle.js';
+
+import * as consensus from '../protocol/consensus.js';
+import {AbstractBlock} from './abstractblock.js';
+import {TX} from './tx.js';
+import {MerkleBlock} from './merkleblock.js';
+import {Headers} from './headers.js';
+import {Network} from '../protocol/network.js';
+import * as  util from '../utils/util.js';
+import {inspectSymbol} from '../utils/index.js';
+import {Golomb} from '../golomb/golomb.js';
+import {opcodes} from '../script/common.js';
+import {CoinView} from '../coins/coinview.js';
+
 const {encoding} = bio;
-import { inspectSymbol } from '../utils';
-import {Golomb} from '../golomb/golomb';
-import { opcodes } from '../script/common';
-import { CoinView } from '../coins/coinview';
 
 /**
  * Block
@@ -35,15 +37,16 @@ import { CoinView } from '../coins/coinview';
 
 export class Block extends AbstractBlock {
   txs: TX[];
-  _raw:Buffer;
-  _size:number;
+  _raw: Buffer;
+  _size: number;
+
   /**
    * Create a block.
    * @constructor
    * @param {Object} options
    */
 
-  constructor(options?:undefined) {
+  constructor(options?: undefined) {
     super();
 
     this.txs = [];
@@ -53,6 +56,60 @@ export class Block extends AbstractBlock {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate block from options.
+   * @param {Object} options
+   * @returns {Block}
+   */
+
+  static fromOptions(options): Block {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate a block from a jsonified block object.
+   * @param {Object} json - The jsonified block object.
+   * @returns {Block}
+   */
+
+  static fromJSON(json) {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Instantiate a block from a serialized Buffer.
+   * @param {Buffer} data
+   * @param {String?} enc - Encoding, can be `'hex'` or null.
+   * @returns {Block}
+   */
+
+  static fromReader(data) {
+    return new this().fromReader(data);
+  }
+
+  /**
+   * Instantiate a block from a serialized Buffer.
+   * @param {Buffer} data
+   * @param {String?} enc - Encoding, can be `'hex'` or null.
+   * @returns {Block}
+   */
+
+  static fromRaw(data: string | Buffer, enc?: 'hex' | null): Block {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Test whether an object is a Block.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isBlock(obj) {
+    return obj instanceof Block;
   }
 
   /**
@@ -76,21 +133,11 @@ export class Block extends AbstractBlock {
   }
 
   /**
-   * Instantiate block from options.
-   * @param {Object} options
-   * @returns {Block}
-   */
-
-  static fromOptions(options):Block {
-    return new this().fromOptions(options);
-  }
-
-  /**
    * Clear any cached values.
    * @param {Boolean?} all - Clear transactions.
    */
 
-  refresh(all?:boolean):Block {
+  refresh(all?: boolean): Block {
     this._refresh();
 
     this._raw = null;
@@ -110,7 +157,7 @@ export class Block extends AbstractBlock {
    * @returns {Buffer}
    */
 
-  toRaw():Buffer {
+  toRaw(): Buffer {
     return this.frame().data;
   }
 
@@ -222,7 +269,6 @@ export class Block extends AbstractBlock {
     return raw.size;
   }
 
-
   /**
    * Test the block's transaction vector against a hash.
    * @param {Hash} hash
@@ -256,7 +302,7 @@ export class Block extends AbstractBlock {
    * @returns {Hash|null}
    */
 
-  createMerkleRoot(enc?:'hex'|null) {
+  createMerkleRoot(enc?: 'hex' | null) {
     const leaves = [];
 
     for (const tx of this.txs)
@@ -280,7 +326,6 @@ export class Block extends AbstractBlock {
     const [valid] = this.checkBody();
     return valid;
   }
-
 
   /**
    * two types of block: proof-of-work or proof-of-stake
@@ -442,7 +487,7 @@ export class Block extends AbstractBlock {
    * @returns {Object}
    */
 
-  format(view?:CoinView, height?:number) {
+  format(view?: CoinView, height?: number) {
     return {
       hash: this.rhash(),
       height: height != null ? height : -1, //height maybe should be 0
@@ -484,7 +529,7 @@ export class Block extends AbstractBlock {
    * @returns {Object}
    */
 
-  getJSON(network?:Network, view?:CoinView, height?:number, depth?:number) {
+  getJSON(network?: Network, view?: CoinView, height?: number, depth?: number) {
     network = Network.get(network);
     return {
       hash: this.rhash(),
@@ -519,16 +564,6 @@ export class Block extends AbstractBlock {
       this.txs.push(TX.fromJSON(tx));
 
     return this;
-  }
-
-  /**
-   * Instantiate a block from a jsonified block object.
-   * @param {Object} json - The jsonified block object.
-   * @returns {Block}
-   */
-
-  static fromJSON(json) {
-    return new this().fromJSON(json);
   }
 
   /**
@@ -568,30 +603,6 @@ export class Block extends AbstractBlock {
   }
 
   /**
-   * Instantiate a block from a serialized Buffer.
-   * @param {Buffer} data
-   * @param {String?} enc - Encoding, can be `'hex'` or null.
-   * @returns {Block}
-   */
-
-  static fromReader(data) {
-    return new this().fromReader(data);
-  }
-
-  /**
-   * Instantiate a block from a serialized Buffer.
-   * @param {Buffer} data
-   * @param {String?} enc - Encoding, can be `'hex'` or null.
-   * @returns {Block}
-   */
-
-  static fromRaw(data:string|Buffer, enc?:'hex'|null ):Block {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
-
-  /**
    * Convert the Block to a MerkleBlock.
    * @param {Bloom} filter - Bloom filter for transactions
    * to match. The merkle block will contain only the
@@ -622,7 +633,6 @@ export class Block extends AbstractBlock {
     return bw;
   }
 
-
   /**
    * Serialze block
    * @private
@@ -637,7 +647,6 @@ export class Block extends AbstractBlock {
     raw.data = bw.render();
     return raw;
   }
-
 
   /**
    * Convert the block to a headers object.
@@ -673,17 +682,6 @@ export class Block extends AbstractBlock {
 
     size += 32 //vchBlockSig
     return new RawBlock(size);
-  }
-
-
-  /**
-   * Test whether an object is a Block.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isBlock(obj) {
-    return obj instanceof Block;
   }
 
   /*
@@ -733,9 +731,10 @@ export class Block extends AbstractBlock {
  */
 
 class RawBlock {
-  data:Buffer;
-  size:number;
-  constructor(size:number) {
+  data: Buffer;
+  size: number;
+
+  constructor(size: number) {
     this.data = null;
     this.size = size;
   }

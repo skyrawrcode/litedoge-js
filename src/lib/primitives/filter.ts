@@ -8,11 +8,11 @@
 
 import assert from 'bsert';
 import bio from 'bufio';
-import * as util from "../utils/util";
+import * as util from "../utils/util.js";
 
-import * as consensus from "../protocol/consensus";
+import * as consensus from "../protocol/consensus.js";
 
-import {inspectSymbol} from "../utils";
+import {inspectSymbol} from "../utils/index.js";
 
 
 /*

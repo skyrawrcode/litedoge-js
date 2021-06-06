@@ -8,17 +8,16 @@
 'use strict';
 
 import assert from 'bsert';
-import bio, { BufferReader, BufferWriter, StaticWriter } from 'bufio';
-import {util} from '../utils';
-import {Amount} from '../btc/amount';
-import {Output} from './output';
-import {Network} from '../protocol/network';
-import {consensus} from '../protocol';
-import {Outpoint} from './outpoint';
-import { inspectSymbol } from '../utils';
-import { TX } from './tx';
-import { Script } from '../script';
-import { Address } from './address';
+import bio, {BufferReader, BufferWriter, StaticWriter} from 'bufio';
+import {inspectSymbol, util} from '../utils/index.js';
+import {Amount} from '../btc/amount.js';
+import {Output} from './output.js';
+import {Network} from '../protocol/network.js';
+import {consensus} from '../protocol/index.js';
+import {Outpoint} from './outpoint.js';
+import {TX} from './tx.js';
+import {Script} from '../script/index.js';
+import {Address} from './address.js';
 
 export interface CoinJson {
   index: number;
@@ -42,6 +41,7 @@ export interface CoinOptions {
   coinstake?: boolean;
   coinbase?: boolean;
 }
+
 /**
  * Coin
  * Represents an unspent output.
@@ -64,13 +64,14 @@ export class Coin extends Output {
   coinstake: boolean;
   hash: any;
   index: number;
+
   /**
    * Create a coin.
    * @constructor
    * @param {Object} options
    */
 
-  constructor(options:any=null) {
+  constructor(options: any = null) {
     super();
 
     this.version = 1;
@@ -82,6 +83,80 @@ export class Coin extends Output {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate Coin from options object.
+   * @private
+   * @param {Object} options
+   */
+
+  static fromOptions(options: object) {
+    return new Coin().fromOptions(options);
+  }
+
+  /**
+   * Instantiate coin from hash table key.
+   * @param {String} key
+   * @returns {Coin}
+   */
+
+  static fromKey(key: string): Coin {
+    return new this().fromKey(key);
+  }
+
+  /**
+   * Instantiate an Coin from a jsonified coin object.
+   * @param {Object} json - The jsonified coin object.
+   * @returns {Coin}
+   */
+
+  static fromJSON(json: CoinJson): Coin {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Instantiate a coin from a buffer reader.
+   * @param {BufferReader} br
+   * @returns {Coin}
+   */
+
+  static fromReader(br: BufferReader): Coin {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate a coin from a serialized Buffer.
+   * @param {Buffer} data
+   * @param {String?} enc - Encoding, can be `'hex'` or null.
+   * @returns {Coin}
+   */
+
+  static fromRaw(data: Buffer, enc?: 'hex' | null): Coin {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate a coin from a TX
+   * @param {TX} tx
+   * @param {Number} index - Output index.
+   * @returns {Coin}
+   */
+
+  static fromTX(tx: TX, index: number, height): Coin {
+    return new this().fromTX(tx, index, height);
+  }
+
+  /**
+   * Test an object to see if it is a Coin.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isCoin(obj: object): boolean {
+    return obj instanceof Coin;
   }
 
   /**
@@ -143,16 +218,6 @@ export class Coin extends Output {
   }
 
   /**
-   * Instantiate Coin from options object.
-   * @private
-   * @param {Object} options
-   */
-
-  static fromOptions(options: object) {
-    return new Coin().fromOptions(options);
-  }
-
-  /**
    * Clone the coin.
    * @private
    * @returns {Coin}
@@ -207,16 +272,6 @@ export class Coin extends Output {
     this.hash = hash;
     this.index = index;
     return this;
-  }
-
-  /**
-   * Instantiate coin from hash table key.
-   * @param {String} key
-   * @returns {Coin}
-   */
-
-  static fromKey(key: string): Coin {
-    return new this().fromKey(key);
   }
 
   /**
@@ -308,7 +363,7 @@ export class Coin extends Output {
     assert((json.version >>> 0) === json.version, 'Version must be a uint32.');
     assert(json.height === -1 || (json.height >>> 0) === json.height,
       'Height must be a uint32.');
-    assert(BigInt(json.value) >= 0n,'Value must be a uint64.');
+    assert(BigInt(json.value) >= 0n, 'Value must be a uint64.');
     assert(typeof json.coinbase === 'boolean', 'Coinbase must be a boolean.');
     assert(typeof json.coinstake === 'boolean', 'Coinstake must be a boolean.');
 
@@ -327,16 +382,6 @@ export class Coin extends Output {
     }
 
     return this;
-  }
-
-  /**
-   * Instantiate an Coin from a jsonified coin object.
-   * @param {Object} json - The jsonified coin object.
-   * @returns {Coin}
-   */
-
-  static fromJSON(json: CoinJson): Coin {
-    return new this().fromJSON(json);
   }
 
   /**
@@ -365,7 +410,7 @@ export class Coin extends Output {
    * @param {BufferWriter} bw
    */
 
-  toWriter(bw: BufferWriter|StaticWriter) {
+  toWriter(bw: BufferWriter | StaticWriter) {
     let height = this.height;
 
     if (height === -1)
@@ -424,29 +469,6 @@ export class Coin extends Output {
   }
 
   /**
-   * Instantiate a coin from a buffer reader.
-   * @param {BufferReader} br
-   * @returns {Coin}
-   */
-
-  static fromReader(br: BufferReader): Coin {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate a coin from a serialized Buffer.
-   * @param {Buffer} data
-   * @param {String?} enc - Encoding, can be `'hex'` or null.
-   * @returns {Coin}
-   */
-
-  static fromRaw(data: Buffer, enc?: 'hex' | null): Coin {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
-
-  /**
    * Inject properties from TX.
    * @param {TX} tx
    * @param {Number} index
@@ -465,27 +487,6 @@ export class Coin extends Output {
     this.hash = tx.hash();
     this.index = index;
     return this;
-  }
-
-  /**
-   * Instantiate a coin from a TX
-   * @param {TX} tx
-   * @param {Number} index - Output index.
-   * @returns {Coin}
-   */
-
-  static fromTX(tx: TX, index: number, height): Coin {
-    return new this().fromTX(tx, index, height);
-  }
-
-  /**
-   * Test an object to see if it is a Coin.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isCoin(obj: object): boolean {
-    return obj instanceof Coin;
   }
 }
 

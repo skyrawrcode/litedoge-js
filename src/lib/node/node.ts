@@ -12,10 +12,12 @@ import EventEmitter from 'events';
 import fs from 'bfile';
 import Logger from 'blgr';
 import Config from 'bcfg';
-import {Network} from '../protocol/network';
-import {WorkerPool} from '../workers/workerpool';
-import { TX, TXMeta } from '../primitives';
 import bweb from "bweb";
+
+
+import {Network} from '../protocol/network.js';
+import {WorkerPool} from '../workers/workerpool.js';
+import { TX, TXMeta } from '../primitives/index.js';
 const RPCBase = bweb.RPC;
 
 export interface Node {

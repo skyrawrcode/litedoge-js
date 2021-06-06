@@ -9,9 +9,9 @@
 
 import assert from 'bsert';
 import bio from 'bufio';
-import * as util from '../utils/util';
-import {TX} from '../primitives/tx';
-import {consensus} from '../protocol';
+import * as util from '../utils/util.js';
+import {TX} from '../primitives/tx.js';
+import {consensus} from '../protocol/index.js';
 
 /**
  * Chain State
@@ -22,6 +22,7 @@ export class ChainState {
   startHeight: number;
   startHash: Buffer;
   marked: boolean;
+
   /**
    * Create a chain state.
    * @constructor
@@ -32,6 +33,17 @@ export class ChainState {
     this.startHash = consensus.ZERO_HASH;
     this.height = 0;
     this.marked = false;
+  }
+
+  /**
+   * Instantiate chain state from serialized data.
+   * @param {Hash} hash
+   * @param {Buffer} data
+   * @returns {ChainState}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
   }
 
   /**
@@ -66,17 +78,6 @@ export class ChainState {
   }
 
   /**
-   * Instantiate chain state from serialized data.
-   * @param {Hash} hash
-   * @param {Buffer} data
-   * @returns {ChainState}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
-  }
-
-  /**
    * Serialize the chain state.
    * @returns {Buffer}
    */
@@ -101,6 +102,7 @@ export class BlockMeta {
   time: any;
   hash: Buffer;
   height: any;
+
   /**
    * Create block meta.
    * @constructor
@@ -109,10 +111,41 @@ export class BlockMeta {
    * @param {Number} time
    */
 
-  constructor(hash?:Buffer, height?:number, time?:number) {
+  constructor(hash?: Buffer, height?: number, time?: number) {
     this.hash = hash || consensus.ZERO_HASH;
     this.height = height != null ? height : -1;
     this.time = time || 0;
+  }
+
+  /**
+   * Instantiate block meta from chain entry.
+   * @param {ChainEntry} entry
+   * @returns {BlockMeta}
+   */
+
+  static fromEntry(entry) {
+    return new this().fromEntry(entry);
+  }
+
+  /**
+   * Instantiate block meta from json object.
+   * @param {Object} json
+   * @returns {BlockMeta}
+   */
+
+  static fromJSON(json) {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Instantiate block meta from serialized data.
+   * @param {Hash} hash
+   * @param {Buffer} data
+   * @returns {BlockMeta}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
   }
 
   /**
@@ -153,7 +186,7 @@ export class BlockMeta {
    */
 
   fromJSON(json) {
-    this.hash = Buffer.from(util.revHex(json.hash),'ascii');
+    this.hash = Buffer.from(util.revHex(json.hash), 'ascii');
     this.height = json.height;
     this.time = json.time;
     return this;
@@ -171,37 +204,6 @@ export class BlockMeta {
     this.height = br.readU32();
     this.time = br.readU32();
     return this;
-  }
-
-  /**
-   * Instantiate block meta from chain entry.
-   * @param {ChainEntry} entry
-   * @returns {BlockMeta}
-   */
-
-  static fromEntry(entry) {
-    return new this().fromEntry(entry);
-  }
-
-  /**
-   * Instantiate block meta from json object.
-   * @param {Object} json
-   * @returns {BlockMeta}
-   */
-
-  static fromJSON(json) {
-    return new this().fromJSON(json);
-  }
-
-  /**
-   * Instantiate block meta from serialized data.
-   * @param {Hash} hash
-   * @param {Buffer} data
-   * @returns {BlockMeta}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
   }
 
   /**
@@ -243,6 +245,7 @@ export class TXRecord {
   block: Buffer;
   index: number;
   time: number;
+
   /**
    * Create tx record.
    * @constructor
@@ -250,7 +253,7 @@ export class TXRecord {
    * @param {BlockMeta?} block
    */
 
-  constructor(tx?:TX, block?:BlockMeta) {
+  constructor(tx?: TX, block?: BlockMeta) {
     this.tx = null;
     this.hash = null;
     this.mtime = util.now();
@@ -264,6 +267,28 @@ export class TXRecord {
   }
 
   /**
+   * Instantiate tx record from tx and block.
+   * @param {TX} tx
+   * @param {Block?} block
+   * @returns {TXRecord}
+   */
+
+  static fromTX(tx: TX, block) {
+    return new TXRecord().fromTX(tx, block);
+  }
+
+  /**
+   * Instantiate a transaction from a buffer
+   * in "extended" serialization format.
+   * @param {Buffer} data
+   * @returns {TXRecord}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
+  }
+
+  /**
    * Inject properties from tx and block.
    * @private
    * @param {TX} tx
@@ -271,7 +296,7 @@ export class TXRecord {
    * @returns {TXRecord}
    */
 
-  fromTX(tx:TX, block?:BlockMeta): TXRecord {
+  fromTX(tx: TX, block?: BlockMeta): TXRecord {
     this.tx = tx;
     this.hash = tx.hash();
 
@@ -279,17 +304,6 @@ export class TXRecord {
       this.setBlock(block);
 
     return this;
-  }
-
-  /**
-   * Instantiate tx record from tx and block.
-   * @param {TX} tx
-   * @param {Block?} block
-   * @returns {TXRecord}
-   */
-
-  static fromTX(tx:TX, block) {
-    return new TXRecord().fromTX(tx, block);
   }
 
   /**
@@ -422,17 +436,6 @@ export class TXRecord {
 
     return this;
   }
-
-  /**
-   * Instantiate a transaction from a buffer
-   * in "extended" serialization format.
-   * @param {Buffer} data
-   * @returns {TXRecord}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -442,6 +445,7 @@ export class TXRecord {
 export class MapRecord {
   wids: any;
   size: number;
+
   /**
    * Create map record.
    * @constructor
@@ -449,6 +453,14 @@ export class MapRecord {
 
   constructor() {
     this.wids = new Set();
+  }
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
   }
 
   add(wid) {
@@ -493,14 +505,6 @@ export class MapRecord {
 
   fromRaw(data) {
     return this.fromReader(bio.read(data));
-  }
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
   }
 }
 

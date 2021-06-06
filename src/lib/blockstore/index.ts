@@ -8,10 +8,10 @@
 
 import { join } from 'path';
 
-import {AbstractBlockStore, } from './abstract';
-import {LevelBlockStore} from './level';
-import {FileBlockStore} from './file';
-import * as common from './common';
+import {AbstractBlockStore, } from './abstract.js';
+import {LevelBlockStore} from './level.js';
+import {FileBlockStore} from './file.js';
+import * as common from './common.js';
 
 /**
  * @module blockstore

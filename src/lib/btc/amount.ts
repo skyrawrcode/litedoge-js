@@ -6,9 +6,7 @@
 
 'use strict';
 
-import assert from 'bsert';
-import * as fixed from '../utils/fixed';
-import { inspectSymbol } from '../utils';
+import { inspectSymbol, fixed } from '../utils/index.js';
 
 /**
  * Amount

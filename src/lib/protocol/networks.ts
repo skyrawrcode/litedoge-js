@@ -11,10 +11,10 @@
  * @module protocol/networks
  */
 
-import { BN } from 'bcrypto';
-import { NetworkOptions } from './networkoptions';
-import * as util from '../utils/util';
-import { NetworkType } from '../types';
+import {BN} from 'bcrypto';
+
+import {NetworkOptions} from './networkoptions.js';
+import {NetworkType} from '../types.js';
 
 /*
  * Helpers
@@ -31,7 +31,7 @@ function b(hash) {
  * @default
  */
 
-export const types:NetworkType[] = ['main', 'testnet', 'regtest'];
+export const types: NetworkType[] = ['main', 'testnet', 'regtest'];
 
 /**
  * Mainnet
@@ -320,8 +320,7 @@ main.block = {
  * @default
  */
 
-main.bip30 = {
-};
+main.bip30 = {};
 
 /**
  * For versionbits.

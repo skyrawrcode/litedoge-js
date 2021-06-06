@@ -8,9 +8,10 @@
 
 import assert from 'bsert';
 import bio from 'bufio';
-import { Outpoint } from '../primitives';
-import {CoinEntry} from './coinentry';
-import { CoinView } from './coinview';
+
+import { Outpoint } from '../primitives/outpoint.js';
+import {CoinEntry} from './coinentry.js';
+import { CoinView } from './coinview.js';
 
 /**
  * Undo Coins

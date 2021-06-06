@@ -8,17 +8,19 @@
 
 'use strict';
 
-import { LoggerContext } from "blgr/lib/logger";
+import {LoggerContext} from "blgr/lib/logger";
 
 import assert from 'bsert';
-import bio, { BufferReader } from 'bufio';
+import bio, {BufferReader} from 'bufio';
 import Logger from 'blgr';
-import { BufferMap } from 'buffer-map';
-import * as binary from '../utils/binary';
-import * as consensus from '../protocol/consensus';
-import * as policy from '../protocol/policy';
-import { Amount, Rate } from "../types";
-import { MempoolEntry } from "./mempoolentry";
+import {BufferMap} from 'buffer-map';
+
+import * as binary from '../utils/binary.js';
+import * as consensus from '../protocol/consensus.js';
+import * as policy from '../protocol/policy.js';
+import {Amount, Rate} from "../types.js";
+import {MempoolEntry} from "./mempoolentry.js";
+
 const {encoding} = bio;
 
 /*
@@ -46,12 +48,12 @@ const PRI_SPACING = 2n;
  */
 
 class ConfirmStats {
-  logger: LoggerContext|Logger;
-  type:string;
-  decay:number;
-  maxConfirms:number;
-  buckets:BigInt64Array;
-  bucketMap:DoubleMap;
+  logger: LoggerContext | Logger;
+  type: string;
+  decay: number;
+  maxConfirms: number;
+  buckets: BigInt64Array;
+  bucketMap: DoubleMap;
   avg: Float64Array;
   curBlockVal: Float64Array;
   txAvg: Float64Array;
@@ -60,6 +62,7 @@ class ConfirmStats {
   unconfTX: Array<Int32Array>;
   curBlockConf: Int32Array[];
   confAvg: Float64Array[];
+
   /**
    * Create confirmation stats.
    * @constructor
@@ -67,7 +70,7 @@ class ConfirmStats {
    * @param {Logger?} logger
    */
 
-  constructor(type:string, logger?:Logger) {
+  constructor(type: string, logger?: Logger) {
     this.logger = Logger.global;
 
     this.type = type;
@@ -94,6 +97,18 @@ class ConfirmStats {
   }
 
   /**
+   * Instantiate confirm stats from serialized data.
+   * @param {Buffer} data
+   * @param {String} type
+   * @param {Logger?} logger
+   * @returns {ConfirmStats}
+   */
+
+  static fromRaw(data, type, logger) {
+    return new this(type, logger).fromRaw(data);
+  }
+
+  /**
    * Initialize stats.
    * @param {Array} buckets
    * @param {Number} maxConfirms
@@ -101,7 +116,7 @@ class ConfirmStats {
    * @private
    */
 
-  init(buckets, maxConfirms:number, decay:number) {
+  init(buckets, maxConfirms: number, decay: number) {
     this.maxConfirms = maxConfirms;
     this.decay = decay;
 
@@ -152,7 +167,7 @@ class ConfirmStats {
    * @param {Rate|Number} val - Rate or priority.
    */
 
-  record(blocks:number, val:Rate|Number) {
+  record(blocks: number, val: Rate | Number) {
     if (blocks < 1)
       return;
 
@@ -190,7 +205,7 @@ class ConfirmStats {
    * @returns {Rate|Number} Returns -1 on error.
    */
 
-  estimateMedian(target:number, needed, breakpoint, greater, height):number {
+  estimateMedian(target: number, needed, breakpoint, greater, height): number {
     const max = this.buckets.length - 1;
     const start = greater ? max : 0;
     const step = greater ? -1 : 1;
@@ -263,7 +278,7 @@ class ConfirmStats {
    * @returns {Number} Bucket index.
    */
 
-  addTX(height:number, val: number):number {
+  addTX(height: number, val: number): number {
     const bucketIndex = this.bucketMap.search(val);
     const blockIndex = height % this.unconfTX.length;
     this.unconfTX[blockIndex][bucketIndex]++;
@@ -397,18 +412,6 @@ class ConfirmStats {
 
     return this;
   }
-
-  /**
-   * Instantiate confirm stats from serialized data.
-   * @param {Buffer} data
-   * @param {String} type
-   * @param {Logger?} logger
-   * @returns {ConfirmStats}
-   */
-
-  static fromRaw(data, type, logger) {
-    return new this(type, logger).fromRaw(data);
-  }
 }
 
 /**
@@ -419,13 +422,13 @@ class ConfirmStats {
 
 export class PolicyEstimator {
   /**
- * Serialization version.
- * @const {Number}
- * @default
- */
+   * Serialization version.
+   * @const {Number}
+   * @default
+   */
 
   static VERSION = 0;
-  logger: LoggerContext|Logger;
+  logger: LoggerContext | Logger;
   minTrackedFee: bigint;
   minTrackedPri: bigint;
   feeStats: ConfirmStats;
@@ -437,14 +440,14 @@ export class PolicyEstimator {
   map: BufferMap<StatEntry>;
   bestHeight: number;
 
-  
+
   /**
    * Create an estimator.
    * @constructor
    * @param {Logger?} logger
    */
 
-  constructor(logger?:Logger) {
+  constructor(logger?: Logger) {
     this.logger = Logger.global;
 
     this.minTrackedFee = MIN_FEERATE;
@@ -473,6 +476,17 @@ export class PolicyEstimator {
       this.feeStats.logger = this.logger;
       this.priStats.logger = this.logger;
     }
+  }
+
+  /**
+   * Instantiate a policy estimator from serialized data.
+   * @param {Buffer} data
+   * @param {Logger?} logger
+   * @returns {PolicyEstimator}
+   */
+
+  static fromRaw(data: Buffer, logger?: Logger): PolicyEstimator {
+    return new this(logger).fromRaw(data);
   }
 
   /**
@@ -523,7 +537,7 @@ export class PolicyEstimator {
    * @param {Hash} hash
    */
 
-  removeTX(hash:Buffer) {
+  removeTX(hash: Buffer) {
     const item = this.map.get(hash);
 
     if (!item) {
@@ -543,7 +557,7 @@ export class PolicyEstimator {
    * @returns {Boolean}
    */
 
-  isFeePoint(fee:Amount, priority:number):boolean {
+  isFeePoint(fee: Amount, priority: number): boolean {
     if ((BigInt(priority) < this.minTrackedPri && fee >= this.minTrackedFee)
       || (BigInt(priority) < this.priUnlikely && fee > this.feeLikely)) {
       return true;
@@ -558,7 +572,7 @@ export class PolicyEstimator {
    * @returns {Boolean}
    */
 
-  isPriPoint(fee:Amount, priority:number):boolean {
+  isPriPoint(fee: Amount, priority: number): boolean {
     if ((fee < this.minTrackedFee && BigInt(priority) >= this.minTrackedPri)
       || (fee < this.feeUnlikely && BigInt(priority) > this.priLikely)) {
       return true;
@@ -572,7 +586,7 @@ export class PolicyEstimator {
    * @param {Boolean} current - Whether the chain is synced.
    */
 
-  processTX(entry:MempoolEntry, current:boolean) {
+  processTX(entry: MempoolEntry, current: boolean) {
     const height = entry.height;
     const hash = entry.hash();
 
@@ -653,7 +667,7 @@ export class PolicyEstimator {
    * @param {Boolean} current - Whether the chain is synced.
    */
 
-  processBlock(height:number, entries:MempoolEntry[], current:boolean):boolean {
+  processBlock(height: number, entries: MempoolEntry[], current: boolean): boolean {
     // Ignore reorgs.
     if (height <= this.bestHeight)
       return;
@@ -720,7 +734,7 @@ export class PolicyEstimator {
    * @returns {Rate}
    */
 
-  estimateFee(target?:number, smart?:boolean) : Rate {
+  estimateFee(target?: number, smart?: boolean): Rate {
     if (!target)
       target = 1;
 
@@ -764,7 +778,7 @@ export class PolicyEstimator {
    * @returns {Number}
    */
 
-  estimatePriority(target, smart):number {
+  estimatePriority(target, smart): number {
     if (!target)
       target = 1;
 
@@ -845,29 +859,17 @@ export class PolicyEstimator {
   }
 
   /**
-   * Instantiate a policy estimator from serialized data.
-   * @param {Buffer} data
-   * @param {Logger?} logger
-   * @returns {PolicyEstimator}
-   */
-
-  static fromRaw(data:Buffer, logger?:Logger):PolicyEstimator {
-    return new this(logger).fromRaw(data);
-  }
-
-  /**
    * Inject properties from estimator.
    * @param {PolicyEstimator} estimator
    * @returns {PolicyEstimator}
    */
 
-  inject(estimator:PolicyEstimator) {
+  inject(estimator: PolicyEstimator) {
     this.bestHeight = estimator.bestHeight;
     this.feeStats = estimator.feeStats;
     return this;
   }
 }
-
 
 
 /**
@@ -877,8 +879,9 @@ export class PolicyEstimator {
  */
 
 class StatEntry {
-  blockHeight:number;
-  bucketIndex:number;
+  blockHeight: number;
+  bucketIndex: number;
+
   /**
    * StatEntry
    * @constructor
@@ -898,6 +901,7 @@ class StatEntry {
 
 class DoubleMap {
   buckets: undefined[][]
+
   /**
    * DoubleMap
    * @constructor
@@ -912,7 +916,7 @@ class DoubleMap {
     this.buckets.splice(i, 0, [key, value]);
   }
 
-  search(key):number {
+  search(key): number {
     assert(this.buckets.length !== 0, 'Cannot search.');
     const i = binary.search(this.buckets, key, compare, true);
     return this.buckets[i][1];
@@ -939,7 +943,7 @@ function writeArray(bw, buckets) {
     bw.writeDouble(buckets[i]);
 }
 
-function readArray(br:BufferReader) {
+function readArray(br: BufferReader) {
   const buckets = new Float64Array(br.readVarint());
 
   for (let i = 0; i < buckets.length; i++)

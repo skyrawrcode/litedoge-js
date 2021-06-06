@@ -12,23 +12,20 @@
  */
 
 import assert from 'bsert';
-import bio, { BufferReader } from 'bufio';
-import { BloomFilter } from 'bfilter';
-import * as common from './common';
-import * as util from '../utils/util';
-import {NetAddress} from './netaddress';
-import * as consensus from '../protocol/consensus';
-import {Headers} from '../primitives/headers';
-import {InvItem} from '../primitives/invitem';
-import {MemBlock} from '../primitives/memblock';
-import {Block} from '../primitives';
-import {MerkleBlock} from '../primitives/merkleblock';
-import {TX} from '../primitives/tx';
+import bio, {BufferReader} from 'bufio';
+import {BloomFilter} from 'bfilter';
+
+import * as common from './common.js';
+import * as util from '../utils/util.js';
+import {NetAddress} from './netaddress.js';
+import * as consensus from '../protocol/consensus.js';
+import {Block, Headers, InvItem, MerkleBlock, TX} from '../primitives/index.js';
+import {inspectSymbol} from '../utils/index.js';
+import {Hash, Rate} from '../types.js';
+import {CompactBlock, TXRequest, TXResponse} from './bip152.js';
+
 const {encoding} = bio;
 const DUMMY = Buffer.alloc(0);
-import { inspectSymbol } from '../utils';
-import { Hash, Rate } from '../types';
-import { CompactBlock, TXRequest, TXResponse } from './bip152';
 
 /**
  * Packet types.
@@ -37,36 +34,36 @@ import { CompactBlock, TXRequest, TXResponse } from './bip152';
  */
 
 export enum PacketTypes {
-  VERSION= 0,
-  VERACK= 1,
-  PING= 2,
-  PONG= 3,
-  GETADDR= 4,
-  ADDR= 5,
-  INV= 6,
-  GETDATA= 7,
-  NOTFOUND= 8,
-  GETBLOCKS= 9,
-  GETHEADERS= 10,
-  HEADERS= 11,
-  SENDHEADERS= 12,
-  BLOCK= 13,
-  TX= 14,
-  REJECT= 15,
-  MEMPOOL= 16,
-  FILTERLOAD= 17,
-  FILTERADD= 18,
-  FILTERCLEAR= 19,
-  MERKLEBLOCK= 20,
-  FEEFILTER= 21,
-  SENDCMPCT= 22,
-  CMPCTBLOCK= 23,
-  GETBLOCKTXN= 24,
-  BLOCKTXN= 25,
-  UNKNOWN= 26,
+  VERSION = 0,
+  VERACK = 1,
+  PING = 2,
+  PONG = 3,
+  GETADDR = 4,
+  ADDR = 5,
+  INV = 6,
+  GETDATA = 7,
+  NOTFOUND = 8,
+  GETBLOCKS = 9,
+  GETHEADERS = 10,
+  HEADERS = 11,
+  SENDHEADERS = 12,
+  BLOCK = 13,
+  TX = 14,
+  REJECT = 15,
+  MEMPOOL = 16,
+  FILTERLOAD = 17,
+  FILTERADD = 18,
+  FILTERCLEAR = 19,
+  MERKLEBLOCK = 20,
+  FEEFILTER = 21,
+  SENDCMPCT = 22,
+  CMPCTBLOCK = 23,
+  GETBLOCKTXN = 24,
+  BLOCKTXN = 25,
+  UNKNOWN = 26,
   // Internal
-  INTERNAL= 27,
-  DATA= 28
+  INTERNAL = 27,
+  DATA = 28
 };
 
 
@@ -77,6 +74,7 @@ export enum PacketTypes {
 export class Packet {
   type = -1;
   cmd = '';
+
   /**
    * Create a base packet.
    * @constructor
@@ -156,6 +154,7 @@ export class VersionPacket extends Packet {
   agent: string;
   height: number;
   noRelay: boolean;
+
   /**
    * Create a version packet.
    * @constructor
@@ -193,6 +192,39 @@ export class VersionPacket extends Packet {
   }
 
   /**
+   * Instantiate version packet from options.
+   * @param {Object} options
+   * @returns {VersionPacket}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate version packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {VersionPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate version packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {VersionPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
    * Inject properties from options.
    * @private
    * @param {Object} options
@@ -227,16 +259,6 @@ export class VersionPacket extends Packet {
       this.noRelay = options.noRelay;
 
     return this;
-  }
-
-  /**
-   * Instantiate version packet from options.
-   * @param {Object} options
-   * @returns {VersionPacket}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
   }
 
   /**
@@ -329,16 +351,6 @@ export class VersionPacket extends Packet {
   }
 
   /**
-   * Instantiate version packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {VersionPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
    * Inject properties from serialized data.
    * @private
    * @param {Buffer} data
@@ -346,19 +358,6 @@ export class VersionPacket extends Packet {
 
   fromRaw(data) {
     return this.fromReader(bio.read(data));
-  }
-
-  /**
-   * Instantiate version packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {VersionPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
   }
 }
 
@@ -411,6 +410,7 @@ export class VerackPacket extends Packet {
 
 export class PingPacket extends Packet {
   nonce: Buffer;
+
   /**
    * Create a `ping` packet.
    * @constructor
@@ -424,6 +424,29 @@ export class PingPacket extends Packet {
     this.type = PacketTypes.PING;
 
     this.nonce = nonce || null;
+  }
+
+  /**
+   * Instantiate ping packet from serialized data.
+   * @param {BufferReader} br
+   * @returns {PingPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromRaw(br);
+  }
+
+  /**
+   * Instantiate ping packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {PingPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -477,29 +500,6 @@ export class PingPacket extends Packet {
   fromRaw(data) {
     return this.fromReader(bio.read(data));
   }
-
-  /**
-   * Instantiate ping packet from serialized data.
-   * @param {BufferReader} br
-   * @returns {PingPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromRaw(br);
-  }
-
-  /**
-   * Instantiate ping packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {PingPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -510,6 +510,7 @@ export class PingPacket extends Packet {
 
 export class PongPacket extends Packet {
   nonce: Buffer;
+
   /**
    * Create a `pong` packet.
    * @constructor
@@ -523,6 +524,29 @@ export class PongPacket extends Packet {
     this.type = PacketTypes.PONG;
 
     this.nonce = nonce || common.ZERO_NONCE;
+  }
+
+  /**
+   * Instantiate pong packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {VerackPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate pong packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {VerackPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -572,29 +596,6 @@ export class PongPacket extends Packet {
 
   fromRaw(data) {
     return this.fromReader(bio.read(data));
-  }
-
-  /**
-   * Instantiate pong packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {VerackPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate pong packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {VerackPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
   }
 }
 
@@ -647,6 +648,7 @@ export class GetAddrPacket extends Packet {
 
 export class AddrPacket extends Packet {
   items: NetAddress[];
+
   /**
    * Create a `addr` packet.
    * @constructor
@@ -660,6 +662,29 @@ export class AddrPacket extends Packet {
     this.type = PacketTypes.ADDR;
 
     this.items = items || [];
+  }
+
+  /**
+   * Instantiate addr packet from Buffer reader.
+   * @param {BufferReader} br
+   * @returns {AddrPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate addr packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {AddrPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -713,29 +738,6 @@ export class AddrPacket extends Packet {
 
     return this;
   }
-
-  /**
-   * Instantiate addr packet from Buffer reader.
-   * @param {BufferReader} br
-   * @returns {AddrPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate addr packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {AddrPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -747,6 +749,7 @@ export class AddrPacket extends Packet {
 export class InvPacket extends Packet {
 
   items: InvItem[];
+
   /**
    * Create a `inv` packet.
    * @constructor
@@ -760,6 +763,29 @@ export class InvPacket extends Packet {
     this.type = PacketTypes.INV;
 
     this.items = items || [];
+  }
+
+  /**
+   * Instantiate inv packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {InvPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromRaw(br);
+  }
+
+  /**
+   * Instantiate inv packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {InvPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -825,29 +851,6 @@ export class InvPacket extends Packet {
 
   fromRaw(data) {
     return this.fromReader(bio.read(data));
-  }
-
-  /**
-   * Instantiate inv packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {InvPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromRaw(br);
-  }
-
-  /**
-   * Instantiate inv packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {InvPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
   }
 }
 
@@ -943,10 +946,11 @@ export class NotFoundPacket extends InvPacket {
  */
 
 export class GetBlocksPacket extends Packet {
-  
+
   version: number;
-  locator:Buffer[];
+  locator: Buffer[];
   stop: Buffer;
+
   /**
    * Create a `getblocks` packet.
    * @constructor
@@ -963,6 +967,19 @@ export class GetBlocksPacket extends Packet {
     this.version = common.PROTOCOL_VERSION;
     this.locator = locator || [];
     this.stop = stop || null;
+  }
+
+  /**
+   * Instantiate getblocks packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {GetBlocksPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -1041,19 +1058,6 @@ export class GetBlocksPacket extends Packet {
   fromRaw(data) {
     return this.fromReader(bio.read(data));
   }
-
-  /**
-   * Instantiate getblocks packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {GetBlocksPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -1106,7 +1110,8 @@ export class GetHeadersPacket extends GetBlocksPacket {
  */
 
 export class HeadersPacket extends Packet {
-  items:Headers[];
+  items: Headers[];
+
   /**
    * Create a `headers` packet.
    * @constructor
@@ -1120,6 +1125,19 @@ export class HeadersPacket extends Packet {
     this.type = PacketTypes.HEADERS;
 
     this.items = items || [];
+  }
+
+  /**
+   * Instantiate headers packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {VerackPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -1176,8 +1194,8 @@ export class HeadersPacket extends Packet {
     assert(count <= 2000, 'Too many headers.');
 
     for (let i = 0; i < count; i++) {
-        const header = Headers.fromReader(br);
-        this.items.push(header);
+      const header = Headers.fromReader(br);
+      this.items.push(header);
     }
     return this;
   }
@@ -1190,19 +1208,6 @@ export class HeadersPacket extends Packet {
 
   fromRaw(data) {
     return this.fromReader(bio.read(data));
-  }
-
-  /**
-   * Instantiate headers packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {VerackPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
   }
 }
 
@@ -1254,20 +1259,44 @@ export class SendHeadersPacket extends Packet {
  */
 
 export class BlockPacket extends Packet {
-  block:Block;
+  block: Block;
+
   /**
    * Create a `block` packet.
    * @constructor
    * @param {Block|null} block
    */
 
-  constructor(block?:Block) {
+  constructor(block?: Block) {
     super();
 
     this.cmd = 'block';
     this.type = PacketTypes.BLOCK;
 
     this.block = block || new Block();
+  }
+
+  /**
+   * Instantiate block packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {BlockPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate block packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {BlockPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -1318,29 +1347,6 @@ export class BlockPacket extends Packet {
     this.block.fromRaw(data);
     return this;
   }
-
-  /**
-   * Instantiate block packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {BlockPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate block packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {BlockPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -1351,19 +1357,43 @@ export class BlockPacket extends Packet {
 
 export class TXPacket extends Packet {
   tx: TX;
+
   /**
    * Create a `tx` packet.
    * @constructor
    * @param {TX|null} tx
    */
 
-  constructor(tx?:TX) {
+  constructor(tx?: TX) {
     super();
 
     this.cmd = 'tx';
     this.type = PacketTypes.TX;
 
     this.tx = tx || new TX();
+  }
+
+  /**
+   * Instantiate tx packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {TXPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate tx packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {TXPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -1414,29 +1444,6 @@ export class TXPacket extends Packet {
     this.tx.fromRaw(data);
     return this;
   }
-
-  /**
-   * Instantiate tx packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {TXPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate tx packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {TXPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -1450,10 +1457,11 @@ export class TXPacket extends Packet {
  */
 
 export class RejectPacket extends Packet {
-  message:string;
+  message: string;
   code: RejectPacketCodes;
   reason: string;
   hash: Buffer;
+
   /**
    * Create reject packet.
    * @constructor
@@ -1472,6 +1480,63 @@ export class RejectPacket extends Packet {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate reject packet from options.
+   * @param {Object} options
+   * @returns {RejectPacket}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate reject packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {RejectPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate reject packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {RejectPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate reject packet from reason message.
+   * @param {Number} code
+   * @param {String} reason
+   * @param {String?} msg
+   * @param {Hash?} hash
+   * @returns {RejectPacket}
+   */
+
+  static fromReason(code, reason, msg, hash?: Buffer) {
+    return new this().fromReason(code, reason, msg, hash);
+  }
+
+  /**
+   * Instantiate reject packet from verify error.
+   * @param {VerifyError} err
+   * @param {(TX|Block)?} obj
+   * @returns {RejectPacket}
+   */
+
+  static fromError(err, obj) {
+    return this.fromReason(err.code, err.reason, obj);
   }
 
   /**
@@ -1503,16 +1568,6 @@ export class RejectPacket extends Packet {
       this.hash = options.hash;
 
     return this;
-  }
-
-  /**
-   * Instantiate reject packet from options.
-   * @param {Object} options
-   * @returns {RejectPacket}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
   }
 
   /**
@@ -1620,29 +1675,6 @@ export class RejectPacket extends Packet {
   }
 
   /**
-   * Instantiate reject packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {RejectPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate reject packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {RejectPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
-
-  /**
    * Inject properties from reason message and object.
    * @private
    * @param {Number|String} code
@@ -1675,30 +1707,6 @@ export class RejectPacket extends Packet {
   }
 
   /**
-   * Instantiate reject packet from reason message.
-   * @param {Number} code
-   * @param {String} reason
-   * @param {String?} msg
-   * @param {Hash?} hash
-   * @returns {RejectPacket}
-   */
-
-  static fromReason(code, reason, msg, hash?:Buffer) {
-    return new this().fromReason(code, reason, msg, hash);
-  }
-
-  /**
-   * Instantiate reject packet from verify error.
-   * @param {VerifyError} err
-   * @param {(TX|Block)?} obj
-   * @returns {RejectPacket}
-   */
-
-  static fromError(err, obj) {
-    return this.fromReason(err.code, err.reason, obj);
-  }
-
-  /**
    * Inspect reject packet.
    * @returns {String}
    */
@@ -1722,20 +1730,20 @@ export class RejectPacket extends Packet {
  * @default
  */
 
-export enum RejectPacketCodes  {
-  MALFORMED= 0x01,
-  INVALID=  0x10,
-  OBSOLETE=  0x11,
-  DUPLICATE=  0x12,
-  NONSTANDARD=  0x40,
-  DUST= 0x41,
-  INSUFFICIENTFEE= 0x42,
-  CHECKPOINT= 0x43,
+export enum RejectPacketCodes {
+  MALFORMED = 0x01,
+  INVALID = 0x10,
+  OBSOLETE = 0x11,
+  DUPLICATE = 0x12,
+  NONSTANDARD = 0x40,
+  DUST = 0x41,
+  INSUFFICIENTFEE = 0x42,
+  CHECKPOINT = 0x43,
   // Internal codes (NOT FOR USE ON NETWORK)
-  INTERNAL= 0x100,
-  HIGHFEE= 0x101,
-  ALREADYKNOWN= 0x102,
-  CONFLICT= 0x103
+  INTERNAL = 0x100,
+  HIGHFEE = 0x101,
+  ALREADYKNOWN = 0x102,
+  CONFLICT = 0x103
 };
 
 /**
@@ -1786,6 +1794,7 @@ export class MempoolPacket extends Packet {
 
 export class FilterLoadPacket extends Packet {
   filter: BloomFilter;
+
   /**
    * Create a `filterload` packet.
    * @constructor
@@ -1799,6 +1808,29 @@ export class FilterLoadPacket extends Packet {
     this.type = PacketTypes.FILTERLOAD;
 
     this.filter = filter || new BloomFilter();
+  }
+
+  /**
+   * Instantiate filterload packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {FilterLoadPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate filterload packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {FilterLoadPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -1851,29 +1883,6 @@ export class FilterLoadPacket extends Packet {
   }
 
   /**
-   * Instantiate filterload packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {FilterLoadPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate filterload packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {FilterLoadPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
-
-  /**
    * Ensure the filter is within the size limits.
    * @returns {Boolean}
    */
@@ -1891,6 +1900,7 @@ export class FilterLoadPacket extends Packet {
 
 export class FilterAddPacket extends Packet {
   data: Buffer;
+
   /**
    * Create a `filteradd` packet.
    * @constructor
@@ -1904,6 +1914,19 @@ export class FilterAddPacket extends Packet {
     this.type = PacketTypes.FILTERADD;
 
     this.data = data || DUMMY;
+  }
+
+  /**
+   * Instantiate filteradd packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {FilterAddPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -1955,19 +1978,6 @@ export class FilterAddPacket extends Packet {
   fromRaw(data) {
     return this.fromReader(bio.read(data));
   }
-
-  /**
-   * Instantiate filteradd packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {FilterAddPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -2008,7 +2018,8 @@ export class FilterClearPacket extends Packet {
  */
 
 export class MerkleBlockPacket extends Packet {
-  block:MerkleBlock;
+  block: MerkleBlock;
+
   /**
    * Create a `merkleblock` packet.
    * @constructor
@@ -2022,6 +2033,19 @@ export class MerkleBlockPacket extends Packet {
     this.type = PacketTypes.MERKLEBLOCK;
 
     this.block = block || new MerkleBlock();
+  }
+
+  /**
+   * Instantiate merkleblock packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {MerkleBlockPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -2072,19 +2096,6 @@ export class MerkleBlockPacket extends Packet {
     this.block.fromRaw(data);
     return this;
   }
-
-  /**
-   * Instantiate merkleblock packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {MerkleBlockPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -2094,7 +2105,8 @@ export class MerkleBlockPacket extends Packet {
  */
 
 export class FeeFilterPacket extends Packet {
-  rate:Rate;
+  rate: Rate;
+
   /**
    * Create a `feefilter` packet.
    * @constructor
@@ -2108,6 +2120,29 @@ export class FeeFilterPacket extends Packet {
     this.type = PacketTypes.FEEFILTER;
 
     this.rate = rate || 0n;
+  }
+
+  /**
+   * Instantiate feefilter packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {FeeFilterPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate feefilter packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {FeeFilterPacket}
+   */
+
+  static fromRaw(data: Buffer, enc?: 'hex'): FeeFilterPacket {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -2158,29 +2193,6 @@ export class FeeFilterPacket extends Packet {
   fromRaw(data) {
     return this.fromReader(bio.read(data));
   }
-
-  /**
-   * Instantiate feefilter packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {FeeFilterPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate feefilter packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {FeeFilterPacket}
-   */
-
-  static fromRaw(data:Buffer, enc?:'hex'):FeeFilterPacket {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -2191,8 +2203,9 @@ export class FeeFilterPacket extends Packet {
  */
 
 export class SendCmpctPacket extends Packet {
-  mode:number;
-  version:number;
+  mode: number;
+  version: number;
+
   /**
    * Create a `sendcmpct` packet.
    * @constructor
@@ -2208,6 +2221,29 @@ export class SendCmpctPacket extends Packet {
 
     this.mode = mode || 0;
     this.version = version || 1;
+  }
+
+  /**
+   * Instantiate sendcmpct packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {SendCmpctPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate sendcmpct packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {SendCmpctPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -2260,29 +2296,6 @@ export class SendCmpctPacket extends Packet {
   fromRaw(data) {
     return this.fromReader(bio.read(data));
   }
-
-  /**
-   * Instantiate sendcmpct packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {SendCmpctPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate sendcmpct packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {SendCmpctPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -2292,7 +2305,8 @@ export class SendCmpctPacket extends Packet {
  */
 
 export class CmpctBlockPacket extends Packet {
-  block:CompactBlock;
+  block: CompactBlock;
+
   /**
    * Create a `cmpctblock` packet.
    * @constructor
@@ -2306,6 +2320,29 @@ export class CmpctBlockPacket extends Packet {
     this.type = PacketTypes.CMPCTBLOCK;
 
     this.block = block || new CompactBlock();
+  }
+
+  /**
+   * Instantiate cmpctblock packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {CmpctBlockPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate cmpctblock packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {CmpctBlockPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -2356,29 +2393,6 @@ export class CmpctBlockPacket extends Packet {
     this.block.fromRaw(data);
     return this;
   }
-
-  /**
-   * Instantiate cmpctblock packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {CmpctBlockPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate cmpctblock packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {CmpctBlockPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -2388,20 +2402,44 @@ export class CmpctBlockPacket extends Packet {
  */
 
 export class GetBlockTxnPacket extends Packet {
-  request:TXRequest;
+  request: TXRequest;
+
   /**
    * Create a `getblocktxn` packet.
    * @constructor
    * @param {TXRequest?} request
    */
 
-  constructor(request?:TXRequest) {
+  constructor(request?: TXRequest) {
     super();
 
     this.cmd = 'getblocktxn';
     this.type = PacketTypes.GETBLOCKTXN;
 
     this.request = request || new TXRequest();
+  }
+
+  /**
+   * Instantiate getblocktxn packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {GetBlockTxnPacket}
+   */
+
+  static fromReader(br: BufferReader) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate getblocktxn packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {GetBlockTxnPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -2452,29 +2490,6 @@ export class GetBlockTxnPacket extends Packet {
     this.request.fromRaw(data);
     return this;
   }
-
-  /**
-   * Instantiate getblocktxn packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {GetBlockTxnPacket}
-   */
-
-  static fromReader(br:BufferReader) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate getblocktxn packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {GetBlockTxnPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -2492,13 +2507,36 @@ export class BlockTxnPacket extends Packet {
    * @param {TXResponse?} response
    */
 
-  constructor(response?:TXResponse) {
+  constructor(response?: TXResponse) {
     super();
 
     this.cmd = 'blocktxn';
     this.type = PacketTypes.BLOCKTXN;
 
     this.response = response || new TXResponse();
+  }
+
+  /**
+   * Instantiate blocktxn packet from buffer reader.
+   * @param {BufferReader} br
+   * @returns {BlockTxnPacket}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate blocktxn packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {BlockTxnPacket}
+   */
+
+  static fromRaw(data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -2549,29 +2587,6 @@ export class BlockTxnPacket extends Packet {
     this.response.fromRaw(data);
     return this;
   }
-
-  /**
-   * Instantiate blocktxn packet from buffer reader.
-   * @param {BufferReader} br
-   * @returns {BlockTxnPacket}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate blocktxn packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {BlockTxnPacket}
-   */
-
-  static fromRaw(data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
 }
 
 /**
@@ -2582,8 +2597,9 @@ export class BlockTxnPacket extends Packet {
  */
 
 export class UnknownPacket extends Packet {
-  
-  data:Buffer;
+
+  data: Buffer;
+
   /**
    * Create an unknown packet.
    * @constructor
@@ -2591,12 +2607,25 @@ export class UnknownPacket extends Packet {
    * @param {Buffer|null} data
    */
 
-  constructor(cmd?:string, data?:Buffer) {
+  constructor(cmd?: string, data?: Buffer) {
     super();
 
     this.cmd = cmd;
     this.type = PacketTypes.UNKNOWN;
     this.data = data;
+  }
+
+  /**
+   * Instantiate unknown packet from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {UnknownPacket}
+   */
+
+  static fromRaw(cmd, data, enc?) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(cmd, data);
   }
 
   /**
@@ -2639,19 +2668,6 @@ export class UnknownPacket extends Packet {
     this.data = data;
     return this;
   }
-
-  /**
-   * Instantiate unknown packet from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {UnknownPacket}
-   */
-
-  static fromRaw(cmd, data, enc?) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(cmd, data);
-  }
 }
 
 /**
@@ -2661,7 +2677,7 @@ export class UnknownPacket extends Packet {
  * @returns {Packet}
  */
 
-export  function fromRaw(cmd:string, data:Buffer) {
+export function fromRaw(cmd: string, data: Buffer) {
   switch (cmd) {
     case 'version':
       return VersionPacket.fromRaw(data);

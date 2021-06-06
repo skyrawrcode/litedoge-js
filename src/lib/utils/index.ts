@@ -9,10 +9,10 @@
 /**
  * @module utils
  */
-export * as binary from './binary';
-export * as fixed from './fixed';
-export * as util from './util';
-export * as message from './message';
+export * as binary from './binary.js';
+export * as fixed from './fixed.js';
+export * as util from './util.js';
+export * as message from './message.js';
 
 
 // const {inspect: {custom}} = require('src/utils/util');

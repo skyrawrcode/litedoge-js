@@ -11,11 +11,12 @@
 
 import assert from 'bsert';
 import EventEmitter from 'events';
-import { format } from 'util';
-import {Network} from '../protocol/network';
-import hash256 from 'bcrypto/lib/hash256';
-import * as common from './common';
-import * as packets from './packets';
+import {format} from 'util';
+import hash256 from 'bcrypto/lib/hash256.js';
+
+import {Network} from '../protocol/network.js';
+import * as common from './common.js';
+import * as packets from './packets.js';
 
 /**
  * Protocol Message Parser
@@ -26,11 +27,12 @@ import * as packets from './packets';
  */
 
 export class Parser extends EventEmitter {
-  network:Network;
-  total:number;
-  waiting:number;
+  network: Network;
+  total: number;
+  waiting: number;
   pending: Buffer[];
-  header:Header
+  header: Header
+
   /**
    * Create a parser.
    * @constructor
@@ -54,7 +56,7 @@ export class Parser extends EventEmitter {
    * @param {...String} msg
    */
 
-  error(...args:string[]) {
+  error(...args: string[]) {
     const msg = format.apply(null, args);
     this.emit('error', new Error(msg));
   }
@@ -64,7 +66,7 @@ export class Parser extends EventEmitter {
    * @param {Buffer} data
    */
 
-  feed(data:Buffer) {
+  feed(data: Buffer) {
     this.total += data.length;
     this.pending.push(data);
 
@@ -143,7 +145,7 @@ export class Parser extends EventEmitter {
 
     // Count length of the cmd.
     let i = 0;
-    for (; data[i + 4] !== 0 && i < 12; i++);
+    for (; data[i + 4] !== 0 && i < 12; i++) ;
 
     if (i === 12) {
       this.error('Non NULL-terminated command.');
@@ -174,7 +176,7 @@ export class Parser extends EventEmitter {
    * @returns {Object}
    */
 
-  parsePayload(cmd, data:Buffer) {
+  parsePayload(cmd, data: Buffer) {
     return packets.fromRaw(cmd, data);
   }
 }
@@ -185,9 +187,10 @@ export class Parser extends EventEmitter {
  */
 
 class Header {
-  cmd:string;
-  size:number;
-  checksum:Buffer;
+  cmd: string;
+  size: number;
+  checksum: Buffer;
+
   /**
    * Create a header.
    * @constructor

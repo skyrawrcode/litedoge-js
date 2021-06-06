@@ -12,17 +12,21 @@ import fs from 'bfile';
 import bio from 'bufio';
 import EventEmitter from 'events';
 import Logger from 'blgr';
-import {Network} from '../protocol/network';
-import {util} from '../utils';
-import {layout} from './layout';
-import {CoinView} from '../coins/coinview';
-import {Block} from '../primitives/block';
-import  {consensus} from '../protocol';
-import { LoggerContext } from 'blgr/lib/logger';
-import { AbstractBlockStore } from '../blockstore';
-import { Chain } from '../blockchain';
-import DB, { Batch } from 'bdb/lib/db';
+
+import {LoggerContext} from 'blgr/lib/logger';
+
+import {Network} from '../protocol/network.js';
+import {util} from '../utils/index.js';
+import {layout} from './layout.js';
+import {CoinView} from '../coins/coinview.js';
+import {Block} from '../primitives/block.js';
+import {consensus} from '../protocol/index.js';
+import {AbstractBlockStore} from '../blockstore/index.js';
+import {Chain} from '../blockchain/index.js';
+import DB, {Batch} from 'bdb/lib/db';
+
 const {ZERO_HASH} = consensus;
+
 /**
  * Indexer
  * The class which indexers inherit from and implement the
@@ -35,16 +39,17 @@ const {ZERO_HASH} = consensus;
 
 export class Indexer extends EventEmitter {
   options: IndexOptions;
-  network:Network;
-  logger:LoggerContext;
+  network: Network;
+  logger: LoggerContext;
   blocks: AbstractBlockStore;
   chain: Chain;
-  closing:boolean;
-  batch:Batch;
-  db:DB;
+  closing: boolean;
+  batch: Batch;
+  db: DB;
   height: number;
   syncing: boolean;
   bound: any[];
+
   /**
    * Create an indexer.
    * @constructor
@@ -274,7 +279,7 @@ export class Indexer extends EventEmitter {
    * @returns {Promise}
    */
 
-  async sync(meta: BlockMeta|null = null, block: Block | null = null, view: CoinView|null = null): Promise<any> {
+  async sync(meta: BlockMeta | null = null, block: Block | null = null, view: CoinView | null = null): Promise<any> {
     if (this.syncing)
       return;
 
@@ -306,7 +311,7 @@ export class Indexer extends EventEmitter {
    * @returns {Promise}
    */
 
-  async _syncBlock(meta: BlockMeta = null, block: Block = null, view: CoinView=null): Promise<any> {
+  async _syncBlock(meta: BlockMeta = null, block: Block = null, view: CoinView = null): Promise<any> {
     // In the case that the next block is being
     // connected or the current block disconnected
     // use the block and view being passed directly,
@@ -594,7 +599,7 @@ export class Indexer extends EventEmitter {
    * @param {Boolean} reverse
    */
 
-  logStatus(start:  [number,number], block: Block, meta: BlockMeta, reverse?: boolean) {
+  logStatus(start: [number, number], block: Block, meta: BlockMeta, reverse?: boolean) {
     if (!this.isSlow())
       return;
 
@@ -644,6 +649,7 @@ class IndexOptions {
   maxFiles: number;
   cacheSize: number;
   compression: boolean;
+
   /**
    * Create index options.
    * @constructor
@@ -651,7 +657,7 @@ class IndexOptions {
    * @param {Object} options
    */
 
-  constructor(module?: string, options?:any) {
+  constructor(module?: string, options?: any) {
     this.module = module;
     this.network = Network.primary;
     this.logger = Logger.global;
@@ -667,6 +673,16 @@ class IndexOptions {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate indexer options from object.
+   * @param {Object} options
+   * @returns {IndexOptions}
+   */
+
+  static fromOptions(options: object): IndexOptions {
+    return new this().fromOptions(options);
   }
 
   /**
@@ -727,16 +743,6 @@ class IndexOptions {
     }
 
     return this;
-  }
-
-  /**
-   * Instantiate indexer options from object.
-   * @param {Object} options
-   * @returns {IndexOptions}
-   */
-
-  static fromOptions(options: object): IndexOptions {
-    return new this().fromOptions(options);
   }
 }
 

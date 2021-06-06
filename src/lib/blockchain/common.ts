@@ -23,7 +23,7 @@ export enum LockFlags  {
    * Standard locktime flags
    */
    STANDARD_LOCKTIME_FLAGS = 0 | LockFlags.VERIFY_SEQUENCE | LockFlags.MEDIAN_TIME_PAST
-};
+}
 
 
 /**
@@ -38,7 +38,7 @@ export enum ThresholdStates  {
   LOCKED_IN=  2,
   ACTIVE= 3,
   FAILED= 4
-};
+}
 
 /**
  * Verify flags for blocks.
@@ -52,4 +52,4 @@ export enum VerifyFlags  {
   VERIFY_BODY= 1 << 1,
   VERIFY_POS= 1 << 2,
   DEFAULT_FLAGS = 0 | VerifyFlags.VERIFY_POW | VerifyFlags.VERIFY_BODY | VerifyFlags.VERIFY_POS
-};
+}

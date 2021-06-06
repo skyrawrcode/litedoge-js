@@ -7,10 +7,9 @@
 
 import assert from 'bsert';
 import bufio from 'bufio';
-import hash256 from 'bcrypto/lib/hash256';
-import secp256k1 from 'bcrypto/lib/secp256k1';
-import { KeyRing } from '../primitives';
-
+import hash256 from 'bcrypto/lib/hash256.js';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+import {KeyRing} from '../primitives/index.js';
 
 
 /**
@@ -28,7 +27,7 @@ export const MAGIC_STRING = 'LiteDoge Signed Message:\\n';
  * @returns {Hash}
  */
 
-export function magicHash(msg, prefix = MAGIC_STRING){
+export function magicHash(msg, prefix = MAGIC_STRING) {
   assert(typeof prefix === 'string', 'prefix must be a string.');
   assert(typeof msg === 'string', 'message must be a string');
 
@@ -48,7 +47,7 @@ export function magicHash(msg, prefix = MAGIC_STRING){
  * @returns {Buffer}
  */
 
-export function sign(msg:string, ring:KeyRing, prefix?:string) {
+export function sign(msg: string, ring: KeyRing, prefix?: string) {
   assert(ring.getPrivateKey(), 'Cannot sign without private key.');
 
   const hash = magicHash(msg, prefix);
@@ -73,7 +72,7 @@ export function sign(msg:string, ring:KeyRing, prefix?:string) {
  * @param {String} [prefix = MAGIC_STRING]
  */
 
-export function recover(msg:string, signature:Buffer, prefix?:string) {
+export function recover(msg: string, signature: Buffer, prefix?: string) {
   assert(typeof msg === 'string', 'msg must be a string');
   assert(Buffer.isBuffer(signature), 'sig must be a buffer');
 

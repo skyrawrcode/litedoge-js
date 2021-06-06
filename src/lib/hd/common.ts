@@ -4,12 +4,12 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
 
 import assert from 'bsert';
 import LRU from 'blru';
-import { HDPrivateKey } from './private';
-import { HDPublicKey } from './public';
+
+import { HDPrivateKey } from './private.js';
+import { HDPublicKey } from './public.js';
 
 /**
  * Index at which hardening begins.
@@ -99,7 +99,7 @@ export  function parsePath(path, hard) {
   }
 
   return result;
-};
+}
 
 /**
  * Test whether the key is a master key.
@@ -111,7 +111,7 @@ export  function isMaster(key) {
   return key.depth === 0
     && key.childIndex === 0
     && key.parentFingerPrint === 0;
-};
+}
 
 /**
  * Test whether the key is (most likely) a BIP44 account key.
@@ -127,7 +127,7 @@ export function isAccount(key:HDPrivateKey|HDPublicKey, account?:number):boolean
       return false;
   }
   return key.depth === 3 && (key.childIndex & HARDENED) !== 0;
-};
+}
 
 /**
  * A compressed pubkey of all zeroes.

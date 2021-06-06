@@ -7,7 +7,7 @@
 'use strict';
 
 import { BufferMap } from 'buffer-map';
-import { TX } from '../primitives';
+import { TX } from '../primitives/index.js';
 
 /**
  * Test whether a string is eligible

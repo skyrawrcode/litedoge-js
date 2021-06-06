@@ -12,7 +12,7 @@
  */
 
 import assert from 'bsert';
-import { AbstractBlock, Block, Headers, TX } from '../primitives';
+import {AbstractBlock, TX} from '../primitives/index.js';
 
 /**
  * Verify Error
@@ -34,8 +34,9 @@ export class VerifyError extends Error {
   code: string;
   reason: string;
   score: number;
-  hash: string|Buffer;
+  hash: string | Buffer;
   malleated: boolean;
+
   /**
    * Create a verify error.
    * @constructor
@@ -47,7 +48,7 @@ export class VerifyError extends Error {
    * @param {Boolean?} malleated
    */
 
-  constructor(msg:TX|AbstractBlock, code:string, reason:string, score:number, malleated?:boolean) {
+  constructor(msg: TX | AbstractBlock, code: string, reason: string, score: number, malleated?: boolean) {
     super();
 
     assert(typeof code === 'string');

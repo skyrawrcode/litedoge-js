@@ -6,10 +6,12 @@
  */
 
 import assert from 'bsert';
-
-import { ScriptNum } from './scriptnum';
-import * as common from './common';
 import bio from "bufio";
+
+
+import {ScriptNum} from './scriptnum.js';
+import * as common from './common.js';
+
 const opcodes = common.opcodes;
 
 const opCache = [];
@@ -40,6 +42,268 @@ export class Opcode {
   constructor(value, data = null) {
     this.value = value || 0;
     this.data = data || null;
+  }
+
+  /**
+   * Instantiate an opcode from a number opcode.
+   * @param {Number} op
+   * @returns {Opcode}
+   */
+
+  static fromOp(op) {
+    assert(typeof op === 'number');
+
+    const cached = opCache[op];
+
+    assert(cached, 'Bad opcode.');
+
+    return cached;
+  }
+
+  /**
+   * Instantiate a pushdata opcode from
+   * a buffer (will encode minimaldata).
+   * @param {Buffer} data
+   * @returns {Opcode}
+   */
+
+  static fromData(data) {
+    assert(Buffer.isBuffer(data));
+
+    if (data.length === 1) {
+      if (data[0] === 0x81)
+        return this.fromOp(opcodes.OP_1NEGATE);
+
+      if (data[0] >= 1 && data[0] <= 16)
+        return this.fromOp(data[0] + 0x50);
+    }
+
+    return this.fromPush(data);
+  }
+
+  /**
+   * Instantiate a pushdata opcode from a
+   * buffer (this differs from fromData in
+   * that it will _always_ be a pushdata op).
+   * @param {Buffer} data
+   * @returns {Opcode}
+   */
+
+  static fromPush(data) {
+    assert(Buffer.isBuffer(data));
+
+    if (data.length === 0)
+      return this.fromOp(opcodes.OP_0);
+
+    if (data.length <= 0x4b)
+      return new this(data.length, data);
+
+    if (data.length <= 0xff)
+      return new this(opcodes.OP_PUSHDATA1, data);
+
+    if (data.length <= 0xffff)
+      return new this(opcodes.OP_PUSHDATA2, data);
+
+    if (data.length <= 0xffffffff)
+      return new this(opcodes.OP_PUSHDATA4, data);
+
+    throw new Error('Pushdata size too large.');
+  }
+
+  /**
+   * Instantiate a pushdata opcode from a string.
+   * @param {String} str
+   * @param {String} [enc=utf8]
+   * @returns {Opcode}
+   */
+
+  static fromString(str: string, enc?: 'utf8' | null): Opcode {
+    assert(typeof str === 'string');
+    const data = Buffer.from(str, enc || 'utf8');
+    return this.fromData(data);
+  }
+
+  /**
+   * Instantiate an opcode from a small number.
+   * @param {Number} num
+   * @returns {Opcode}
+   */
+
+  static fromSmall(num) {
+    assert((num & 0xff) === num && num >= 0 && num <= 16);
+    return this.fromOp(num === 0 ? 0 : num + 0x50);
+  }
+
+  /**
+   * Instantiate an opcode from a ScriptNum.
+   * @param {ScriptNumber} num
+   * @returns {Opcode}
+   */
+
+  static fromNum(num) {
+    assert(ScriptNum.isScriptNum(num));
+    return this.fromData(num.encode());
+  }
+
+  /**
+   * Instantiate an opcode from a Number.
+   * @param {Number} num
+   * @returns {Opcode}
+   */
+
+  static fromInt(num) {
+    assert(Number.isSafeInteger(num));
+
+    if (num === 0)
+      return this.fromOp(opcodes.OP_0);
+
+    if (num === -1)
+      return this.fromOp(opcodes.OP_1NEGATE);
+
+    if (num >= 1 && num <= 16)
+      return this.fromOp(num + 0x50);
+
+    return this.fromNum(ScriptNum.fromNumber(num));
+  }
+
+  /**
+   * Instantiate an opcode from a Number.
+   * @param {Boolean} value
+   * @returns {Opcode}
+   */
+
+  static fromBool(value) {
+    assert(typeof value === 'boolean');
+    return this.fromSmall(value ? 1 : 0);
+  }
+
+  /**
+   * Instantiate a pushdata opcode from symbolic name.
+   * @example
+   *   Opcode.fromSymbol('checksequenceverify')
+   * @param {String} name
+   * @returns {Opcode}
+   */
+
+  static fromSymbol(name) {
+    assert(typeof name === 'string');
+    assert(name.length > 0);
+
+    if (name.charCodeAt(0) & 32)
+      name = name.toUpperCase();
+
+    if (!/^OP_/.test(name))
+      name = `OP_${name}`;
+
+    const op = common.opcodes[name];
+
+    if (op != null)
+      return this.fromOp(op);
+
+    assert(/^OP_0X/.test(name), 'Unknown opcode.');
+    assert(name.length === 7, 'Unknown opcode.');
+
+    const value = parseInt(name.substring(5), 16);
+
+    assert((value & 0xff) === value, 'Unknown opcode.');
+
+    return this.fromOp(value);
+  }
+
+  /**
+   * Instantiate opcode from buffer reader.
+   * @param {BufferReader} br
+   * @returns {Opcode}
+   */
+
+  static fromReader(br) {
+    const value = br.readU8();
+    const op = opCache[value];
+
+    if (op)
+      return op;
+
+    switch (value) {
+      case opcodes.OP_PUSHDATA1: {
+        if (br.left() < 1)
+          return PARSE_ERROR;
+
+        const size = br.readU8();
+
+        if (br.left() < size) {
+          br.seek(br.left());
+          return PARSE_ERROR;
+        }
+
+        const data = br.readBytes(size);
+
+        return new this(value, data);
+      }
+      case opcodes.OP_PUSHDATA2: {
+        if (br.left() < 2) {
+          br.seek(br.left());
+          return PARSE_ERROR;
+        }
+
+        const size = br.readU16();
+
+        if (br.left() < size) {
+          br.seek(br.left());
+          return PARSE_ERROR;
+        }
+
+        const data = br.readBytes(size);
+
+        return new this(value, data);
+      }
+      case opcodes.OP_PUSHDATA4: {
+        if (br.left() < 4) {
+          br.seek(br.left());
+          return PARSE_ERROR;
+        }
+
+        const size = br.readU32();
+
+        if (br.left() < size) {
+          br.seek(br.left());
+          return PARSE_ERROR;
+        }
+
+        const data = br.readBytes(size);
+
+        return new this(value, data);
+      }
+      default: {
+        if (br.left() < value) {
+          br.seek(br.left());
+          return PARSE_ERROR;
+        }
+
+        const data = br.readBytes(value);
+
+        return new this(value, data);
+      }
+    }
+  }
+
+  /**
+   * Instantiate opcode from serialized data.
+   * @param {Buffer} data
+   * @returns {Opcode}
+   */
+
+  static fromRaw(data) {
+    return this.fromReader(bio.read(data));
+  }
+
+  /**
+   * Test whether an object an Opcode.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isOpcode(obj) {
+    return obj instanceof Opcode;
   }
 
   /**
@@ -407,268 +671,6 @@ export class Opcode {
       return common.toASM(this.data, decode);
 
     return Opcode[this.value] || 'OP_UNKNOWN';
-  }
-
-  /**
-   * Instantiate an opcode from a number opcode.
-   * @param {Number} op
-   * @returns {Opcode}
-   */
-
-  static fromOp(op) {
-    assert(typeof op === 'number');
-
-    const cached = opCache[op];
-
-    assert(cached, 'Bad opcode.');
-
-    return cached;
-  }
-
-  /**
-   * Instantiate a pushdata opcode from
-   * a buffer (will encode minimaldata).
-   * @param {Buffer} data
-   * @returns {Opcode}
-   */
-
-  static fromData(data) {
-    assert(Buffer.isBuffer(data));
-
-    if (data.length === 1) {
-      if (data[0] === 0x81)
-        return this.fromOp(opcodes.OP_1NEGATE);
-
-      if (data[0] >= 1 && data[0] <= 16)
-        return this.fromOp(data[0] + 0x50);
-    }
-
-    return this.fromPush(data);
-  }
-
-  /**
-   * Instantiate a pushdata opcode from a
-   * buffer (this differs from fromData in
-   * that it will _always_ be a pushdata op).
-   * @param {Buffer} data
-   * @returns {Opcode}
-   */
-
-  static fromPush(data) {
-    assert(Buffer.isBuffer(data));
-
-    if (data.length === 0)
-      return this.fromOp(opcodes.OP_0);
-
-    if (data.length <= 0x4b)
-      return new this(data.length, data);
-
-    if (data.length <= 0xff)
-      return new this(opcodes.OP_PUSHDATA1, data);
-
-    if (data.length <= 0xffff)
-      return new this(opcodes.OP_PUSHDATA2, data);
-
-    if (data.length <= 0xffffffff)
-      return new this(opcodes.OP_PUSHDATA4, data);
-
-    throw new Error('Pushdata size too large.');
-  }
-
-  /**
-   * Instantiate a pushdata opcode from a string.
-   * @param {String} str
-   * @param {String} [enc=utf8]
-   * @returns {Opcode}
-   */
-
-  static fromString(str: string, enc?: 'utf8' | null): Opcode {
-    assert(typeof str === 'string');
-    const data = Buffer.from(str, enc || 'utf8');
-    return this.fromData(data);
-  }
-
-  /**
-   * Instantiate an opcode from a small number.
-   * @param {Number} num
-   * @returns {Opcode}
-   */
-
-  static fromSmall(num) {
-    assert((num & 0xff) === num && num >= 0 && num <= 16);
-    return this.fromOp(num === 0 ? 0 : num + 0x50);
-  }
-
-  /**
-   * Instantiate an opcode from a ScriptNum.
-   * @param {ScriptNumber} num
-   * @returns {Opcode}
-   */
-
-  static fromNum(num) {
-    assert(ScriptNum.isScriptNum(num));
-    return this.fromData(num.encode());
-  }
-
-  /**
-   * Instantiate an opcode from a Number.
-   * @param {Number} num
-   * @returns {Opcode}
-   */
-
-  static fromInt(num) {
-    assert(Number.isSafeInteger(num));
-
-    if (num === 0)
-      return this.fromOp(opcodes.OP_0);
-
-    if (num === -1)
-      return this.fromOp(opcodes.OP_1NEGATE);
-
-    if (num >= 1 && num <= 16)
-      return this.fromOp(num + 0x50);
-
-    return this.fromNum(ScriptNum.fromNumber(num));
-  }
-
-  /**
-   * Instantiate an opcode from a Number.
-   * @param {Boolean} value
-   * @returns {Opcode}
-   */
-
-  static fromBool(value) {
-    assert(typeof value === 'boolean');
-    return this.fromSmall(value ? 1 : 0);
-  }
-
-  /**
-   * Instantiate a pushdata opcode from symbolic name.
-   * @example
-   *   Opcode.fromSymbol('checksequenceverify')
-   * @param {String} name
-   * @returns {Opcode}
-   */
-
-  static fromSymbol(name) {
-    assert(typeof name === 'string');
-    assert(name.length > 0);
-
-    if (name.charCodeAt(0) & 32)
-      name = name.toUpperCase();
-
-    if (!/^OP_/.test(name))
-      name = `OP_${name}`;
-
-    const op = common.opcodes[name];
-
-    if (op != null)
-      return this.fromOp(op);
-
-    assert(/^OP_0X/.test(name), 'Unknown opcode.');
-    assert(name.length === 7, 'Unknown opcode.');
-
-    const value = parseInt(name.substring(5), 16);
-
-    assert((value & 0xff) === value, 'Unknown opcode.');
-
-    return this.fromOp(value);
-  }
-
-  /**
-   * Instantiate opcode from buffer reader.
-   * @param {BufferReader} br
-   * @returns {Opcode}
-   */
-
-  static fromReader(br) {
-    const value = br.readU8();
-    const op = opCache[value];
-
-    if (op)
-      return op;
-
-    switch (value) {
-      case opcodes.OP_PUSHDATA1: {
-        if (br.left() < 1)
-          return PARSE_ERROR;
-
-        const size = br.readU8();
-
-        if (br.left() < size) {
-          br.seek(br.left());
-          return PARSE_ERROR;
-        }
-
-        const data = br.readBytes(size);
-
-        return new this(value, data);
-      }
-      case opcodes.OP_PUSHDATA2: {
-        if (br.left() < 2) {
-          br.seek(br.left());
-          return PARSE_ERROR;
-        }
-
-        const size = br.readU16();
-
-        if (br.left() < size) {
-          br.seek(br.left());
-          return PARSE_ERROR;
-        }
-
-        const data = br.readBytes(size);
-
-        return new this(value, data);
-      }
-      case opcodes.OP_PUSHDATA4: {
-        if (br.left() < 4) {
-          br.seek(br.left());
-          return PARSE_ERROR;
-        }
-
-        const size = br.readU32();
-
-        if (br.left() < size) {
-          br.seek(br.left());
-          return PARSE_ERROR;
-        }
-
-        const data = br.readBytes(size);
-
-        return new this(value, data);
-      }
-      default: {
-        if (br.left() < value) {
-          br.seek(br.left());
-          return PARSE_ERROR;
-        }
-
-        const data = br.readBytes(value);
-
-        return new this(value, data);
-      }
-    }
-  }
-
-  /**
-   * Instantiate opcode from serialized data.
-   * @param {Buffer} data
-   * @returns {Opcode}
-   */
-
-  static fromRaw(data) {
-    return this.fromReader(bio.read(data));
-  }
-
-  /**
-   * Test whether an object an Opcode.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isOpcode(obj) {
-    return obj instanceof Opcode;
   }
 }
 

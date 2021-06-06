@@ -6,7 +6,7 @@
 
 'use strict';
 
-import * as words from './words';
+import * as words from './words/index.js';
 
 export function get(name) {
   switch (name) {

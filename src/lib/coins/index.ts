@@ -10,8 +10,8 @@
  * @module coins
  */
 
-export {Coins} from "./coins";
-export {CoinView} from "./coinview";
-export * as compress from "./compress";
-export {UndoCoins} from "./undocoins";
+export {Coins} from "./coins.js";
+export {CoinView} from "./coinview.js";
+export * as compress from "./compress.js";
+export {UndoCoins} from "./undocoins.js";
 

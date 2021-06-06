@@ -7,18 +7,18 @@
 
 'use strict';
 
-import { Outpoint, OutpointJson, OutpointOptions } from "./outpoint";
+import { Outpoint, OutpointJson, OutpointOptions } from "./outpoint.js";
 
 import assert from 'bsert';
 import bio, { BufferReader, BufferWriter, StaticWriter } from 'bufio';
-import { inspectSymbol } from '../utils';
-import { Script, ScriptOptions } from "../script/script";
-import { Coin, CoinJson } from "./coin";
-import { TX } from "./tx";
-import { Address } from "./address";
-import { Network } from "../protocol";
-import { ScriptTypes } from "../script/common";
-import { Output } from "./output";
+import { inspectSymbol } from '../utils/index.js';
+import { Script, ScriptOptions } from "../script/script.js";
+import { Coin, CoinJson } from "./coin.js";
+import { TX } from "./tx.js";
+import { Address } from "./address.js";
+import { Network } from "../protocol/index.js";
+import { ScriptTypes } from "../script/common.js";
+import { Output } from "./output.js";
 
 export interface InputOptions {
   prevout?: OutpointOptions;

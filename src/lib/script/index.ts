@@ -4,16 +4,14 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
-
 /**
  * @module script
  */
 
-export * as common from './common'
-export * from './opcode'
-export * from './script';
-export * from './scripterror';
-export * from './scriptnum';
-export * from './sigcache';
-export * from './stack';
+export * as common from './common.js'
+export * from './opcode.js'
+export * from './script.js';
+export * from './scripterror.js';
+export * from './scriptnum.js';
+export * from './sigcache.js';
+export * from './stack.js';

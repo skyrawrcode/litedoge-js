@@ -10,26 +10,27 @@ import assert from 'bsert';
 import path from 'path';
 import AsyncEmitter from 'bevent';
 import Logger from 'blgr';
-import { Lock } from 'bmutex';
+import {Lock} from 'bmutex';
 import LRU from 'blru';
-import { BufferMap } from 'buffer-map';
-import { Network, NetworkPOS } from '../protocol/network';
-import { ChainDB } from './chaindb';
-import * as consensus from '../protocol/consensus';
-import * as util from '../utils/util';
-import { BN } from 'bcrypto/lib/bcrypto';
-import { ChainEntry } from './chainentry';
-import { CoinView } from '../coins/coinview';
-import { Script } from '../script/script';
-import { VerifyError } from '../protocol/errors';
-import { Block } from '../primitives/block';
-import { LoggerContext } from 'blgr/lib/logger';
-import { Kernel } from '../staking/kernel';
-import { VerifyFlags ,LockFlags, ThresholdStates } from './common';
-import { WorkerPool } from '../workers';
-import { AbstractBlock, Headers, MemBlock } from '../primitives';
-import { AbstractBlockStore } from '../blockstore';
-import { VerifyFlags as ScriptVerifyFlags} from '../script/common'
+import {BufferMap} from 'buffer-map';
+import {BN} from 'bcrypto';
+import {LoggerContext} from 'blgr/lib/logger';
+
+import {Network, NetworkPOS} from '../protocol/network.js';
+import {ChainDB} from './chaindb.js';
+import * as consensus from '../protocol/consensus.js';
+import * as util from '../utils/util.js';
+import {ChainEntry} from './chainentry.js';
+import {CoinView} from '../coins/coinview.js';
+import {Script} from '../script/script.js';
+import {VerifyError} from '../protocol/errors.js';
+import {Block} from '../primitives/block.js';
+import {Kernel} from '../staking/kernel.js';
+import {LockFlags, ThresholdStates, VerifyFlags} from './common.js';
+import {WorkerPool} from '../workers/index.js';
+import {AbstractBlock, Headers, MemBlock} from '../primitives/index.js';
+import {AbstractBlockStore} from '../blockstore/index.js';
+import {VerifyFlags as ScriptVerifyFlags} from '../script/common.js'
 
 const ZERO = new BN(0);
 
@@ -64,6 +65,7 @@ export class Chain extends AsyncEmitter {
   orphanPrev: BufferMap<Orphan>;
   workers: WorkerPool;
   blocks: AbstractBlockStore;
+
   /**
    * Create a blockchain.
    * @constructor
@@ -1357,7 +1359,7 @@ export class Chain extends AsyncEmitter {
 
     //ppcoin compute stake modifier
     try {
-      const { stakeModifier, generated } = await this.kernel.computeNextStakeModifier(prev);
+      const {stakeModifier, generated} = await this.kernel.computeNextStakeModifier(prev);
       entry.setStakeModifier(stakeModifier, generated)
     } catch (e) {
       this.logger.error(e);
@@ -1367,7 +1369,7 @@ export class Chain extends AsyncEmitter {
     //ppcoin proof hash
     if (entry.isProofOfStake()) {
       try {
-        let { proofHash } = await this.kernel.checkProofOfStake(prev, (block as Block).txs[1], entry.bits);
+        let {proofHash} = await this.kernel.checkProofOfStake(prev, (block as Block).txs[1], entry.bits);
         entry.proofHash = proofHash;
       } catch (e) {
         this.logger.error(e);
@@ -1407,7 +1409,7 @@ export class Chain extends AsyncEmitter {
     let orphan = this.resolveOrphan(entry.hash);
 
     while (orphan) {
-      const { block, flags, id } = orphan;
+      const {block, flags, id} = orphan;
 
       try {
         entry = await this.connect(entry, block, flags);
@@ -2413,7 +2415,7 @@ export class Chain extends AsyncEmitter {
     let minHeight = -1;
     let minTime = -1;
 
-    for (const { prevout, sequence } of tx.inputs) {
+    for (const {prevout, sequence} of tx.inputs) {
       if (sequence & DISABLE_FLAG)
         continue;
 
@@ -2490,7 +2492,7 @@ export interface ChainOptionsOptions {
   maxOrphans?: number;
   checkpoints?: boolean;
   indexTX?: boolean;
-  indexAddress?:boolean;
+  indexAddress?: boolean;
 }
 
 /**
@@ -2516,6 +2518,7 @@ export class ChainOptions {
   compression: boolean;
   maxOrphans: number;
   checkpoints: boolean;
+
   /**
    * Create chain options.
    * @constructor
@@ -2546,6 +2549,16 @@ export class ChainOptions {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate chain options from object.
+   * @param {Object} options
+   * @returns {ChainOptions}
+   */
+
+  static fromOptions(options) {
+    return new ChainOptions().fromOptions(options);
   }
 
   /**
@@ -2648,16 +2661,6 @@ export class ChainOptions {
 
     return this;
   }
-
-  /**
-   * Instantiate chain options from object.
-   * @param {Object} options
-   * @returns {ChainOptions}
-   */
-
-  static fromOptions(options) {
-    return new ChainOptions().fromOptions(options);
-  }
 }
 
 /**
@@ -2671,6 +2674,7 @@ export class ChainOptions {
 class DeploymentState {
   flags: ScriptVerifyFlags;
   lockFlags: LockFlags;
+
   /**
    * Create a deployment state.
    * @constructor
@@ -2730,6 +2734,7 @@ class Orphan {
   time: number;
   flags: undefined;
   id: undefined;
+
   /**
    * Create an orphan.
    * @constructor

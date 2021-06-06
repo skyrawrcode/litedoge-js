@@ -7,32 +7,31 @@
 
 'use strict';
 
-import Logger from "blgr/lib/blgr";
-import { LoggerContext } from "blgr/lib/logger";
-
-
+import Logger from "blgr";
+import {LoggerContext} from "blgr/lib/logger";
 import assert from 'bsert';
 import path from 'path';
-import { Server } from 'bweb';
+import {Server} from 'bweb';
 import Validator from 'bval';
-import base58 from 'bcrypto/lib/encoding/base58';
-import { BloomFilter } from 'bfilter';
-import sha256 from 'bcrypto/lib/sha256';
-import random from 'bcrypto/lib/random';
-import { safeEqual } from 'bcrypto/lib/safe';
-import * as util from '../utils/util';
-import {Address} from '../primitives/address';
-import {TX} from '../primitives/tx';
-import {Outpoint} from '../primitives/outpoint';
-import {Network} from '../protocol/network';
-import * as pkg from '../pkg';
-import { Chain } from "../blockchain";
-import { Mempool, PolicyEstimator } from "../mempool";
-import { Pool } from "../net/pool";
-import { Miner } from "../mining/miner";
-import { Node } from "./node";
-import { FullNode } from "./fullnode";
-import { SPVNode } from "./spvnode";
+import base58 from 'bcrypto/lib/encoding/base58.js';
+import {BloomFilter} from 'bfilter';
+import sha256 from 'bcrypto/lib/sha256.js';
+import random from 'bcrypto/lib/random.js';
+import {safeEqual} from 'bcrypto/lib/safe.js';
+
+import * as util from '../utils/util.js';
+import {Address} from '../primitives/address.js';
+import {TX} from '../primitives/tx.js';
+import {Outpoint} from '../primitives/outpoint.js';
+import {Network} from '../protocol/network.js';
+import * as pkg from '../pkg.js';
+import {Chain} from "../blockchain/index.js";
+import {Mempool, PolicyEstimator} from "../mempool/index.js";
+import {Pool} from "../net/pool.js";
+import {Miner} from "../mining/miner.js";
+import {Node} from "./node.js";
+import {FullNode} from "./fullnode.js";
+import {SPVNode} from "./spvnode.js";
 
 /**
  * HTTP
@@ -40,15 +39,16 @@ import { SPVNode } from "./spvnode";
  */
 
 export class HTTP extends Server {
-  network:Network;
-  logger:LoggerContext
-  node:Node|FullNode|SPVNode;
-  chain:Chain;
-  mempool:Mempool;
-  pool:Pool;
-  fees:PolicyEstimator;
-  miner:Miner;
-  options:HTTPOptions
+  network: Network;
+  logger: LoggerContext
+  node: Node | FullNode | SPVNode;
+  chain: Chain;
+  mempool: Mempool;
+  pool: Pool;
+  fees: PolicyEstimator;
+  miner: Miner;
+  options: HTTPOptions
+
   /**
    * Create an http server.
    * @constructor
@@ -195,7 +195,7 @@ export class HTTP extends Server {
       enforce(index != null, 'Index is required.');
       enforce(!this.chain.options.spv, 'Cannot get coins in SPV mode.');
 
-      
+
       const coin = await (this.node as FullNode).getCoin(hash, index);
 
       if (!coin) {
@@ -685,7 +685,7 @@ export class HTTP extends Server {
     if (!socket.filter)
       return null;
 
-      
+
     await (this.node as FullNode).scan(start, socket.filter, (entry, txs) => {
       const block = entry.toRaw();
       const raw = [];
@@ -700,20 +700,21 @@ export class HTTP extends Server {
 }
 
 class HTTPOptions {
-  network:Network;
-  logger:Logger|LoggerContext;
-  node:Node;
+  network: Network;
+  logger: Logger | LoggerContext;
+  node: Node;
   apiKey: string;
-  apiHash:string;
-  noAuth:boolean;
-  cors:boolean;
-  maxTxs:number;
-  prefix:string;
-  host:string;
-  port:number;
-  ssl:boolean;
-  keyFile:string;
-  certFile:string;
+  apiHash: string;
+  noAuth: boolean;
+  cors: boolean;
+  maxTxs: number;
+  prefix: string;
+  host: string;
+  port: number;
+  ssl: boolean;
+  keyFile: string;
+  certFile: string;
+
   /**
    * HTTPOptions
    * @alias module:http.HTTPOptions
@@ -739,6 +740,16 @@ class HTTPOptions {
     this.certFile = null;
 
     this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate http options from object.
+   * @param {Object} options
+   * @returns {HTTPOptions}
+   */
+
+  static fromOptions(options) {
+    return new HTTPOptions().fromOptions(options);
   }
 
   /**
@@ -829,16 +840,6 @@ class HTTPOptions {
     }
 
     return this;
-  }
-
-  /**
-   * Instantiate http options from object.
-   * @param {Object} options
-   * @returns {HTTPOptions}
-   */
-
-  static fromOptions(options) {
-    return new HTTPOptions().fromOptions(options);
   }
 }
 

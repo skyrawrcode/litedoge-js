@@ -8,19 +8,19 @@
 'use strict';
 
 import assert from 'bsert';
-import base58 from 'bcrypto/lib/encoding/base58';
-import bio, { BufferReader, BufferWriter, StaticWriter } from 'bufio';
-import hash160 from 'bcrypto/lib/hash160';
-import hash256 from 'bcrypto/lib/hash256';
-import {Network} from '../protocol/network';
-import {Script} from '../script/script';
-import {Address, AddressTypes} from './address';
-import {Output} from './output';
-import secp256k1 from 'bcrypto/lib/secp256k1';
+import base58 from 'bcrypto/lib/encoding/base58.js';
+import bio, {BufferReader, BufferWriter, StaticWriter} from 'bufio';
+import hash160 from 'bcrypto/lib/hash160.js';
+import hash256 from 'bcrypto/lib/hash256.js';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+import {Network} from '../protocol/network.js';
+import {Script} from '../script/script.js';
+import {Address, AddressTypes} from './address.js';
+import {Output} from './output.js';
+import {inspectSymbol} from '../utils/index.js';
+import {TX} from './tx.js';
 
 const {encoding} = bio;
-import {inspectSymbol} from '../utils';
-import { TX } from './tx';
 
 /*
  * Constants
@@ -38,7 +38,7 @@ export interface KeyRingOptions {
 }
 
 export interface KeyRingJson {
-  
+
 }
 
 /**
@@ -48,12 +48,12 @@ export interface KeyRingJson {
  */
 
 export class KeyRing implements KeyRingOptions {
-  name:string;
+  name: string;
   publicKey: Buffer;
   privateKey: Buffer;
   script: Script;
   key: Buffer;
-  branch:number;
+  branch: number;
   _keyHash: any;
   _keyAddress: any;
   _scriptHash160: any;
@@ -83,34 +83,6 @@ export class KeyRing implements KeyRingOptions {
   }
 
   /**
-   * Inject properties from options object.
-   */
-
-  protected fromOptions(options: KeyRingOptions) {
-    let key = toKey(options);
-
-
-    if (Buffer.isBuffer(key))
-      return this.fromKey(key);
-
-    key = toKey(options.key);
-
-    if (options.publicKey)
-      key = toKey(options.publicKey);
-
-    if (options.privateKey)
-      key = toKey(options.privateKey);
-
-    const script = options.script;
-    const compress = options.compressed;
-
-    if (script)
-      return this.fromScript(key, script, compress);
-
-    return this.fromKey(key, compress);
-  }
-
-  /**
    * Instantiate key ring from options.
    * @param {Object} options
    * @returns {KeyRing}
@@ -118,6 +90,122 @@ export class KeyRing implements KeyRingOptions {
 
   static fromOptions(options: KeyRingOptions) {
     return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate keyring from a private key.
+   * @param {Buffer} key
+   * @param {Boolean?} compress
+   * @returns {KeyRing}
+   */
+
+  static fromPrivate(key, compress) {
+    return new this().fromPrivate(key, compress);
+  }
+
+  /**
+   * Generate a keyring.
+   * @param {Boolean?} compress
+   * @returns {KeyRing}
+   */
+
+  static generate(compress) {
+    return new this().generate(compress);
+  }
+
+  /**
+   * Instantiate keyring from a public key.
+   * @param {Buffer} publicKey
+   * @returns {KeyRing}
+   */
+
+  static fromPublic(key: Buffer) {
+    return new this().fromPublic(key);
+  }
+
+  /**
+   * Instantiate keyring from a public key.
+   * @param {Buffer} publicKey
+   * @param {Boolean?} compress
+   * @returns {KeyRing}
+   */
+
+  static fromKey(key, compress) {
+    return new this().fromKey(key, compress);
+  }
+
+  /**
+   * Instantiate keyring from script.
+   * @param {Buffer} key
+   * @param {Script} script
+   * @param {Boolean?} compress
+   * @returns {KeyRing}
+   */
+
+  static fromScript(key, script, compress) {
+    return new this().fromScript(key, script, compress);
+  }
+
+  /**
+   * Instantiate keyring from ith key in multisig script.
+   * @param {Script} script
+   * @param {Number} i
+   * @returns {KeyRing}
+   */
+
+  static fromMultisigScript(script, i) {
+    return new this().fromMultisigScript(script, i);
+  }
+
+  /**
+   * Instantiate a keyring from a serialized CBitcoinSecret.
+   * @param {Base58String} secret
+   * @param {(Network|NetworkType)?} network
+   * @returns {KeyRing}
+   */
+
+  static fromSecret(data, network) {
+    return new this().fromSecret(data, network);
+  }
+
+  /**
+   * Instantiate an KeyRing from a jsonified transaction object.
+   * @param {Object} json - The jsonified transaction object.
+   * @returns {KeyRing}
+   */
+
+  static fromJSON(json): KeyRing {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Instantiate a keyring from buffer reader.
+   * @param {BufferReader} br
+   * @returns {KeyRing}
+   */
+
+  static fromReader(br: BufferReader): KeyRing {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate a keyring from serialized data.
+   * @param {Buffer} data
+   * @returns {KeyRing}
+   */
+
+  static fromRaw(data: Buffer): KeyRing {
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Test whether an object is a KeyRing.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isKeyRing(obj: object): boolean {
+    return obj instanceof KeyRing;
   }
 
   /**
@@ -131,34 +219,6 @@ export class KeyRing implements KeyRingOptions {
     this._scriptHash160 = null;
     this._scriptHash256 = null;
     this._scriptAddress = null;
-  }
-
-  /**
-   * Inject data from private key.
-   * @private
-   * @param key
-   * @param  compress
-   */
-
-  protected fromPrivate(key: Buffer, compress?: boolean) {
-    assert(Buffer.isBuffer(key), 'Private key must be a buffer.');
-    assert(secp256k1.privateKeyVerify(key), 'Not a valid private key.');
-
-    this.privateKey = key;
-    this.publicKey = secp256k1.publicKeyCreate(key, compress !== false);
-
-    return this;
-  }
-
-  /**
-   * Instantiate keyring from a private key.
-   * @param {Buffer} key
-   * @param {Boolean?} compress
-   * @returns {KeyRing}
-   */
-
-  static fromPrivate(key, compress) {
-    return new this().fromPrivate(key, compress);
   }
 
   /**
@@ -187,26 +247,6 @@ export class KeyRing implements KeyRingOptions {
   }
 
   /**
-   * Generate a keyring.
-   * @param {Boolean?} compress
-   * @returns {KeyRing}
-   */
-
-  static generate(compress) {
-    return new this().generate(compress);
-  }
-
-  /**
-   * Instantiate keyring from a public key.
-   * @param {Buffer} publicKey
-   * @returns {KeyRing}
-   */
-
-  static fromPublic(key:Buffer) {
-    return new this().fromPublic(key);
-  }
-
-  /**
    * Inject data from public key.
    * @private
    * @param {Buffer} privateKey
@@ -220,17 +260,6 @@ export class KeyRing implements KeyRingOptions {
       return this.fromPrivate(key, compress !== false);
 
     return this.fromPublic(key);
-  }
-
-  /**
-   * Instantiate keyring from a public key.
-   * @param {Buffer} publicKey
-   * @param {Boolean?} compress
-   * @returns {KeyRing}
-   */
-
-  static fromKey(key, compress) {
-    return new this().fromKey(key, compress);
   }
 
   /**
@@ -251,18 +280,6 @@ export class KeyRing implements KeyRingOptions {
   }
 
   /**
-   * Instantiate keyring from script.
-   * @param {Buffer} key
-   * @param {Script} script
-   * @param {Boolean?} compress
-   * @returns {KeyRing}
-   */
-
-  static fromScript(key, script, compress) {
-    return new this().fromScript(key, script, compress);
-  }
-
-  /**
    * Get ith public key from multisig script.
    * @private
    * @param {Script} script
@@ -280,17 +297,6 @@ export class KeyRing implements KeyRingOptions {
     this.fromKey(script.code[i].toData());
 
     return this;
-  }
-
-  /**
-   * Instantiate keyring from ith key in multisig script.
-   * @param {Script} script
-   * @param {Number} i
-   * @returns {KeyRing}
-   */
-
-  static fromMultisigScript(script, i) {
-    return new this().fromMultisigScript(script, i);
   }
 
   /**
@@ -366,23 +372,12 @@ export class KeyRing implements KeyRingOptions {
   }
 
   /**
-   * Instantiate a keyring from a serialized CBitcoinSecret.
-   * @param {Base58String} secret
-   * @param {(Network|NetworkType)?} network
-   * @returns {KeyRing}
-   */
-
-  static fromSecret(data, network) {
-    return new this().fromSecret(data, network);
-  }
-
-  /**
    * Get private key.
    * @param {String?} enc - Can be `"hex"`, `"base58"`, or `null`.
    * @returns {Buffer} Private key.
    */
 
-  getPrivateKey(enc?:'hex'|'base58', network?:Network):Buffer|string {
+  getPrivateKey(enc?: 'hex' | 'base58', network?: Network): Buffer | string {
     if (!this.privateKey)
       return null;
 
@@ -401,8 +396,10 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Buffer}
    */
   getPublicKey(): Buffer;
-  getPublicKey(enc:'base58'|'hex'):string
-  getPublicKey(enc?:'base58'|'hex'):string|Buffer {
+
+  getPublicKey(enc: 'base58' | 'hex'): string
+
+  getPublicKey(enc?: 'base58' | 'hex'): string | Buffer {
     if (enc === 'base58')
       return base58.encode(this.publicKey);
 
@@ -420,7 +417,6 @@ export class KeyRing implements KeyRingOptions {
   getScript() {
     return this.script;
   }
-
 
   /**
    * Get scripthash.
@@ -474,8 +470,9 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Address|AddressString}
    */
 
-  getScriptAddress(enc, network) 
-  getScriptAddress(enc: 'base58'|'string', network:Network) {
+  getScriptAddress(enc, network)
+
+  getScriptAddress(enc: 'base58' | 'string', network: Network) {
     if (!this.script)
       return null;
 
@@ -515,7 +512,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Address|AddressString}
    */
 
-  getKeyAddress(enc?: 'base58'|string|null | null, network?:Network) {
+  getKeyAddress(enc?: 'base58' | string | null | null, network?: Network) {
     if (!this._keyAddress) {
       const hash = this.getKeyHash();
       this._keyAddress = Address.fromPubkeyhash(hash);
@@ -550,8 +547,10 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Address|AddressString}
    */
   getAddress(): Address
-  getAddress(enc?:'base58'|'string', network?:Network):string
-  getAddress(enc?:'base58'|'string'|null, network?:Network):string|Address{
+
+  getAddress(enc?: 'base58' | 'string', network?: Network): string
+
+  getAddress(enc?: 'base58' | 'string' | null, network?: Network): string | Address {
 
     if (this.script)
       return this.getScriptAddress(enc, network);
@@ -588,7 +587,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Boolean}
    */
 
-  ownOutput(tx:TX|Output, index?:number) {
+  ownOutput(tx: TX | Output, index?: number) {
     let output;
 
     if (tx instanceof Output) {
@@ -681,7 +680,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Object}
    */
 
-  toJSON(network?):KeyRingJson {
+  toJSON(network?): KeyRingJson {
     return {
       publicKey: this.publicKey.toString('hex'),
       script: this.script ? this.script.toRaw().toString('hex') : null,
@@ -704,20 +703,10 @@ export class KeyRing implements KeyRingOptions {
     this.publicKey = Buffer.from(json.publicKey, 'hex');
 
     if (json.script)
-    
+
       this.script = Script.fromJSON(json.script);
 
     return this;
-  }
-
-  /**
-   * Instantiate an KeyRing from a jsonified transaction object.
-   * @param {Object} json - The jsonified transaction object.
-   * @returns {KeyRing}
-   */
-
-  static fromJSON(json):KeyRing {
-    return new this().fromJSON(json);
   }
 
   /**
@@ -725,7 +714,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Number}
    */
 
-  getSize():number {
+  getSize(): number {
     let size = 0;
     size += 1;
     if (this.privateKey) {
@@ -743,7 +732,7 @@ export class KeyRing implements KeyRingOptions {
    * @param {BufferWriter} bw
    */
 
-  toWriter(bw:BufferWriter|StaticWriter):BufferWriter|StaticWriter  {
+  toWriter(bw: BufferWriter | StaticWriter): BufferWriter | StaticWriter {
     let field = 0;
 
     bw.writeU8(field);
@@ -779,7 +768,7 @@ export class KeyRing implements KeyRingOptions {
    * @param {BufferReader} br
    */
 
-  fromReader(br:BufferReader):KeyRing {
+  fromReader(br: BufferReader): KeyRing {
     const field = br.readU8();
 
     const key = br.readVarBytes();
@@ -807,38 +796,53 @@ export class KeyRing implements KeyRingOptions {
    * @param {Buffer} data
    */
 
-  fromRaw(data:Buffer)  {
+  fromRaw(data: Buffer) {
     return this.fromReader(bio.read(data));
   }
 
   /**
-   * Instantiate a keyring from buffer reader.
-   * @param {BufferReader} br
-   * @returns {KeyRing}
+   * Inject properties from options object.
    */
 
-  static fromReader(br:BufferReader):KeyRing {
-    return new this().fromReader(br);
+  protected fromOptions(options: KeyRingOptions) {
+    let key = toKey(options);
+
+
+    if (Buffer.isBuffer(key))
+      return this.fromKey(key);
+
+    key = toKey(options.key);
+
+    if (options.publicKey)
+      key = toKey(options.publicKey);
+
+    if (options.privateKey)
+      key = toKey(options.privateKey);
+
+    const script = options.script;
+    const compress = options.compressed;
+
+    if (script)
+      return this.fromScript(key, script, compress);
+
+    return this.fromKey(key, compress);
   }
 
   /**
-   * Instantiate a keyring from serialized data.
-   * @param {Buffer} data
-   * @returns {KeyRing}
+   * Inject data from private key.
+   * @private
+   * @param key
+   * @param  compress
    */
 
-  static fromRaw(data: Buffer): KeyRing {
-    return new this().fromRaw(data);
-  }
+  protected fromPrivate(key: Buffer, compress?: boolean) {
+    assert(Buffer.isBuffer(key), 'Private key must be a buffer.');
+    assert(secp256k1.privateKeyVerify(key), 'Not a valid private key.');
 
-  /**
-   * Test whether an object is a KeyRing.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
+    this.privateKey = key;
+    this.publicKey = secp256k1.publicKeyCreate(key, compress !== false);
 
-  static isKeyRing(obj: object): boolean {
-    return obj instanceof KeyRing;
+    return this;
   }
 }
 

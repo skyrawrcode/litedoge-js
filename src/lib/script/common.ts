@@ -8,10 +8,9 @@
 'use strict';
 
 
-
 import assert from 'bsert';
-import secp256k1 from 'bcrypto/lib/secp256k1';
-import { ScriptNum } from './scriptnum';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+import {ScriptNum} from './scriptnum.js';
 
 /**
  * Script opcodes.
@@ -200,42 +199,41 @@ export enum VerifyFlags {
   VERIFY_CONST_SCRIPTCODE = 1 << 16,
 
   /**
- * Consensus verify flags (used for block validation).
- * @const {VerifyFlags}
- * @default
- */
+   * Consensus verify flags (used for block validation).
+   * @const {VerifyFlags}
+   * @default
+   */
 
 
   MANDATORY_VERIFY_FLAGS = VerifyFlags.VERIFY_P2SH,
   STANDARD_VERIFY_FLAGS = 0
-  | VerifyFlags.MANDATORY_VERIFY_FLAGS
-  | VerifyFlags.VERIFY_DERSIG
-  | VerifyFlags.VERIFY_STRICTENC
-  | VerifyFlags.VERIFY_MINIMALDATA
-  | VerifyFlags.VERIFY_NULLDUMMY
-  | VerifyFlags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS
-  | VerifyFlags.VERIFY_CLEANSTACK
-  | VerifyFlags.VERIFY_MINIMALIF
-  | VerifyFlags.VERIFY_NULLFAIL
-  | VerifyFlags.VERIFY_CHECKLOCKTIMEVERIFY
-  | VerifyFlags.VERIFY_CHECKSEQUENCEVERIFY
-  | VerifyFlags.VERIFY_LOW_S
-  | VerifyFlags.VERIFY_CONST_SCRIPTCODE,
+    | VerifyFlags.MANDATORY_VERIFY_FLAGS
+    | VerifyFlags.VERIFY_DERSIG
+    | VerifyFlags.VERIFY_STRICTENC
+    | VerifyFlags.VERIFY_MINIMALDATA
+    | VerifyFlags.VERIFY_NULLDUMMY
+    | VerifyFlags.VERIFY_DISCOURAGE_UPGRADABLE_NOPS
+    | VerifyFlags.VERIFY_CLEANSTACK
+    | VerifyFlags.VERIFY_MINIMALIF
+    | VerifyFlags.VERIFY_NULLFAIL
+    | VerifyFlags.VERIFY_CHECKLOCKTIMEVERIFY
+    | VerifyFlags.VERIFY_CHECKSEQUENCEVERIFY
+    | VerifyFlags.VERIFY_LOW_S
+    | VerifyFlags.VERIFY_CONST_SCRIPTCODE,
 
 
   /**
- * Standard flags without mandatory bits.
- * @const {VerifyFlags}
- */
+   * Standard flags without mandatory bits.
+   * @const {VerifyFlags}
+   */
   ONLY_STANDARD_VERIFY_FLAGS = VerifyFlags.STANDARD_VERIFY_FLAGS & ~VerifyFlags.MANDATORY_VERIFY_FLAGS
 }
+
 /**
  * Script and locktime flags. See {@link VerifyFlags}.
  * @enum {Number}
  */
 export type flags = VerifyFlags;
-
-
 
 
 /**
@@ -269,7 +267,6 @@ export enum SighashType {
 
   ANYONECANPAY = 0x80
 };
-
 
 
 /**

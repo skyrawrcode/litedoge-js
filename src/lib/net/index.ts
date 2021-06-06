@@ -10,12 +10,12 @@
  * @module net
  */
 
-export * as bip152 from "./bip152"
-export * as common from "./common";
-export {Framer} from "./framer";
-export {HostList} from "./hostlist";
-export {NetAddress} from "./netaddress";
-export * as packets from "./packets";
-export {Parser} from "./parser";
-export {Peer} from "./peer";
-export {Pool} from "./pool";
+export * as bip152 from "./bip152.js"
+export * as common from "./common.js";
+export {Framer} from "./framer.js";
+export {HostList} from "./hostlist.js";
+export {NetAddress} from "./netaddress.js";
+export * as packets from "./packets.js";
+export {Parser} from "./parser.js";
+export {Peer} from "./peer.js";
+export {Pool} from "./pool.js";

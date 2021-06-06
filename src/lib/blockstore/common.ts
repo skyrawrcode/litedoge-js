@@ -6,7 +6,7 @@
 
 import Logger from 'blgr';
 import { LoggerContext } from 'blgr/lib/logger';
-import { Network } from '../protocol';
+import { Network } from '../protocol/index.js';
 /**
  * @module blockstore/common
  */

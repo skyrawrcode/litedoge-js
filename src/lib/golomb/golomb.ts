@@ -7,13 +7,14 @@
 'use strict';
 
 import assert from 'bsert';
-import { U64 } from 'n64';
-import hash256 from 'bcrypto/lib/hash256';
-import { sipmod } from 'bcrypto/lib/siphash';
+import {U64} from 'n64';
+import hash256 from 'bcrypto/lib/hash256.js';
+import {sipmod} from 'bcrypto/lib/siphash.js';
 import bio from 'bufio';
-import { BufferSet } from 'buffer-map';
-import {BitWriter} from './writer';
-  import {BitReader} from './reader';
+import {BufferSet} from 'buffer-map';
+
+import {BitWriter} from './writer.js';
+import {BitReader} from './reader.js';
 
 /*
  * Constants
@@ -34,11 +35,12 @@ const M = new U64(784931);
  */
 
 export class Golomb {
-  m:U64;
-  n:number;
-  p:number;
+  m: U64;
+  n: number;
+  p: number;
 
-  data:Buffer;
+  data: Buffer;
+
   /**
    * Create a block filter.
    * @constructor
@@ -52,14 +54,82 @@ export class Golomb {
   }
 
   /**
+   * Instantiate a block filter from a P, 128-bit key and items.
+   * @param {Number} P
+   * @param {Buffer} 128-bit key
+   * @param {Buffer[]} items
+   * @returns {Golomb}
+   */
+
+  static fromItems(P, key, items) {
+    return new this().fromItems(P, key, items);
+  }
+
+  /**
+   * Instantiate a block filter from a N, P, and raw data.
+   * @param {Number} N
+   * @param {Number} P
+   * @param {Buffer} data
+   * @returns {Golomb}
+   */
+
+  static fromBytes(N, P, data) {
+    return new this().fromBytes(N, P, data);
+  }
+
+  /**
+   * Instantiate a block filter from a P, and raw data.
+   * @param {Number} P
+   * @param {Buffer} data
+   * @returns {Golomb}
+   */
+
+  static fromNBytes(P, data) {
+    return new this().fromNBytes(P, data);
+  }
+
+  /**
+   * Instantiate a block filter from a N, and raw data.
+   * @param {Number} N
+   * @param {Buffer} data
+   * @returns {Golomb}
+   */
+
+  static fromPBytes(N, data) {
+    return new this().fromPBytes(N, data);
+  }
+
+  /**
+   * Instantiate a block filter from raw data.
+   * @param {Buffer} data
+   * @returns {Golomb}
+   */
+
+  static fromNPBytes(data) {
+    return new this().fromNPBytes(data);
+  }
+
+  /**
+   * Instantiate a block filter from raw data.
+   * @param {Buffer} data
+   * @returns {Golomb}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
+  }
+
+  /**
    * Hash the block filter.
    * @param {String?} enc - Can be `'hex'` or `null`.
    * @returns {Hash|Buffer} hash
    */
 
-  hash():Buffer
-  hash(enc:'hex'):string
-  hash(enc?:'hex'):string|Buffer {
+  hash(): Buffer
+
+  hash(enc: 'hex'): string
+
+  hash(enc?: 'hex'): string | Buffer {
     const h = hash256.digest(this.toNBytes());
     return enc === 'hex' ? h.toString('hex') : h;
   }
@@ -130,7 +200,7 @@ export class Golomb {
     let last2 = values[0];
     let i = 1;
 
-    for (;;) {
+    for (; ;) {
       const cmp = last1.cmp(last2);
 
       if (cmp === 0)
@@ -380,72 +450,6 @@ export class Golomb {
 
   fromRaw(data) {
     return this.fromNBytes(19, data);
-  }
-
-  /**
-   * Instantiate a block filter from a P, 128-bit key and items.
-   * @param {Number} P
-   * @param {Buffer} 128-bit key
-   * @param {Buffer[]} items
-   * @returns {Golomb}
-   */
-
-  static fromItems(P, key, items) {
-    return new this().fromItems(P, key, items);
-  }
-
-  /**
-   * Instantiate a block filter from a N, P, and raw data.
-   * @param {Number} N
-   * @param {Number} P
-   * @param {Buffer} data
-   * @returns {Golomb}
-   */
-
-  static fromBytes(N, P, data) {
-    return new this().fromBytes(N, P, data);
-  }
-
-  /**
-   * Instantiate a block filter from a P, and raw data.
-   * @param {Number} P
-   * @param {Buffer} data
-   * @returns {Golomb}
-   */
-
-  static fromNBytes(P, data) {
-    return new this().fromNBytes(P, data);
-  }
-
-  /**
-   * Instantiate a block filter from a N, and raw data.
-   * @param {Number} N
-   * @param {Buffer} data
-   * @returns {Golomb}
-   */
-
-  static fromPBytes(N, data) {
-    return new this().fromPBytes(N, data);
-  }
-
-  /**
-   * Instantiate a block filter from raw data.
-   * @param {Buffer} data
-   * @returns {Golomb}
-   */
-
-  static fromNPBytes(data) {
-    return new this().fromNPBytes(data);
-  }
-
-  /**
-   * Instantiate a block filter from raw data.
-   * @param {Buffer} data
-   * @returns {Golomb}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
   }
 }
 

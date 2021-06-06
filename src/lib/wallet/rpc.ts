@@ -7,33 +7,35 @@
 'use strict';
 
 import assert from 'bsert';
-import { format } from 'util';
+import {format} from 'util';
 import bweb from 'bweb';
-import { Lock } from 'bmutex';
+import {Lock} from 'bmutex';
 import fs from 'bfile';
 import Validator from 'bval';
-import { BufferMap, BufferSet } from 'buffer-map';
-import * as util from '../utils/util';
-import * as messageUtil from '../utils/message';
-import {Amount} from '../btc/amount';
-import {Script} from '../script/script';
-import {Address} from '../primitives/address';
-import {KeyRing} from '../primitives/keyring';
-import {MerkleBlock} from '../primitives/merkleblock';
-import {MTX} from '../primitives/mtx';
-import {Outpoint} from '../primitives/outpoint';
-import {Output} from '../primitives/output';
-import {TX} from '../primitives/tx';
-import * as consensus from '../protocol/consensus';
-import * as pkg from '../pkg';
-import * as common from './common';
-import { BlockMeta } from './records';
-import { WalletDB } from './walletdb';
-import { Network } from '../protocol';
-import { LoggerContext } from 'blgr/lib/logger';
-import { Wallet } from './wallet';
-import { WalletClient } from './client';
-import {WalletNode} from "./node";
+import {BufferMap, BufferSet} from 'buffer-map'
+import {LoggerContext} from 'blgr/lib/logger';
+
+import * as util from '../utils/util.js';
+import * as messageUtil from '../utils/message.js';
+import {Amount} from '../btc/amount.js';
+import {Script} from '../script/script.js';
+import {Address} from '../primitives/address.js';
+import {KeyRing} from '../primitives/keyring.js';
+import {MerkleBlock} from '../primitives/merkleblock.js';
+import {MTX} from '../primitives/mtx.js';
+import {Outpoint} from '../primitives/outpoint.js';
+import {Output} from '../primitives/output.js';
+import {TX} from '../primitives/tx.js';
+import * as consensus from '../protocol/consensus.js';
+import * as pkg from '../pkg.js';
+import * as common from './common.js';
+import {BlockMeta} from './records.js';
+import {WalletDB} from './walletdb.js';
+import {Network} from '../protocol/index.js';
+import {Wallet} from './wallet.js';
+import {WalletClient} from './client.js';
+import {WalletNode} from "./node.js";
+
 const RPCBase = bweb.RPC;
 const RPCError = bweb.RPCError;
 
@@ -82,17 +84,18 @@ export const errs = {
 
 export class RPC extends RPCBase {
   wdb: WalletDB;
-  network:Network;
-  logger:LoggerContext;
+  network: Network;
+  logger: LoggerContext;
   client: WalletClient;
   locker: Lock;
   wallet: Wallet;
+
   /**
    * Create an RPC.
    * @param {WalletNode} node
    */
 
-  constructor(node:WalletNode) {
+  constructor(node: WalletNode) {
     super();
 
     assert(node, 'RPC requires a WalletDB.');
@@ -610,7 +613,7 @@ export class RPC extends RPCBase {
     return Amount.btc(total, true);
   }
 
-  async _toWalletTX(wtx, watchOnly?:boolean) {
+  async _toWalletTX(wtx, watchOnly?: boolean) {
     const wallet = this.wallet;
     const details = await wallet.toDetails(wtx);
 
@@ -833,7 +836,7 @@ export class RPC extends RPCBase {
 
     const wallet = this.wallet;
     const valid = new Validator(args);
-    let addr: string|Address = valid.str(0, '');
+    let addr: string | Address = valid.str(0, '');
     const rescan = valid.bool(2, false);
     const p2sh = valid.bool(3, false);
 
@@ -981,11 +984,11 @@ export class RPC extends RPCBase {
 
     const map = new BufferMap<{
       involvesWatchonly: boolean,
-      address:string,
-      account:string,
-      amount:bigint,
-      confirmations:number,
-      label:string,
+      address: string,
+      account: string,
+      amount: bigint,
+      confirmations: number,
+      label: string,
     }>();
     for (const path of paths) {
       const addr = path.toAddress();

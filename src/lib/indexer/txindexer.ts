@@ -6,19 +6,19 @@
 
 'use strict';
 
-import {Hash} from "../types";
 
 import pkg from 'bsert';
-
-const {assert} = pkg;
 import bdb from 'bdb';
 import bio from 'bufio';
-import {layout} from './layout';
 
-import {consensus} from '../protocol';
-import {TX} from '../primitives';
-import {TXMeta} from '../primitives';
-import {Indexer} from './indexer';
+
+import {Hash} from "../types.js";
+import {layout} from './layout.js';
+import {consensus} from '../protocol/index.js';
+import {TX, TXMeta} from '../primitives/index.js';
+import {Indexer} from './indexer.js';
+
+const {assert} = pkg;
 
 /*
  * TXIndexer Database Layout:
@@ -59,6 +59,16 @@ class BlockRecord {
   }
 
   /**
+   * Instantiate block record from serialized data.
+   * @param {Buffer} data
+   * @returns {BlockRecord}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
+  }
+
+  /**
    * Inject properties from serialized data.
    * @private
    * @param {Buffer} data
@@ -71,16 +81,6 @@ class BlockRecord {
     this.time = br.readU32();
 
     return this;
-  }
-
-  /**
-   * Instantiate block record from serialized data.
-   * @param {Buffer} data
-   * @returns {BlockRecord}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
   }
 
   /**
@@ -126,6 +126,17 @@ class TxRecord {
   }
 
   /**
+   * Instantiate transaction record from serialized data.
+   * @param {Hash} hash
+   * @param {Buffer} data
+   * @returns {BlockRecord}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
+  }
+
+  /**
    * Inject properties from serialized data.
    * @private
    * @param {Buffer} data
@@ -140,17 +151,6 @@ class TxRecord {
     this.length = br.readU32();
 
     return this;
-  }
-
-  /**
-   * Instantiate transaction record from serialized data.
-   * @param {Hash} hash
-   * @param {Buffer} data
-   * @returns {BlockRecord}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
   }
 
   /**
@@ -295,7 +295,7 @@ export class TXIndexer extends Indexer {
    * @returns {Promise} - Returns Boolean.
    */
 
-  async hasTX(hash:Hash) {
+  async hasTX(hash: Hash) {
     return this.db.has(layout.t.encode(hash));
   }
 
@@ -305,7 +305,7 @@ export class TXIndexer extends Indexer {
    * @returns {Promise} - Returns {@link CoinView}.
    */
 
-  async getSpentView(tx:TX) {
+  async getSpentView(tx: TX) {
     const view = await this.chain.getCoinView(tx);
 
     for (const {prevout} of tx.inputs) {

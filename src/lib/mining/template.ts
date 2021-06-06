@@ -9,22 +9,21 @@
 
 import assert from 'bsert';
 import bio from 'bufio';
-import hash256 from 'bcrypto/lib/hash256';
-import merkle from 'bcrypto/lib/merkle';
-import random from 'bcrypto/lib/random';
-import * as util from '../utils/util';
-import {Address} from '../primitives/address';
-  import {TX} from '../primitives/tx';
-import {Block} from '../primitives/block';
-import {Input} from '../primitives/input';
-import {Output} from '../primitives/output';
-import * as consensus from '../protocol/consensus';
-import * as policy from '../protocol/policy';
-import {CoinView} from '../coins/coinview';
-import {Script} from '../script/script';
-import * as common from './common';
-import BN from 'bcrypto/lib/native/bn';
-import { Rate } from '../types';
+import hash256 from 'bcrypto/lib/hash256.js';
+import random from 'bcrypto/lib/random.js';
+
+
+import * as util from '../utils/util.js';
+import {Address} from '../primitives/address.js';
+import {TX} from '../primitives/tx.js';
+import {Block} from '../primitives/block.js';
+import {Input} from '../primitives/input.js';
+import {Output} from '../primitives/output.js';
+import * as consensus from '../protocol/consensus.js';
+import * as policy from '../protocol/policy.js';
+import {CoinView} from '../coins/coinview.js';
+import * as common from './common.js';
+import {Rate} from '../types.js';
 
 /*
  * Constants
@@ -38,26 +37,27 @@ const DUMMY = Buffer.alloc(0);
  */
 
 export class BlockTemplate {
-  
-  prevBlock:Buffer;
-  version:number;
-  height:number;
-  time:number;
-  bits:number;
-  target:Buffer;
-  locktime:number;
-  mtp:number;
-  flags:number;
+
+  prevBlock: Buffer;
+  version: number;
+  height: number;
+  time: number;
+  bits: number;
+  target: Buffer;
+  locktime: number;
+  mtp: number;
+  flags: number;
   coinbaseFlags: Buffer;
-  address:Address;
-  sigops:number;
-  weight:number;
-  fees:bigint;
-  tree:MerkleTree;
-  left:Buffer;
-  right:Buffer;
-  items:BlockEntry[];
+  address: Address;
+  sigops: number;
+  weight: number;
+  fees: bigint;
+  tree: MerkleTree;
+  left: Buffer;
+  right: Buffer;
+  items: BlockEntry[];
   pos: boolean;
+
   /**
    * Create a block template.
    * @constructor
@@ -86,6 +86,16 @@ export class BlockTemplate {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate block template from options.
+   * @param {Object} options
+   * @returns {BlockTemplate}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
   }
 
   /**
@@ -168,23 +178,12 @@ export class BlockTemplate {
     }
 
     if (options.pos != null) {
-      assert(typeof options.pos ==='boolean');
+      assert(typeof options.pos === 'boolean');
       this.pos = options.pos;
     }
 
     return this;
   }
-
-  /**
-   * Instantiate block template from options.
-   * @param {Object} options
-   * @returns {BlockTemplate}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
-  }
-
 
   /**
    * Set the target (bits).
@@ -240,7 +239,7 @@ export class BlockTemplate {
     // Coinbase input.
     const input = new Input();
 
-    if(this.pos) {
+    if (this.pos) {
       // Height (required in v2+ blocks)
       input.script.pushInt(this.height);
 
@@ -264,7 +263,7 @@ export class BlockTemplate {
 
     // Reward output.
     const output = new Output();
-    if(!this.pos){
+    if (!this.pos) {
       output.script.fromPubkeyhash(this.address.getHash());
       output.value = this.getProofOfWorkReward();
     }
@@ -291,7 +290,7 @@ export class BlockTemplate {
     input.script.compile();
 
     // Setup output script (variable size).
-    if(!this.pos){
+    if (!this.pos) {
       output.script.fromAddress(this.address);
     }
     cb.refresh();
@@ -409,7 +408,7 @@ export class BlockTemplate {
    * @returns {TX}
    */
 
-  getCoinbase(nonce1:number, nonce2:number):TX {
+  getCoinbase(nonce1: number, nonce2: number): TX {
     const raw = this.getRawCoinbase(nonce1, nonce2);
     return TX.fromRaw(raw);
   }
@@ -561,15 +560,16 @@ export class BlockTemplate {
  */
 
 export class BlockEntry {
-  tx:TX;
-  hash:Buffer;
-  fee:bigint;
-  rate:Rate;
-  priority:number;
-  free:boolean;
-  sigops:number;
-  descRate:Rate;
-  depCount:number;
+  tx: TX;
+  hash: Buffer;
+  fee: bigint;
+  rate: Rate;
+  priority: number;
+  free: boolean;
+  sigops: number;
+  descRate: Rate;
+  depCount: number;
+
   /**
    * Create a block entry.
    * @constructor
@@ -632,12 +632,13 @@ export class BlockEntry {
 
 class BlockProof {
 
-  hash:Buffer;
-  root:Buffer;
-  nonce1:number;
-  nonce2:number;
-  time:number;
-  nonce:number;
+  hash: Buffer;
+  root: Buffer;
+  nonce1: number;
+  nonce2: number;
+  time: number;
+  nonce: number;
+
   /**
    * Create a block proof.
    * @constructor
@@ -677,7 +678,8 @@ class BlockProof {
  */
 
 class MerkleTree {
-  steps:Buffer[];
+  steps: Buffer[];
+
   /**
    * Create a merkle tree.
    * @constructor
@@ -685,6 +687,18 @@ class MerkleTree {
 
   constructor() {
     this.steps = [];
+  }
+
+  static fromItems(items) {
+    return new this().fromItems(items);
+  }
+
+  static fromBlock(txs) {
+    return new this().fromBlock(txs);
+  }
+
+  static fromLeaves(leaves) {
+    return new this().fromLeaves(leaves);
   }
 
   withFirst(hash) {
@@ -713,10 +727,6 @@ class MerkleTree {
     return this.fromLeaves(leaves);
   }
 
-  static fromItems(items) {
-    return new this().fromItems(items);
-  }
-
   fromBlock(txs) {
     const leaves = [];
 
@@ -728,10 +738,6 @@ class MerkleTree {
     }
 
     return this.fromLeaves(leaves);
-  }
-
-  static fromBlock(txs) {
-    return new this().fromBlock(txs);
   }
 
   fromLeaves(leaves) {
@@ -755,10 +761,6 @@ class MerkleTree {
     }
 
     return this;
-  }
-
-  static fromLeaves(leaves) {
-    return new this().fromLeaves(leaves);
   }
 }
 

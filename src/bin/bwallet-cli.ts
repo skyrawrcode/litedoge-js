@@ -2,9 +2,9 @@
 
 
 import Config from 'bcfg';
-import { WalletClient, Wallet} from '../lib/client/wallet';
-import { NetworkType } from '../lib/types';
-import {Client} from "bcurl";
+import { WalletClient, Wallet} from '../lib/client/wallet.js';
+import { NetworkType } from '../lib/types.js';
+
 const ports = {
   main: 27015,
   testnet: 18334

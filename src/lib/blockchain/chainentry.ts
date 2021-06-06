@@ -10,16 +10,16 @@
 import assert from 'bsert';
 import bio from 'bufio';
 import BN from 'bcrypto/lib/bn.js';
-import * as consensus from '../protocol/consensus';
-import hash256 from 'bcrypto/lib/hash256';
-import scrypt from 'bcrypto/lib/scrypt';
-import * as util from '../utils/util';
-import {Headers} from '../primitives/headers';
-import {InvItem, InvType} from '../primitives/invitem';
-import {Outpoint} from '../primitives/outpoint';
-import { inspectSymbol } from '../utils';
-import {Block} from '../primitives/block';
-import { Network } from '../protocol';
+import hash256 from 'bcrypto/lib/hash256.js';
+import scrypt from 'bcrypto/lib/scrypt.js';
+
+
+import * as consensus from '../protocol/consensus.js';
+import * as util from '../utils/util.js';
+
+import {Block, Headers, InvItem, InvType, Outpoint} from '../primitives/index.js';
+import {inspectSymbol} from '../utils/index.js';
+import {Network} from '../protocol/index.js';
 /*
  * Constants
  */
@@ -32,24 +32,23 @@ const BLOCK_STAKE_MODIFIER = (1 << 2);
 
 export interface ChainEntryOptions {
 
- 
- 
+
   hash: Buffer;
   version: number;
-  prevBlock:Buffer
+  prevBlock: Buffer
   merkleRoot: Buffer;
   time: number;
-  bits:number;
-  nonce:number;
-  vchBlockSig:Buffer;
-  height:number;
-  chaintrust:BN;
-  flags?:number;
+  bits: number;
+  nonce: number;
+  vchBlockSig: Buffer;
+  height: number;
+  chaintrust: BN;
+  flags?: number;
 
   prevoutStake: Outpoint;
   stakeTime: number;
   stakeModifier: BN;
-  
+
   proofHash: any;
 }
 
@@ -95,13 +94,14 @@ export class ChainEntry {
   stakeTime: number;
   stakeModifier: BN;
   proofHash: Buffer;
+
   /**
    * Create a chain entry.
    * @constructor
    * @param {Object?} options
    */
 
-  constructor(options?:ChainEntryOptions) {
+  constructor(options?: ChainEntryOptions) {
     this.hash = consensus.ZERO_HASH;
     this.version = 1;
     this.prevBlock = consensus.ZERO_HASH;
@@ -120,6 +120,58 @@ export class ChainEntry {
     this.setStakeEntropyBit(0);
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate chainentry from options.
+   * @param {Object} options
+   * @param {ChainEntry} prev - Previous entry.
+   * @returns {ChainEntry}
+   */
+
+  static fromOptions(options: ChainEntryOptions, prev?: ChainEntry): ChainEntry {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate chainentry from block.
+   * @param {Block|MerkleBlock} block
+   * @param {ChainEntry} prev - Previous entry.
+   * @returns {ChainEntry}
+   */
+
+  static fromBlock(block, prev) {
+    return new this().fromBlock(block, prev);
+  }
+
+  /**
+   * Deserialize the entry.
+   * @param {Buffer} data
+   * @returns {ChainEntry}
+   */
+
+  static fromRaw(data: Buffer): ChainEntry {
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate block from jsonified object.
+   * @param {Object} json
+   * @returns {ChainEntry}
+   */
+
+  static fromJSON(json) {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Test whether an object is a {@link ChainEntry}.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isChainEntry(obj: any): boolean {
+    return obj instanceof ChainEntry;
   }
 
   /**
@@ -162,17 +214,6 @@ export class ChainEntry {
   }
 
   /**
-   * Instantiate chainentry from options.
-   * @param {Object} options
-   * @param {ChainEntry} prev - Previous entry.
-   * @returns {ChainEntry}
-   */
-
-  static fromOptions(options:ChainEntryOptions, prev?:ChainEntry):ChainEntry {
-    return new this().fromOptions(options);
-  }
-
-  /**
    * Calculate the proof: (1 << 256) / (target + 1)
    * @returns {BN} proof
    */
@@ -200,7 +241,6 @@ export class ChainEntry {
 
     return proof.iadd(prev.chaintrust);
   }
-
 
   /**
    * Test against the genesis block.
@@ -283,18 +323,6 @@ export class ChainEntry {
     return this;
   }
 
-
-  /**
-   * Instantiate chainentry from block.
-   * @param {Block|MerkleBlock} block
-   * @param {ChainEntry} prev - Previous entry.
-   * @returns {ChainEntry}
-   */
-
-  static fromBlock(block, prev) {
-    return new this().fromBlock(block, prev);
-  }
-
   /**
    * Serialize the entry to internal database format.
    * @returns {Buffer}
@@ -364,17 +392,6 @@ export class ChainEntry {
     return this;
   }
 
-
-  /**
-   * Deserialize the entry.
-   * @param {Buffer} data
-   * @returns {ChainEntry}
-   */
-
-  static fromRaw(data:Buffer):ChainEntry {
-    return new this().fromRaw(data);
-  }
-
   /**
    * Serialize the entry to an object more
    * suitable for JSON serialization.
@@ -437,21 +454,11 @@ export class ChainEntry {
   }
 
   /**
-   * Instantiate block from jsonified object.
-   * @param {Object} json
-   * @returns {ChainEntry}
-   */
-
-  static fromJSON(json) {
-    return new this().fromJSON(json);
-  }
-
-  /**
    * Convert the entry to a headers object.
    * @returns {Headers}
    */
 
-  toHeaders():Headers {
+  toHeaders(): Headers {
     return Headers.fromEntry(this);
   }
 
@@ -484,7 +491,6 @@ export class ChainEntry {
     }
   }
 
-
   /**
    * Returns if the block generated the stake modifier
    * @returns {boolean}
@@ -510,16 +516,6 @@ export class ChainEntry {
     const json = this.toJSON();
     json.version = Number(json.version.toString(16));
     return json;
-  }
-
-  /**
-   * Test whether an object is a {@link ChainEntry}.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isChainEntry(obj:any):boolean {
-    return obj instanceof ChainEntry;
   }
 
   /**

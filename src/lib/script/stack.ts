@@ -8,9 +8,9 @@
 'use strict';
 
 import assert from 'bsert';
-import * as common from './common';
-import {ScriptNum} from './scriptnum';
-import { inspectSymbol } from '../utils';
+import * as common from './common.js';
+import {ScriptNum} from './scriptnum.js';
+import {inspectSymbol} from '../utils/index.js';
 
 /**
  * Stack
@@ -22,13 +22,14 @@ import { inspectSymbol } from '../utils';
 
 export class Stack {
   items: Buffer[];
+
   /**
    * Create a stack.
    * @constructor
    * @param {Buffer[]?} items - Stack items.
    */
 
-  constructor(items?:Buffer[]) {
+  constructor(items?: Buffer[]) {
     this.items = items || [];
   }
 
@@ -37,7 +38,7 @@ export class Stack {
    * @returns {Number}
    */
 
-  get length():number {
+  get length(): number {
     return this.items.length;
   }
 
@@ -46,8 +47,73 @@ export class Stack {
    * @param {Number} value
    */
 
-  set length(value:number) {
+  set length(value: number) {
     this.items.length = value;
+  }
+
+  /**
+   * Test an object to see if it is a Stack.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isStack(obj) {
+    return obj instanceof Stack;
+  }
+
+  static toString(item, enc) {
+    assert(Buffer.isBuffer(item));
+    return item.toString(enc || 'utf8');
+  }
+
+  static fromString(str, enc) {
+    assert(typeof str === 'string');
+    return Buffer.from(str, enc || 'utf8');
+  }
+
+  static toNum(item, minimal, limit) {
+    return ScriptNum.decode(item, minimal, limit);
+  }
+
+  static fromNum(num) {
+    assert(ScriptNum.isScriptNum(num));
+    return num.encode();
+  }
+
+  static toInt(item, minimal, limit) {
+    const num = Stack.toNum(item, minimal, limit);
+    return num.getInt();
+  }
+
+  static fromInt(int) {
+    assert(typeof int === 'number');
+
+    if (int >= -1 && int <= 16)
+      return common.small[int + 1];
+
+    const num = ScriptNum.fromNumber(int);
+
+    return Stack.fromNum(num);
+  }
+
+  static toBool(item) {
+    assert(Buffer.isBuffer(item));
+
+    for (let i = 0; i < item.length; i++) {
+      if (item[i] !== 0) {
+        // Cannot be negative zero
+        if (i === item.length - 1 && item[i] === 0x80)
+          return false;
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  static fromBool(value) {
+    assert(typeof value === 'boolean');
+    return Stack.fromInt(value ? 1 : 0);
   }
 
   /**
@@ -91,7 +157,7 @@ export class Stack {
    * @returns {String} Human-readable stack.
    */
 
-  toString():string {
+  toString(): string {
     const out = [];
 
     for (const item of this.items)
@@ -106,7 +172,7 @@ export class Stack {
    * @returns {String} Human-readable script.
    */
 
-  toASM(decode:boolean):string {
+  toASM(decode: boolean): string {
     const out = [];
 
     for (const item of this.items)
@@ -120,7 +186,7 @@ export class Stack {
    * @returns {Stack} Cloned stack.
    */
 
-  clone():Stack {
+  clone(): Stack {
     return new Stack(this.items.slice());
   }
 
@@ -129,7 +195,7 @@ export class Stack {
    * @returns {Stack}
    */
 
-  clear():Stack {
+  clear(): Stack {
     this.items.length = 0;
     return this;
   }
@@ -149,6 +215,10 @@ export class Stack {
 
     return this.items[index];
   }
+
+  /*
+   * Data
+   */
 
   /**
    * Pop a stack item.
@@ -274,6 +344,10 @@ export class Stack {
     this.items.splice(start, end - start);
   }
 
+  /*
+   * Length
+   */
+
   /**
    * Swap stack values.
    * @param {Number} i1 - Index 1.
@@ -295,7 +369,7 @@ export class Stack {
   }
 
   /*
-   * Data
+   * String
    */
 
   getData(index) {
@@ -331,17 +405,13 @@ export class Stack {
   }
 
   /*
-   * Length
+   * Num
    */
 
   getLength(index) {
     const item = this.get(index);
     return item ? item.length : -1;
   }
-
-  /*
-   * String
-   */
 
   getString(index, enc) {
     const item = this.get(index);
@@ -375,13 +445,13 @@ export class Stack {
     return this.unshift(Stack.fromString(str, enc));
   }
 
+  /*
+   * Int
+   */
+
   insertString(index, str, enc) {
     return this.insert(index, Stack.fromString(str, enc));
   }
-
-  /*
-   * Num
-   */
 
   getNum(index, minimal, limit) {
     const item = this.get(index);
@@ -415,13 +485,13 @@ export class Stack {
     return this.unshift(Stack.fromNum(num));
   }
 
+  /*
+   * Bool
+   */
+
   insertNum(index, num) {
     return this.insert(index, Stack.fromNum(num));
   }
-
-  /*
-   * Int
-   */
 
   getInt(index, minimal, limit) {
     const item = this.get(index);
@@ -460,7 +530,7 @@ export class Stack {
   }
 
   /*
-   * Bool
+   * Encoding
    */
 
   getBool(index) {
@@ -497,75 +567,6 @@ export class Stack {
 
   insertBool(index, value) {
     return this.insert(index, Stack.fromBool(value));
-  }
-
-  /**
-   * Test an object to see if it is a Stack.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isStack(obj) {
-    return obj instanceof Stack;
-  }
-
-  /*
-   * Encoding
-   */
-
-  static toString(item, enc) {
-    assert(Buffer.isBuffer(item));
-    return item.toString(enc || 'utf8');
-  }
-
-  static fromString(str, enc) {
-    assert(typeof str === 'string');
-    return Buffer.from(str, enc || 'utf8');
-  }
-
-  static toNum(item, minimal, limit) {
-    return ScriptNum.decode(item, minimal, limit);
-  }
-
-  static fromNum(num) {
-    assert(ScriptNum.isScriptNum(num));
-    return num.encode();
-  }
-
-  static toInt(item, minimal, limit) {
-    const num = Stack.toNum(item, minimal, limit);
-    return num.getInt();
-  }
-
-  static fromInt(int) {
-    assert(typeof int === 'number');
-
-    if (int >= -1 && int <= 16)
-      return common.small[int + 1];
-
-    const num = ScriptNum.fromNumber(int);
-
-    return Stack.fromNum(num);
-  }
-
-  static toBool(item) {
-    assert(Buffer.isBuffer(item));
-
-    for (let i = 0; i < item.length; i++) {
-      if (item[i] !== 0) {
-        // Cannot be negative zero
-        if (i === item.length - 1 && item[i] === 0x80)
-          return false;
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  static fromBool(value) {
-    assert(typeof value === 'boolean');
-    return Stack.fromInt(value ? 1 : 0);
   }
 }
 

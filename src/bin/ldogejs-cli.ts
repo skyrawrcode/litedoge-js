@@ -3,9 +3,9 @@
 'use strict';
 
 import Config from 'bcfg';
-import {NodeClient} from '../lib/client/node';
-import {Amount} from '../lib/btc/amount';
-import { NetworkType } from '../lib/types';
+import {NodeClient} from '../lib/client/node.js';
+import {Amount} from '../lib/btc/amount.js';
+import { NetworkType } from '../lib/types.js';
 
 import { Client } from 'bcurl';
 

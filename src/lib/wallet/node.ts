@@ -7,13 +7,13 @@
 'use strict';
 
 import assert from 'bsert';
-import {Node} from '../node/node';
-import {WalletDB} from './walletdb';
-import {HTTP} from './http';
-import {WalletClient} from './client';
-import {RPC} from './rpc';
-import {Staker} from '../staking/staker';
-import { Kernel } from '../staking/kernel';
+import {Node} from '../node/node.js';
+import {WalletDB} from './walletdb.js';
+import {HTTP} from './http.js';
+import {WalletClient} from './client.js';
+import {RPC} from './rpc.js';
+import {Staker} from '../staking/staker.js';
+import {Kernel} from '../staking/kernel.js';
 
 /**
  * Wallet Node
@@ -21,10 +21,11 @@ import { Kernel } from '../staking/kernel';
  */
 
 export class WalletNode extends Node {
-  opened:boolean;
-  client:WalletClient;
-  kernel:Kernel;
-  wdb:WalletDB;
+  opened: boolean;
+  client: WalletClient;
+  kernel: Kernel;
+  wdb: WalletDB;
+
   /**
    * Create a wallet node.
    * @constructor
@@ -46,8 +47,8 @@ export class WalletNode extends Node {
     });
 
     this.kernel = new Kernel({
-      network:this.network,
-      logger:this.logger,
+      network: this.network,
+      logger: this.logger,
       node: this
     });
 
@@ -64,7 +65,7 @@ export class WalletNode extends Node {
       wipeNoReally: this.config.bool('wipe-no-really'),
       reserveBalance: BigInt(this.config.uint('reserve-balance', 0)),
       spv: this.config.bool('spv'),
-      
+
     });
 
     this.rpc = new RPC(this);

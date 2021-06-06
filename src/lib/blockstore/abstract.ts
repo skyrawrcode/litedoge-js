@@ -7,8 +7,7 @@
 'use strict';
 
 import Logger from 'blgr';
-import { LoggerContext } from 'blgr/lib/logger';
-import { BlockStoreOptions } from './common';
+import { BlockStoreOptions } from './common.js';
 
 
 

@@ -6,7 +6,7 @@
 
 'use strict';
 
-import * as unorm from './unorm';
+import * as unorm from './unorm.js';
 
 export default function nfkd(str) {
   if (str.normalize)

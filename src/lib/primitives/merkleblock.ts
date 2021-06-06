@@ -7,20 +7,22 @@
 
 'use strict';
 
-import { CoinView } from "../coins";
+import {CoinView} from "../coins";
 
 import assert from 'bsert';
 import bio from 'bufio';
-import { BufferMap, BufferSet } from 'buffer-map';
-import * as util from '../utils/util';
-import hash256 from 'bcrypto/lib/hash256';
-import * as consensus from '../protocol/consensus';
-import {AbstractBlock} from './abstractblock';
-import {TX} from './tx';
-import {Headers} from './headers';
+import {BufferMap, BufferSet} from 'buffer-map';
+
+import * as util from '../utils/util.js';
+import hash256 from 'bcrypto/lib/hash256.js';
+import * as consensus from '../protocol/consensus.js';
+import {AbstractBlock} from './abstractblock.js';
+import {TX} from './tx.js';
+import {Headers} from './headers.js';
+import {inspectSymbol} from '../utils/index.js';
+
 const DUMMY = Buffer.from([0]);
 const {encoding} = bio;
-import { inspectSymbol } from '../utils';
 
 /**
  * Merkle Block
@@ -30,12 +32,13 @@ import { inspectSymbol } from '../utils';
  */
 
 export class MerkleBlock extends AbstractBlock {
-  
+
   txs: TX[]
-  hashes:Buffer[];
-  flags:Buffer;
+  hashes: Buffer[];
+  flags: Buffer;
   totalTX: number;
-  _tree:PartialTree
+  _tree: PartialTree
+
   /**
    * Create a merkle block.
    * @constructor
@@ -58,40 +61,6 @@ export class MerkleBlock extends AbstractBlock {
   }
 
   /**
-   * Inject properties from options object.
-   * @private
-   * @param {Object} options
-   */
-
-  fromOptions(options) {
-    this.parseOptions(options);
-
-    assert(options, 'MerkleBlock data is required.');
-    assert(Array.isArray(options.hashes));
-    assert(Buffer.isBuffer(options.flags));
-    assert((options.totalTX >>> 0) === options.totalTX);
-
-    if (options.hashes) {
-      for (const hash of options.hashes) {
-        assert(Buffer.isBuffer(hash));
-        this.hashes.push(hash);
-      }
-    }
-
-    if (options.flags) {
-      assert(Buffer.isBuffer(options.flags));
-      this.flags = options.flags;
-    }
-
-    if (options.totalTX != null) {
-      assert((options.totalTX >>> 0) === options.totalTX);
-      this.totalTX = options.totalTX;
-    }
-
-    return this;
-  }
-
-  /**
    * Instantiate merkle block from options object.
    * @param {Object} options
    * @returns {MerkleBlock}
@@ -99,384 +68,6 @@ export class MerkleBlock extends AbstractBlock {
 
   static fromOptions(data) {
     return new this().fromOptions(data);
-  }
-
-  /**
-   * Clear any cached values.
-   * @param {Boolean?} all - Clear transactions.
-   */
-
-  refresh(all?:boolean) {
-    this._refresh();
-    this._tree = null;
-
-    if (!all)
-      return;
-
-    for (const tx of this.txs)
-      tx.refresh();
-  }
-
-  /**
-   * Test the block's _matched_ transaction vector against a hash.
-   * @param {Hash} hash
-   * @returns {Boolean}
-   */
-
-  hasTX(hash) {
-    return this.indexOf(hash) !== -1;
-  }
-
-  /**
-   * Test the block's _matched_ transaction vector against a hash.
-   * @param {Hash} hash
-   * @returns {Number} Index.
-   */
-
-  indexOf(hash) {
-    const tree = this.getTree();
-    const index = tree.map.get(hash);
-
-    if (index == null)
-      return -1;
-
-    return index;
-  }
-
-  /**
-   * Verify the partial merkletree.
-   * @private
-   * @returns {Boolean}
-   */
-
-  verifyBody():boolean {
-    const [valid] = this.checkBody();
-    return valid;
-  }
-
-  /**
-   * Verify the partial merkletree.
-   * @private
-   * @returns {Array} [valid, reason, score]
-   */
-
-  checkBody():[boolean, string, number] {
-    const tree = this.getTree();
-
-    if (!tree.root.equals(this.merkleRoot))
-      return [false, 'bad-txnmrklroot', 100];
-
-    return [true, 'valid', 0];
-  }
-
-  /**
-   * Extract the matches from partial merkle
-   * tree and calculate merkle root.
-   * @returns {Object}
-   */
-
-  getTree() {
-    if (!this._tree) {
-      try {
-        this._tree = this.extractTree();
-      } catch (e) {
-        this._tree = new PartialTree();
-      }
-    }
-    return this._tree;
-  }
-
-  /**
-   * Extract the matches from partial merkle
-   * tree and calculate merkle root.
-   * @private
-   * @returns {Object}
-   */
-
-  extractTree() {
-    const matches = [];
-    const indexes = [];
-    const map = new BufferMap();
-    const hashes = this.hashes;
-    const flags = this.flags;
-    const totalTX = this.totalTX;
-
-    let bitsUsed = 0;
-    let hashUsed = 0;
-    let failed = false;
-    let height = 0;
-
-    const width = (height) => {
-      return (totalTX + (1 << height) - 1) >>> height;
-    };
-
-    const traverse = (height, pos) => {
-      if (bitsUsed >= flags.length * 8) {
-        failed = true;
-        return consensus.ZERO_HASH;
-      }
-
-      const parent = (flags[bitsUsed / 8 | 0] >>> (bitsUsed % 8)) & 1;
-
-      bitsUsed += 1;
-
-      if (height === 0 || !parent) {
-        if (hashUsed >= hashes.length) {
-          failed = true;
-          return consensus.ZERO_HASH;
-        }
-
-        const hash = hashes[hashUsed];
-
-        hashUsed += 1;
-
-        if (height === 0 && parent) {
-          matches.push(hash);
-          indexes.push(pos);
-          map.set(hash, pos);
-        }
-
-        return hash;
-      }
-
-      const left = traverse(height - 1, pos * 2);
-      let right;
-
-      if (pos * 2 + 1 < width(height - 1)) {
-        right = traverse(height - 1, pos * 2 + 1);
-        if (right.equals(left))
-          failed = true;
-      } else {
-        right = left;
-      }
-
-      return hash256.root(left, right);
-    };
-
-    if (totalTX === 0)
-      throw new Error('Zero transactions.');
-
-    if (totalTX > consensus.MAX_BLOCK_SIZE / 60)
-      throw new Error('Too many transactions.');
-
-    if (hashes.length > totalTX)
-      throw new Error('Too many hashes.');
-
-    if (flags.length * 8 < hashes.length)
-      throw new Error('Flags too small.');
-
-    while (width(height) > 1)
-      height += 1;
-
-    const root = traverse(height, 0);
-
-    if (failed)
-      throw new Error('Mutated merkle tree.');
-
-    if (((bitsUsed + 7) / 8 | 0) !== flags.length)
-      throw new Error('Too many flag bits.');
-
-    if (hashUsed !== hashes.length)
-      throw new Error('Incorrect number of hashes.');
-
-    return new PartialTree(root, matches, indexes, map);
-  }
-
-  /**
-   * Extract the coinbase height (always -1).
-   * @returns {Number}
-   */
-
-  getCoinbaseHeight() {
-    return -1;
-  }
-
-  /**
-   * Inspect the block and return a more
-   * user-friendly representation of the data.
-   * @returns {Object}
-   */
-
-  [inspectSymbol]() {
-    return this.format();
-  }
-
-  /**
-   * Inspect the block and return a more
-   * user-friendly representation of the data.
-   * @param {CoinView} view
-   * @param {Number} height
-   * @returns {Object}
-   */
-
-  format(view?:CoinView, height?:number) {
-    return {
-      hash: this.rhash(),
-      height: height != null ? height : -1,
-      date: util.date(this.time),
-      version: this.version.toString(16),
-      prevBlock: util.revHex(this.prevBlock),
-      merkleRoot: util.revHex(this.merkleRoot),
-      time: this.time,
-      bits: this.bits,
-      nonce: this.nonce,
-      totalTX: this.totalTX,
-      hashes: this.hashes.map((hash) => {
-        return hash.toString('hex');
-      }),
-      flags: this.flags,
-      map: this.getTree().map,
-      txs: this.txs.map((tx, i) => {
-        return tx.format(view, null, i);
-      })
-    };
-  }
-
-  /**
-   * Get merkleblock size.
-   * @returns {Number} Size.
-   */
-
-  getSize() {
-    let size = 0;
-    size += 80;
-    size += 4;
-    size += encoding.sizeVarint(this.hashes.length);
-    size += this.hashes.length * 32;
-    size += encoding.sizeVarint(this.flags.length);
-    size += this.flags.length;
-    return size;
-  }
-
-  /**
-   * Get merkleblock size with transactions.
-   * @returns {Number} Size.
-   */
-
-  getExtendedSize() {
-    let size = this.getSize();
-
-    size += encoding.sizeVarint(this.txs.length);
-
-    for (const tx of this.txs)
-      size += tx.getSize();
-
-    return size;
-  }
-
-  /**
-   * Write the merkleblock to a buffer writer.
-   * @param {BufferWriter} bw
-   */
-
-  toWriter(bw) {
-    this.writeHead(bw);
-
-    bw.writeU32(this.totalTX);
-
-    bw.writeVarint(this.hashes.length);
-
-    for (const hash of this.hashes)
-      bw.writeHash(hash);
-
-    bw.writeVarBytes(this.flags);
-
-    return bw;
-  }
-
-  /**
-   * Write the merkleblock to a buffer writer with transactions.
-   * @param {BufferWriter} bw
-   */
-
-  toExtendedWriter(bw) {
-    this.toWriter(bw);
-
-    bw.writeVarint(this.txs.length);
-
-    for (const tx of this.txs)
-      tx.toWriter(bw);
-
-    return bw;
-  }
-
-  /**
-   * Serialize the merkleblock.
-   * @param {String?} enc - Encoding, can be `'hex'` or null.
-   * @returns {Buffer|String}
-   */
-
-  toRaw() {
-    const size = this.getSize();
-    return this.toWriter(bio.write(size)).render();
-  }
-
-  /**
-   * Serialize the merkleblock with transactions.
-   * @returns {Buffer}
-   */
-
-  toExtendedRaw() {
-    const size = this.getExtendedSize();
-    return this.toExtendedWriter(bio.write(size)).render();
-  }
-
-  /**
-   * Inject properties from buffer reader.
-   * @private
-   * @param {BufferReader} br
-   */
-
-  fromReader(br) {
-    this.readHead(br);
-
-    this.totalTX = br.readU32();
-
-    const count = br.readVarint();
-
-    for (let i = 0; i < count; i++)
-      this.hashes.push(br.readHash());
-
-    this.flags = br.readVarBytes();
-
-    return this;
-  }
-
-  /**
-   * Inject properties with transactions from buffer reader.
-   * @private
-   * @param {BufferReader} br
-   */
-
-  fromExtendedReader(br)  {
-    this.fromReader(br);
-
-    const count = br.readVarint();
-
-    for (let i = 0; i < count; i++)
-      this.txs.push(TX.fromReader(br));
-
-    return this;
-  }
-
-  /**
-   * Inject properties from serialized data.
-   * @private
-   * @param {Buffer} data
-   */
-
-  fromRaw(data) {
-    return this.fromReader(bio.read(data));
-  }
-
-  /**
-   * Inject properties with transactions from serialized data.
-   * @private
-   * @param {Buffer} data
-   */
-
-  fromExtendedRaw(data) {
-    return this.fromExtendedReader(bio.read(data));
   }
 
   /**
@@ -506,7 +97,7 @@ export class MerkleBlock extends AbstractBlock {
    * @returns {MerkleBlock}
    */
 
-  static fromRaw(data:Buffer, enc?:'hex') {
+  static fromRaw(data: Buffer, enc?: 'hex') {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromRaw(data);
@@ -523,69 +114,6 @@ export class MerkleBlock extends AbstractBlock {
     if (typeof data === 'string')
       data = Buffer.from(data, enc);
     return new this().fromExtendedRaw(data);
-  }
-
-  /**
-   * Convert the block to an object suitable
-   * for JSON serialization.
-   * @returns {Object}
-   */
-
-  toJSON() {
-    return this.getJSON();
-  }
-
-  /**
-   * Convert the block to an object suitable
-   * for JSON serialization. Note that the hashes
-   * will be reversed to abide by bitcoind's legacy
-   * of little-endian uint256s.
-   * @param {Network} network
-   * @param {CoinView} view
-   * @param {Number} height
-   * @returns {Object}
-   */
-
-  getJSON(network?, view?, height?) {
-    return {
-      hash: this.rhash(),
-      height: height,
-      version: this.version,
-      prevBlock: util.revHex(this.prevBlock),
-      merkleRoot: util.revHex(this.merkleRoot),
-      time: this.time,
-      bits: this.bits,
-      nonce: this.nonce,
-      totalTX: this.totalTX,
-      hashes: this.hashes.map((hash) => {
-        return util.revHex(hash);
-      }),
-      flags: this.flags.toString('hex')
-    };
-  }
-
-  /**
-   * Inject properties from json object.
-   * @private
-   * @param {Object} json
-   */
-
-  fromJSON(json) {
-    assert(json, 'MerkleBlock data is required.');
-    assert(Array.isArray(json.hashes));
-    assert(typeof json.flags === 'string');
-    assert((json.totalTX >>> 0) === json.totalTX);
-
-    this.parseJSON(json);
-
-    for (const hash of json.hashes)
-      this.hashes.push(util.fromRev(hash));
-
-    this.flags = Buffer.from(json.flags, 'hex');
-
-    this.totalTX = json.totalTX;
-
-    return this;
   }
 
   /**
@@ -742,6 +270,481 @@ export class MerkleBlock extends AbstractBlock {
   }
 
   /**
+   * Inject properties from options object.
+   * @private
+   * @param {Object} options
+   */
+
+  fromOptions(options) {
+    this.parseOptions(options);
+
+    assert(options, 'MerkleBlock data is required.');
+    assert(Array.isArray(options.hashes));
+    assert(Buffer.isBuffer(options.flags));
+    assert((options.totalTX >>> 0) === options.totalTX);
+
+    if (options.hashes) {
+      for (const hash of options.hashes) {
+        assert(Buffer.isBuffer(hash));
+        this.hashes.push(hash);
+      }
+    }
+
+    if (options.flags) {
+      assert(Buffer.isBuffer(options.flags));
+      this.flags = options.flags;
+    }
+
+    if (options.totalTX != null) {
+      assert((options.totalTX >>> 0) === options.totalTX);
+      this.totalTX = options.totalTX;
+    }
+
+    return this;
+  }
+
+  /**
+   * Clear any cached values.
+   * @param {Boolean?} all - Clear transactions.
+   */
+
+  refresh(all?: boolean) {
+    this._refresh();
+    this._tree = null;
+
+    if (!all)
+      return;
+
+    for (const tx of this.txs)
+      tx.refresh();
+  }
+
+  /**
+   * Test the block's _matched_ transaction vector against a hash.
+   * @param {Hash} hash
+   * @returns {Boolean}
+   */
+
+  hasTX(hash) {
+    return this.indexOf(hash) !== -1;
+  }
+
+  /**
+   * Test the block's _matched_ transaction vector against a hash.
+   * @param {Hash} hash
+   * @returns {Number} Index.
+   */
+
+  indexOf(hash) {
+    const tree = this.getTree();
+    const index = tree.map.get(hash);
+
+    if (index == null)
+      return -1;
+
+    return index;
+  }
+
+  /**
+   * Verify the partial merkletree.
+   * @private
+   * @returns {Boolean}
+   */
+
+  verifyBody(): boolean {
+    const [valid] = this.checkBody();
+    return valid;
+  }
+
+  /**
+   * Verify the partial merkletree.
+   * @private
+   * @returns {Array} [valid, reason, score]
+   */
+
+  checkBody(): [boolean, string, number] {
+    const tree = this.getTree();
+
+    if (!tree.root.equals(this.merkleRoot))
+      return [false, 'bad-txnmrklroot', 100];
+
+    return [true, 'valid', 0];
+  }
+
+  /**
+   * Extract the matches from partial merkle
+   * tree and calculate merkle root.
+   * @returns {Object}
+   */
+
+  getTree() {
+    if (!this._tree) {
+      try {
+        this._tree = this.extractTree();
+      } catch (e) {
+        this._tree = new PartialTree();
+      }
+    }
+    return this._tree;
+  }
+
+  /**
+   * Extract the matches from partial merkle
+   * tree and calculate merkle root.
+   * @private
+   * @returns {Object}
+   */
+
+  extractTree() {
+    const matches = [];
+    const indexes = [];
+    const map = new BufferMap();
+    const hashes = this.hashes;
+    const flags = this.flags;
+    const totalTX = this.totalTX;
+
+    let bitsUsed = 0;
+    let hashUsed = 0;
+    let failed = false;
+    let height = 0;
+
+    const width = (height) => {
+      return (totalTX + (1 << height) - 1) >>> height;
+    };
+
+    const traverse = (height, pos) => {
+      if (bitsUsed >= flags.length * 8) {
+        failed = true;
+        return consensus.ZERO_HASH;
+      }
+
+      const parent = (flags[bitsUsed / 8 | 0] >>> (bitsUsed % 8)) & 1;
+
+      bitsUsed += 1;
+
+      if (height === 0 || !parent) {
+        if (hashUsed >= hashes.length) {
+          failed = true;
+          return consensus.ZERO_HASH;
+        }
+
+        const hash = hashes[hashUsed];
+
+        hashUsed += 1;
+
+        if (height === 0 && parent) {
+          matches.push(hash);
+          indexes.push(pos);
+          map.set(hash, pos);
+        }
+
+        return hash;
+      }
+
+      const left = traverse(height - 1, pos * 2);
+      let right;
+
+      if (pos * 2 + 1 < width(height - 1)) {
+        right = traverse(height - 1, pos * 2 + 1);
+        if (right.equals(left))
+          failed = true;
+      } else {
+        right = left;
+      }
+
+      return hash256.root(left, right);
+    };
+
+    if (totalTX === 0)
+      throw new Error('Zero transactions.');
+
+    if (totalTX > consensus.MAX_BLOCK_SIZE / 60)
+      throw new Error('Too many transactions.');
+
+    if (hashes.length > totalTX)
+      throw new Error('Too many hashes.');
+
+    if (flags.length * 8 < hashes.length)
+      throw new Error('Flags too small.');
+
+    while (width(height) > 1)
+      height += 1;
+
+    const root = traverse(height, 0);
+
+    if (failed)
+      throw new Error('Mutated merkle tree.');
+
+    if (((bitsUsed + 7) / 8 | 0) !== flags.length)
+      throw new Error('Too many flag bits.');
+
+    if (hashUsed !== hashes.length)
+      throw new Error('Incorrect number of hashes.');
+
+    return new PartialTree(root, matches, indexes, map);
+  }
+
+  /**
+   * Extract the coinbase height (always -1).
+   * @returns {Number}
+   */
+
+  getCoinbaseHeight() {
+    return -1;
+  }
+
+  /**
+   * Inspect the block and return a more
+   * user-friendly representation of the data.
+   * @returns {Object}
+   */
+
+  [inspectSymbol]() {
+    return this.format();
+  }
+
+  /**
+   * Inspect the block and return a more
+   * user-friendly representation of the data.
+   * @param {CoinView} view
+   * @param {Number} height
+   * @returns {Object}
+   */
+
+  format(view?: CoinView, height?: number) {
+    return {
+      hash: this.rhash(),
+      height: height != null ? height : -1,
+      date: util.date(this.time),
+      version: this.version.toString(16),
+      prevBlock: util.revHex(this.prevBlock),
+      merkleRoot: util.revHex(this.merkleRoot),
+      time: this.time,
+      bits: this.bits,
+      nonce: this.nonce,
+      totalTX: this.totalTX,
+      hashes: this.hashes.map((hash) => {
+        return hash.toString('hex');
+      }),
+      flags: this.flags,
+      map: this.getTree().map,
+      txs: this.txs.map((tx, i) => {
+        return tx.format(view, null, i);
+      })
+    };
+  }
+
+  /**
+   * Get merkleblock size.
+   * @returns {Number} Size.
+   */
+
+  getSize() {
+    let size = 0;
+    size += 80;
+    size += 4;
+    size += encoding.sizeVarint(this.hashes.length);
+    size += this.hashes.length * 32;
+    size += encoding.sizeVarint(this.flags.length);
+    size += this.flags.length;
+    return size;
+  }
+
+  /**
+   * Get merkleblock size with transactions.
+   * @returns {Number} Size.
+   */
+
+  getExtendedSize() {
+    let size = this.getSize();
+
+    size += encoding.sizeVarint(this.txs.length);
+
+    for (const tx of this.txs)
+      size += tx.getSize();
+
+    return size;
+  }
+
+  /**
+   * Write the merkleblock to a buffer writer.
+   * @param {BufferWriter} bw
+   */
+
+  toWriter(bw) {
+    this.writeHead(bw);
+
+    bw.writeU32(this.totalTX);
+
+    bw.writeVarint(this.hashes.length);
+
+    for (const hash of this.hashes)
+      bw.writeHash(hash);
+
+    bw.writeVarBytes(this.flags);
+
+    return bw;
+  }
+
+  /**
+   * Write the merkleblock to a buffer writer with transactions.
+   * @param {BufferWriter} bw
+   */
+
+  toExtendedWriter(bw) {
+    this.toWriter(bw);
+
+    bw.writeVarint(this.txs.length);
+
+    for (const tx of this.txs)
+      tx.toWriter(bw);
+
+    return bw;
+  }
+
+  /**
+   * Serialize the merkleblock.
+   * @param {String?} enc - Encoding, can be `'hex'` or null.
+   * @returns {Buffer|String}
+   */
+
+  toRaw() {
+    const size = this.getSize();
+    return this.toWriter(bio.write(size)).render();
+  }
+
+  /**
+   * Serialize the merkleblock with transactions.
+   * @returns {Buffer}
+   */
+
+  toExtendedRaw() {
+    const size = this.getExtendedSize();
+    return this.toExtendedWriter(bio.write(size)).render();
+  }
+
+  /**
+   * Inject properties from buffer reader.
+   * @private
+   * @param {BufferReader} br
+   */
+
+  fromReader(br) {
+    this.readHead(br);
+
+    this.totalTX = br.readU32();
+
+    const count = br.readVarint();
+
+    for (let i = 0; i < count; i++)
+      this.hashes.push(br.readHash());
+
+    this.flags = br.readVarBytes();
+
+    return this;
+  }
+
+  /**
+   * Inject properties with transactions from buffer reader.
+   * @private
+   * @param {BufferReader} br
+   */
+
+  fromExtendedReader(br) {
+    this.fromReader(br);
+
+    const count = br.readVarint();
+
+    for (let i = 0; i < count; i++)
+      this.txs.push(TX.fromReader(br));
+
+    return this;
+  }
+
+  /**
+   * Inject properties from serialized data.
+   * @private
+   * @param {Buffer} data
+   */
+
+  fromRaw(data) {
+    return this.fromReader(bio.read(data));
+  }
+
+  /**
+   * Inject properties with transactions from serialized data.
+   * @private
+   * @param {Buffer} data
+   */
+
+  fromExtendedRaw(data) {
+    return this.fromExtendedReader(bio.read(data));
+  }
+
+  /**
+   * Convert the block to an object suitable
+   * for JSON serialization.
+   * @returns {Object}
+   */
+
+  toJSON() {
+    return this.getJSON();
+  }
+
+  /**
+   * Convert the block to an object suitable
+   * for JSON serialization. Note that the hashes
+   * will be reversed to abide by bitcoind's legacy
+   * of little-endian uint256s.
+   * @param {Network} network
+   * @param {CoinView} view
+   * @param {Number} height
+   * @returns {Object}
+   */
+
+  getJSON(network?, view?, height?) {
+    return {
+      hash: this.rhash(),
+      height: height,
+      version: this.version,
+      prevBlock: util.revHex(this.prevBlock),
+      merkleRoot: util.revHex(this.merkleRoot),
+      time: this.time,
+      bits: this.bits,
+      nonce: this.nonce,
+      totalTX: this.totalTX,
+      hashes: this.hashes.map((hash) => {
+        return util.revHex(hash);
+      }),
+      flags: this.flags.toString('hex')
+    };
+  }
+
+  /**
+   * Inject properties from json object.
+   * @private
+   * @param {Object} json
+   */
+
+  fromJSON(json) {
+    assert(json, 'MerkleBlock data is required.');
+    assert(Array.isArray(json.hashes));
+    assert(typeof json.flags === 'string');
+    assert((json.totalTX >>> 0) === json.totalTX);
+
+    this.parseJSON(json);
+
+    for (const hash of json.hashes)
+      this.hashes.push(util.fromRev(hash));
+
+    this.flags = Buffer.from(json.flags, 'hex');
+
+    this.totalTX = json.totalTX;
+
+    return this;
+  }
+
+  /**
    * Convert the block to a headers object.
    * @returns {Headers}
    */
@@ -756,11 +759,12 @@ export class MerkleBlock extends AbstractBlock {
  */
 
 class PartialTree {
-  root:Buffer;
+  root: Buffer;
   matches: [];
-  indexes:[];
-  map:BufferMap<undefined>;
-  constructor(root?:Buffer, matches?, indexes?, map?) {
+  indexes: [];
+  map: BufferMap<undefined>;
+
+  constructor(root?: Buffer, matches?, indexes?, map?) {
     this.root = root || consensus.ZERO_HASH;
     this.matches = matches || [];
     this.indexes = indexes || [];

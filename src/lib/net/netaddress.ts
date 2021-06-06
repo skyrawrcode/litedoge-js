@@ -9,10 +9,10 @@
 import assert from 'bsert';
 import bio from 'bufio';
 import IP from 'binet';
-import {Network} from '../protocol/network';
-import * as util from '../utils/util';
-import * as common from './common';
-import { inspectSymbol } from '../utils';
+import {Network} from '../protocol/network.js';
+import * as util from '../utils/util.js';
+import * as common from './common.js';
+import { inspectSymbol } from '../utils/index.js';
 
 /**
  * Net Address

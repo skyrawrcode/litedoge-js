@@ -8,8 +8,8 @@
 
 import assert from 'bsert';
 import AsyncEmitter from 'bevent';
-import {Network} from "../protocol";
-import {WalletNode} from "./node";
+import {Network} from "../protocol/index.js";
+import {WalletNode} from "./node.js";
 
 /**
  * Node Client

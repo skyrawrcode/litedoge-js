@@ -8,43 +8,41 @@
 
 
 import assert from 'bsert';
-import {BufferReader, BufferWriter} from 'bufio';
-import bio from "bufio";
-import {Script} from '../script/script';
-import {Output} from '../primitives/output';
-import {MTX} from '../primitives';
-import {TX} from '../primitives';
-import {KeyRing} from '../primitives/keyring';
-import {CoinView} from '../coins/coinview';
-import {ScriptError} from '../script/scripterror';
+import bio, {BufferWriter} from 'bufio';
+import {Script} from '../script/script.js';
+import {MTX, Output, TX} from '../primitives/index.js';
+import {KeyRing} from '../primitives/keyring.js';
+import {CoinView} from '../coins/coinview.js';
+import {ScriptError} from '../script/scripterror.js';
+
 const {encoding} = bio;
 
 /*
  * Constants
  */
 
-export enum WorkerPacketTypes  {
-  ENV= 0,
-  EVENT= 1,
-  LOG= 2,
-  ERROR= 3,
-  ERRORRESULT= 4,
-  CHECK= 5,
-  CHECKRESULT= 6,
-  SIGN= 7,
-  SIGNRESULT= 8,
-  CHECKINPUT= 9,
-  CHECKINPUTRESULT= 10,
-  SIGNINPUT= 11,
-  SIGNINPUTRESULT= 12,
-  ECVERIFY= 13,
-  ECVERIFYRESULT= 14,
-  ECSIGN= 15,
-  ECSIGNRESULT= 16,
-  MINE= 17,
-  MINERESULT= 18,
-  SCRYPT= 19,
-  SCRYPTRESULT= 20
+export enum WorkerPacketTypes {
+  ENV = 0,
+  EVENT = 1,
+  LOG = 2,
+  ERROR = 3,
+  ERRORRESULT = 4,
+  CHECK = 5,
+  CHECKRESULT = 6,
+  SIGN = 7,
+  SIGNRESULT = 8,
+  CHECKINPUT = 9,
+  CHECKINPUTRESULT = 10,
+  SIGNINPUT = 11,
+  SIGNINPUTRESULT = 12,
+  ECVERIFY = 13,
+  ECVERIFYRESULT = 14,
+  ECSIGN = 15,
+  ECSIGNRESULT = 16,
+  MINE = 17,
+  MINERESULT = 18,
+  SCRYPT = 19,
+  SCRYPTRESULT = 20
 };
 
 /**
@@ -55,9 +53,14 @@ class Packet {
   static id: number = 0;
   id: number;
   cmd: number;
+
   constructor() {
     this.id = ++Packet.id >>> 0;
     this.cmd = -1;
+  }
+
+  static fromRaw(data: Buffer = null): Packet {
+    throw new Error('Abstract method.');
   }
 
   getSize() {
@@ -68,13 +71,9 @@ class Packet {
     throw new Error('Abstract method.');
   }
 
-  fromRaw(data: Buffer):Packet {
+  fromRaw(data: Buffer): Packet {
     throw new Error('Abstract method.');
-    
-  }
 
-  static fromRaw(data:Buffer = null):Packet {
-    throw new Error('Abstract method.');
   }
 }
 
@@ -85,6 +84,7 @@ class Packet {
 export class EnvPacket extends Packet {
   env: any;
   json: string;
+
   constructor(env = {}) {
     super();
     this.cmd = WorkerPacketTypes.ENV;
@@ -92,24 +92,24 @@ export class EnvPacket extends Packet {
     this.json = JSON.stringify(this.env);
   }
 
+  static fromRaw(data) {
+    return new EnvPacket().fromRaw(data);
+  }
+
   getSize() {
     return encoding.sizeVarString(this.json, 'utf8');
   }
 
-  toWriter(bw:BufferWriter) {
+  toWriter(bw: BufferWriter) {
     bw.writeVarString(this.json, 'utf8');
     return bw;
   }
 
-  fromRaw(data:Buffer) {
+  fromRaw(data: Buffer) {
     const br = bio.read(data, true);
     this.json = br.readVarString('utf8');
     this.env = JSON.parse(this.json);
     return this;
-  }
-
-  static fromRaw(data) {
-    return new EnvPacket().fromRaw(data);
   }
 }
 
@@ -120,11 +120,16 @@ export class EnvPacket extends Packet {
 export class EventPacket extends Packet {
   items: any;
   json: string;
+
   constructor(items = null) {
     super();
     this.cmd = WorkerPacketTypes.EVENT;
     this.items = items || [];
     this.json = JSON.stringify(this.items);
+  }
+
+  static fromRaw(data) {
+    return new EventPacket().fromRaw(data);
   }
 
   getSize() {
@@ -142,10 +147,6 @@ export class EventPacket extends Packet {
     this.items = JSON.parse(this.json);
     return this;
   }
-
-  static fromRaw(data) {
-    return new EventPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -154,10 +155,15 @@ export class EventPacket extends Packet {
 
 export class LogPacket extends Packet {
   text: any;
+
   constructor(text = null) {
     super();
     this.cmd = WorkerPacketTypes.LOG;
     this.text = text || '';
+  }
+
+  static fromRaw(data) {
+    return new LogPacket().fromRaw(data);
   }
 
   getSize() {
@@ -174,10 +180,6 @@ export class LogPacket extends Packet {
     this.text = br.readVarString('utf8');
     return this;
   }
-
-  static fromRaw(data) {
-    return new LogPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -186,10 +188,15 @@ export class LogPacket extends Packet {
 
 export class ErrorPacket extends Packet {
   error: any;
-  constructor(error= null) {
+
+  constructor(error = null) {
     super();
     this.cmd = WorkerPacketTypes.ERROR;
     this.error = error || new Error();
+  }
+
+  static fromRaw(data) {
+    return new ErrorPacket().fromRaw(data);
   }
 
   getSize() {
@@ -264,10 +271,6 @@ export class ErrorPacket extends Packet {
 
     return this;
   }
-
-  static fromRaw(data) {
-    return new ErrorPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -275,7 +278,7 @@ export class ErrorPacket extends Packet {
  */
 
 export class ErrorResultPacket extends ErrorPacket {
-  constructor(error=null) {
+  constructor(error = null) {
     super(error);
     this.cmd = WorkerPacketTypes.ERRORRESULT;
   }
@@ -293,12 +296,17 @@ export class CheckPacket extends Packet {
   tx: TX;
   view: any;
   flags: any;
-  constructor(tx?:TX, view?, flags?) {
+
+  constructor(tx?: TX, view?, flags?) {
     super();
     this.cmd = WorkerPacketTypes.CHECK;
     this.tx = tx || null;
     this.view = view || null;
     this.flags = flags != null ? flags : null;
+  }
+
+  static fromRaw(data) {
+    return new CheckPacket().fromRaw(data);
   }
 
   getSize() {
@@ -324,10 +332,6 @@ export class CheckPacket extends Packet {
 
     return this;
   }
-
-  static fromRaw(data) {
-    return new CheckPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -336,10 +340,15 @@ export class CheckPacket extends Packet {
 
 export class CheckResultPacket extends Packet {
   error: any;
+
   constructor(error?) {
     super();
     this.cmd = WorkerPacketTypes.CHECKRESULT;
     this.error = error || null;
+  }
+
+  static fromRaw(data) {
+    return new CheckResultPacket().fromRaw(data);
   }
 
   getSize() {
@@ -404,10 +413,6 @@ export class CheckResultPacket extends Packet {
 
     return this;
   }
-
-  static fromRaw(data) {
-    return new CheckResultPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -418,12 +423,17 @@ export class SignPacket extends Packet {
   tx: any;
   rings: any;
   type: any;
+
   constructor(tx?, rings?, type?) {
     super();
     this.cmd = WorkerPacketTypes.SIGN;
     this.tx = tx || null;
     this.rings = rings || [];
     this.type = type != null ? type : 1;
+  }
+
+  static fromRaw(data) {
+    return new SignPacket().fromRaw(data);
   }
 
   getSize() {
@@ -472,10 +482,6 @@ export class SignPacket extends Packet {
 
     return this;
   }
-
-  static fromRaw(data) {
-    return new SignPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -485,11 +491,20 @@ export class SignPacket extends Packet {
 export class SignResultPacket extends Packet {
   total: any;
   script: any;
+
   constructor(total?, script?) {
     super();
     this.cmd = WorkerPacketTypes.SIGNRESULT;
     this.total = total || 0;
     this.script = script || [];
+  }
+
+  static fromTX(tx, total) {
+    return new SignResultPacket().fromTX(tx, total);
+  }
+
+  static fromRaw(data) {
+    return new SignResultPacket().fromRaw(data);
   }
 
   fromTX(tx, total) {
@@ -500,10 +515,6 @@ export class SignResultPacket extends Packet {
     }
 
     return this;
-  }
-
-  static fromTX(tx, total) {
-    return new SignResultPacket().fromTX(tx, total);
   }
 
   getSize() {
@@ -554,10 +565,6 @@ export class SignResultPacket extends Packet {
 
     return this;
   }
-
-  static fromRaw(data) {
-    return new SignResultPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -569,6 +576,7 @@ export class CheckInputPacket extends Packet {
   index: any;
   coin: any;
   flags: any;
+
   constructor(tx?, index?, coin?, flags?) {
     super();
     this.cmd = WorkerPacketTypes.CHECKINPUT;
@@ -576,6 +584,10 @@ export class CheckInputPacket extends Packet {
     this.index = index;
     this.coin = coin || null;
     this.flags = flags != null ? flags : null;
+  }
+
+  static fromRaw(data) {
+    return new CheckInputPacket().fromRaw(data);
   }
 
   getSize() {
@@ -614,10 +626,6 @@ export class CheckInputPacket extends Packet {
 
     return this;
   }
-
-  static fromRaw(data) {
-    return new CheckInputPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -645,6 +653,7 @@ export class SignInputPacket extends Packet {
   coin: any;
   ring: any;
   type: any;
+
   constructor(tx?, index?, coin?, ring?, type?) {
     super();
     this.cmd = WorkerPacketTypes.SIGNINPUT;
@@ -653,6 +662,10 @@ export class SignInputPacket extends Packet {
     this.coin = coin || null;
     this.ring = ring || null;
     this.type = type != null ? type : 1;
+  }
+
+  static fromRaw(data) {
+    return new SignInputPacket().fromRaw(data);
   }
 
   getSize() {
@@ -691,10 +704,6 @@ export class SignInputPacket extends Packet {
 
     return this;
   }
-
-  static fromRaw(data) {
-    return new SignInputPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -704,11 +713,20 @@ export class SignInputPacket extends Packet {
 export class SignInputResultPacket extends Packet {
   value: any;
   script: any;
+
   constructor(value?, script?) {
     super();
     this.cmd = WorkerPacketTypes.SIGNINPUTRESULT;
     this.value = value || false;
     this.script = script || null;
+  }
+
+  static fromTX(tx, i, value) {
+    return new SignInputResultPacket().fromTX(tx, i, value);
+  }
+
+  static fromRaw(data) {
+    return new SignInputResultPacket().fromRaw(data);
   }
 
   fromTX(tx, i, value) {
@@ -720,10 +738,6 @@ export class SignInputResultPacket extends Packet {
     this.script = input.script;
 
     return this;
-  }
-
-  static fromTX(tx, i, value) {
-    return new SignInputResultPacket().fromTX(tx, i, value);
   }
 
   getSize() {
@@ -748,10 +762,6 @@ export class SignInputResultPacket extends Packet {
     this.script = Script.fromReader(br);
     return this;
   }
-
-  static fromRaw(data) {
-    return new SignInputResultPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -762,12 +772,17 @@ export class ECVerifyPacket extends Packet {
   msg: any;
   sig: any;
   key: any;
+
   constructor(msg?, sig?, key?) {
     super();
     this.cmd = WorkerPacketTypes.ECVERIFY;
     this.msg = msg || null;
     this.sig = sig || null;
     this.key = key || null;
+  }
+
+  static fromRaw(data) {
+    return new ECVerifyPacket().fromRaw(data);
   }
 
   getSize() {
@@ -792,10 +807,6 @@ export class ECVerifyPacket extends Packet {
     this.key = br.readVarBytes();
     return this;
   }
-
-  static fromRaw(data) {
-    return new ECVerifyPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -804,10 +815,15 @@ export class ECVerifyPacket extends Packet {
 
 export class ECVerifyResultPacket extends Packet {
   value: any;
+
   constructor(value?) {
     super();
     this.cmd = WorkerPacketTypes.ECVERIFYRESULT;
     this.value = value;
+  }
+
+  static fromRaw(data) {
+    return new ECVerifyResultPacket().fromRaw(data);
   }
 
   getSize() {
@@ -824,10 +840,6 @@ export class ECVerifyResultPacket extends Packet {
     this.value = br.readU8() === 1;
     return this;
   }
-
-  static fromRaw(data) {
-    return new ECVerifyResultPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -837,11 +849,16 @@ export class ECVerifyResultPacket extends Packet {
 export class ECSignPacket extends Packet {
   msg: any;
   key: any;
+
   constructor(msg?, key?) {
     super();
     this.cmd = WorkerPacketTypes.ECSIGN;
     this.msg = msg || null;
     this.key = key || null;
+  }
+
+  static fromRaw(data) {
+    return new ECSignPacket().fromRaw(data);
   }
 
   getSize() {
@@ -863,10 +880,6 @@ export class ECSignPacket extends Packet {
     this.key = br.readVarBytes();
     return this;
   }
-
-  static fromRaw(data) {
-    return new ECSignPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -875,10 +888,15 @@ export class ECSignPacket extends Packet {
 
 export class ECSignResultPacket extends Packet {
   sig: any;
+
   constructor(sig?) {
     super();
     this.cmd = WorkerPacketTypes.ECSIGNRESULT;
     this.sig = sig;
+  }
+
+  static fromRaw(data) {
+    return new ECSignResultPacket().fromRaw(data);
   }
 
   getSize() {
@@ -895,10 +913,6 @@ export class ECSignResultPacket extends Packet {
     this.sig = br.readVarBytes();
     return this;
   }
-
-  static fromRaw(data) {
-    return new ECSignResultPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -910,6 +924,7 @@ export class MinePacket extends Packet {
   target: any;
   min: any;
   max: any;
+
   constructor(data?, target?, min?, max?) {
     super();
     this.cmd = WorkerPacketTypes.MINE;
@@ -917,6 +932,10 @@ export class MinePacket extends Packet {
     this.target = target || null;
     this.min = min != null ? min : -1;
     this.max = max != null ? max : -1;
+  }
+
+  static fromRaw(data) {
+    return new MinePacket().fromRaw(data);
   }
 
   getSize() {
@@ -939,10 +958,6 @@ export class MinePacket extends Packet {
     this.max = br.readU32();
     return this;
   }
-
-  static fromRaw(data) {
-    return new MinePacket().fromRaw(data);
-  }
 }
 
 /**
@@ -951,10 +966,15 @@ export class MinePacket extends Packet {
 
 export class MineResultPacket extends Packet {
   nonce: any;
+
   constructor(nonce?) {
     super();
     this.cmd = WorkerPacketTypes.MINERESULT;
     this.nonce = nonce != null ? nonce : -1;
+  }
+
+  static fromRaw(data) {
+    return new MineResultPacket().fromRaw(data);
   }
 
   getSize() {
@@ -974,10 +994,6 @@ export class MineResultPacket extends Packet {
       this.nonce = br.readU32();
     return this;
   }
-
-  static fromRaw(data) {
-    return new MineResultPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -991,6 +1007,7 @@ export class ScryptPacket extends Packet {
   r: any;
   p: any;
   len: any;
+
   constructor(passwd?, salt?, N?, r?, p?, len?) {
     super();
     this.cmd = WorkerPacketTypes.SCRYPT;
@@ -1000,6 +1017,10 @@ export class ScryptPacket extends Packet {
     this.r = r != null ? r : -1;
     this.p = p != null ? p : -1;
     this.len = len != null ? len : -1;
+  }
+
+  static fromRaw(data) {
+    return new ScryptPacket().fromRaw(data);
   }
 
   getSize() {
@@ -1030,10 +1051,6 @@ export class ScryptPacket extends Packet {
     this.len = br.readU32();
     return this;
   }
-
-  static fromRaw(data) {
-    return new ScryptPacket().fromRaw(data);
-  }
 }
 
 /**
@@ -1042,10 +1059,15 @@ export class ScryptPacket extends Packet {
 
 export class ScryptResultPacket extends Packet {
   key: any;
-  constructor(key =null) {
+
+  constructor(key = null) {
     super();
     this.cmd = WorkerPacketTypes.SCRYPTRESULT;
     this.key = key || null;
+  }
+
+  static fromRaw(data) {
+    return new ScryptResultPacket().fromRaw(data);
   }
 
   getSize() {
@@ -1061,10 +1083,6 @@ export class ScryptResultPacket extends Packet {
     const br = bio.read(data, true);
     this.key = br.readVarBytes();
     return this;
-  }
-
-  static fromRaw(data) {
-    return new ScryptResultPacket().fromRaw(data);
   }
 }
 

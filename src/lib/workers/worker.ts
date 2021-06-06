@@ -5,7 +5,7 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-import { Master } from './master';
+import { Master } from './master.js';
 const server = new Master();
 
 process.title = 'ldogejs-worker';

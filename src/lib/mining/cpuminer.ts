@@ -9,17 +9,18 @@
 
 import assert from 'bsert';
 import EventEmitter from 'events';
-import { Lock } from 'bmutex';
-import * as util from '../utils/util';
-import { mine } from './mine';
-import { Miner } from './miner';
-import { Network } from '../protocol';
-import { LoggerContext } from 'blgr/lib/logger';
+import {LoggerContext} from 'blgr/lib/logger';
 import Logger from 'blgr/lib/blgr';
-import { WorkerPool } from '../workers';
-import { Chain, ChainEntry } from '../blockchain';
-import { Address } from '../primitives';
-import { BlockTemplate } from './template';
+import {Lock} from 'bmutex';
+
+import * as util from '../utils/util.js';
+import {mine} from './mine.js';
+import {Miner} from './miner.js';
+import {Network} from '../protocol/index.js'
+import {WorkerPool} from '../workers/index.js';
+import {Chain, ChainEntry} from '../blockchain/index.js';
+import {Address} from '../primitives/index.js';
+import {BlockTemplate} from './template.js';
 
 /**
  * CPU miner.
@@ -37,7 +38,8 @@ export class CPUMiner extends EventEmitter {
   running: boolean;
   stopping: boolean;
   job: CPUJob;
-  stopJob: {resolve, reject};
+  stopJob: { resolve, reject };
+
   /**
    * Create a CPU miner.
    * @constructor
@@ -106,7 +108,8 @@ export class CPUMiner extends EventEmitter {
 
   start() {
     assert(!this.running, 'Miner is already running.');
-    this._start().catch(() => { });
+    this._start().catch(() => {
+    });
   }
 
   /**
@@ -243,7 +246,7 @@ export class CPUMiner extends EventEmitter {
   wait() {
     return new Promise((resolve, reject) => {
       assert(!this.stopJob);
-      this.stopJob = { resolve, reject };
+      this.stopJob = {resolve, reject};
     });
   }
 
@@ -455,7 +458,8 @@ class CPUJob {
   committed: boolean;
   start: number;
   nonce1: number;
-  nonce2: number; 
+  nonce2: number;
+
   /**
    * Create a mining job.
    * @constructor

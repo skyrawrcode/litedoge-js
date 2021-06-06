@@ -3,4 +3,4 @@
  * @module Staking
  */
 
-export {Staker} from "./staker"
+export {Staker} from "./staker.js"

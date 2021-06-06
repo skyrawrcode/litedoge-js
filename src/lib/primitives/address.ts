@@ -9,15 +9,14 @@
 
 import assert from 'bsert';
 import bio from 'bufio';
-import base58 from 'bcrypto/lib/encoding/base58';
-import bech32 from 'bcrypto/lib/encoding/bech32';
-import sha256 from 'bcrypto/lib/sha256';
-import hash160 from 'bcrypto/lib/hash160';
-import hash256 from 'bcrypto/lib/hash256';
-import {Network} from '../protocol/network';
-import {consensus} from '../protocol';
-import {inspectSymbol} from '../utils';
-import { Script } from '../script';
+import base58 from 'bcrypto/lib/encoding/base58.js';
+import bech32 from 'bcrypto/lib/encoding/bech32.js';
+import hash160 from 'bcrypto/lib/hash160.js';
+import hash256 from 'bcrypto/lib/hash256.js';
+import {Network} from '../protocol/network.js';
+import {consensus} from '../protocol/index.js';
+import {inspectSymbol} from '../utils/index.js';
+import {Script} from '../script/index.js';
 
 
 /**
@@ -28,12 +27,12 @@ import { Script } from '../script';
 export enum AddressTypes {
   PUBKEYHASH = 0,
   SCRIPTHASH = 1
-};
+}
 
 export interface AddressOptions {
   hash: undefined;
   type: undefined;
-  version:undefined;
+  version: undefined;
 }
 
 /*
@@ -53,11 +52,11 @@ export const ZERO_HASH160 = Buffer.alloc(20, 0x00);
 
 export class Address {
 
-  hash: Buffer;
   static typesByVal: any;
+  static types = AddressTypes;
+  hash: Buffer;
   type: AddressTypes;
   version: number;
-  static types = AddressTypes;
 
   /**
    * Create an address.
@@ -75,12 +74,163 @@ export class Address {
   }
 
   /**
+   * Insantiate address from options.
+   * @param {Object} options
+   * @returns {Address}
+   */
+
+  static fromOptions(options, network) {
+    return new Address().fromOptions(options, network);
+  }
+
+  /**
+   * Instantiate address from string.
+   * @param {String} addr
+   * @param {(Network|NetworkType)?} network
+   * @returns {Address}
+   */
+
+  static fromString(addr, network?): Address {
+    return new this().fromString(addr, network);
+  }
+
+  /**
+   * Create an address object from a serialized address.
+   * @param {Buffer} data
+   * @returns {Address}
+   * @throws Parse error.
+   */
+
+  static fromRaw(data, network) {
+    return new this().fromRaw(data, network);
+  }
+
+  /**
+   * Create an address object from a base58 address.
+   * @param {AddressString} data
+   * @param {Network?} network
+   * @returns {Address}
+   * @throws Parse error.
+   */
+
+  static fromBase58(data, network) {
+    return new this().fromBase58(data, network);
+  }
+
+  /**
+   * Create an Address from an input script.
+   * Attempt to extract address
+   * properties from an input script.
+   * @param {Script}
+   * @returns {Address|null}
+   */
+
+  static fromInputScript(script) {
+    return new this().fromInputScript(script);
+  }
+
+  /**
+   * Create an Address from an output script.
+   * Parse an output script and extract address
+   * properties. Converts pubkey and multisig
+   * scripts to pubkeyhash and scripthash addresses.
+   * @param {Script}
+   * @returns {Address|null}
+   */
+
+  static fromScript(script: Script): Address {
+    return new this().fromScript(script);
+  }
+
+  /**
+   * Create a naked address from hash/type/version.
+   * @param {Hash} hash
+   * @param {AddressPrefix} type
+   * @param {Number} [version=-1]
+   * @returns {Address}
+   * @throws on bad hash size
+   */
+
+  static fromHash(hash, type, version) {
+    return new this().fromHash(hash, type, version);
+  }
+
+  /**
+   * Instantiate address from pubkeyhash.
+   * @param {Buffer} hash
+   * @returns {Address}
+   */
+
+  static fromPubkeyhash(hash) {
+    return new this().fromPubkeyhash(hash);
+  }
+
+  /**
+   * Instantiate address from scripthash.
+   * @param {Buffer} hash
+   * @returns {Address}
+   */
+
+  static fromScripthash(hash) {
+    return new this().fromScripthash(hash);
+  }
+
+  /**
+   * Get the hash of a base58 address or address-related object.
+   * @param {String|Address|Hash} data
+   * @param {String?} enc - Can be `"hex"` or `null`.
+   * @returns {Hash}
+   */
+
+  static getHash(data: Buffer | Address, enc?: 'hex' | null) {
+    if (!data)
+      throw new Error('Object is not an address.');
+
+    let hash;
+
+    if (Buffer.isBuffer(data)) {
+      if (data.length !== 20 && data.length !== 32)
+        throw new Error('Object is not an address.');
+      hash = data;
+    } else if (data instanceof Address) {
+      hash = data.hash;
+    } else {
+      throw new Error('Object is not an address.');
+    }
+
+    if (enc === 'hex')
+      return hash.toString('hex');
+
+    return hash;
+  }
+
+  /**
+   * Get an address type for a specified network address prefix.
+   * @param {Number} prefix
+   * @param {Network} network
+   * @returns {AddressType}
+   */
+
+  static getType(prefix, network) {
+    const prefixes = network.addressPrefix;
+
+    switch (prefix) {
+      case prefixes.pubkeyhash:
+        return AddressTypes.PUBKEYHASH;
+      case prefixes.scripthash:
+        return AddressTypes.SCRIPTHASH;
+      default:
+        throw new Error('Unknown address prefix.');
+    }
+  }
+
+  /**
    * Inject properties from options object.
    * @private
    * @param {Object} options
    */
 
-  fromOptions(options: string | AddressOptions, network?:Network) {
+  fromOptions(options: string | AddressOptions, network?: Network) {
     if (typeof options === 'string')
       return this.fromString(options, network);
 
@@ -92,24 +242,16 @@ export class Address {
   }
 
   /**
-   * Insantiate address from options.
-   * @param {Object} options
-   * @returns {Address}
-   */
-
-  static fromOptions(options, network) {
-    return new Address().fromOptions(options, network);
-  }
-
-  /**
    * Get the address hash.
    * @param {String?} enc - Can be `"hex"` or `null`.
    * @returns {Hash|Buffer}
    */
 
-  getHash():Buffer
-  getHash(enc:'hex'):string
-  getHash(enc?:'hex'):Buffer|string {
+  getHash(): Buffer
+
+  getHash(enc: 'hex'): string
+
+  getHash(enc?: 'hex'): Buffer | string {
     if (enc === 'hex')
       return this.hash.toString('hex');
     return this.hash;
@@ -283,17 +425,6 @@ export class Address {
   }
 
   /**
-   * Instantiate address from string.
-   * @param {String} addr
-   * @param {(Network|NetworkType)?} network
-   * @returns {Address}
-   */
-
-  static fromString(addr, network?): Address {
-    return new this().fromString(addr, network);
-  }
-
-  /**
    * Convert the Address to a string.
    * @param {(Network|NetworkType)?} network
    * @returns {AddressString}
@@ -346,17 +477,6 @@ export class Address {
   }
 
   /**
-   * Create an address object from a serialized address.
-   * @param {Buffer} data
-   * @returns {Address}
-   * @throws Parse error.
-   */
-
-  static fromRaw(data, network) {
-    return new this().fromRaw(data, network);
-  }
-
-  /**
    * Inject properties from base58 address.
    * @private
    * @param {AddressString} data
@@ -374,24 +494,12 @@ export class Address {
   }
 
   /**
-   * Create an address object from a base58 address.
-   * @param {AddressString} data
-   * @param {Network?} network
-   * @returns {Address}
-   * @throws Parse error.
-   */
-
-  static fromBase58(data, network) {
-    return new this().fromBase58(data, network);
-  }
-
-  /**
    * Inject properties from output script.
    * @private
    * @param {Script} script
    */
 
-  fromScript(script:Script) {
+  fromScript(script: Script) {
     const pk = script.getPubkey();
 
     if (pk) {
@@ -430,7 +538,6 @@ export class Address {
     return null;
   }
 
-
   /**
    * Inject properties from input script.
    * @private
@@ -457,32 +564,6 @@ export class Address {
     }
 
     return null;
-  }
-
-
-  /**
-   * Create an Address from an input script.
-   * Attempt to extract address
-   * properties from an input script.
-   * @param {Script}
-   * @returns {Address|null}
-   */
-
-  static fromInputScript(script) {
-    return new this().fromInputScript(script);
-  }
-
-  /**
-   * Create an Address from an output script.
-   * Parse an output script and extract address
-   * properties. Converts pubkey and multisig
-   * scripts to pubkeyhash and scripthash addresses.
-   * @param {Script}
-   * @returns {Address|null}
-   */
-
-  static fromScript(script:Script):Address {
-    return new this().fromScript(script);
   }
 
   /**
@@ -527,19 +608,6 @@ export class Address {
   }
 
   /**
-   * Create a naked address from hash/type/version.
-   * @param {Hash} hash
-   * @param {AddressPrefix} type
-   * @param {Number} [version=-1]
-   * @returns {Address}
-   * @throws on bad hash size
-   */
-
-  static fromHash(hash, type, version) {
-    return new this().fromHash(hash, type, version);
-  }
-
-  /**
    * Inject properties from pubkeyhash.
    * @private
    * @param {Buffer} hash
@@ -553,16 +621,6 @@ export class Address {
   }
 
   /**
-   * Instantiate address from pubkeyhash.
-   * @param {Buffer} hash
-   * @returns {Address}
-   */
-
-  static fromPubkeyhash(hash) {
-    return new this().fromPubkeyhash(hash);
-  }
-
-  /**
    * Inject properties from scripthash.
    * @private
    * @param {Buffer} hash
@@ -573,16 +631,6 @@ export class Address {
     const type = AddressTypes.SCRIPTHASH;
     assert(hash && hash.length === 20, 'P2SH must be 20 bytes.');
     return this.fromHash(hash, type, -1);
-  }
-
-  /**
-   * Instantiate address from scripthash.
-   * @param {Buffer} hash
-   * @returns {Address}
-   */
-
-  static fromScripthash(hash) {
-    return new this().fromScripthash(hash);
   }
 
   /**
@@ -601,56 +649,6 @@ export class Address {
 
   isScripthash() {
     return this.type === AddressTypes.SCRIPTHASH;
-  }
-
-
-  /**
-   * Get the hash of a base58 address or address-related object.
-   * @param {String|Address|Hash} data
-   * @param {String?} enc - Can be `"hex"` or `null`.
-   * @returns {Hash}
-   */
-
-  static getHash(data: Buffer|Address, enc?:'hex'|null) {
-    if (!data)
-      throw new Error('Object is not an address.');
-
-    let hash;
-
-    if (Buffer.isBuffer(data)) {
-      if (data.length !== 20 && data.length !== 32)
-        throw new Error('Object is not an address.');
-      hash = data;
-    } else if (data instanceof Address) {
-      hash = data.hash;
-    } else {
-      throw new Error('Object is not an address.');
-    }
-
-    if (enc === 'hex')
-      return hash.toString('hex');
-
-    return hash;
-  }
-
-  /**
-   * Get an address type for a specified network address prefix.
-   * @param {Number} prefix
-   * @param {Network} network
-   * @returns {AddressType}
-   */
-
-  static getType(prefix, network) {
-    const prefixes = network.addressPrefix;
-
-    switch (prefix) {
-      case prefixes.pubkeyhash:
-        return AddressTypes.PUBKEYHASH;
-      case prefixes.scripthash:
-        return AddressTypes.SCRIPTHASH;
-      default:
-        throw new Error('Unknown address prefix.');
-    }
   }
 }
 

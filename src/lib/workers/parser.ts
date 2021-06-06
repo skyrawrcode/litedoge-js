@@ -9,8 +9,8 @@
 
 import assert from 'bsert';
 import {EventEmitter} from 'events';
-import * as packets from './packets';
-import {WorkerPacketTypes} from "./packets";
+import * as packets from './packets.js';
+import {WorkerPacketTypes} from './packets.js';
 
 /**
  * Parser
@@ -23,6 +23,7 @@ export class Parser extends EventEmitter {
   total: number;
   header: Header;
   pending: Buffer[];
+
   /**
    * Create a parser.
    * @constructor
@@ -192,6 +193,7 @@ class Header {
   id: any;
   cmd: any;
   size: any;
+
   /**
    * Create a header.
    * @constructor

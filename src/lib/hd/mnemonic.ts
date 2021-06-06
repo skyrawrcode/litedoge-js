@@ -4,19 +4,19 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
 
 import assert from 'bsert';
 import bio from 'bufio';
-import sha256 from 'bcrypto/lib/sha256';
-import cleanse from 'bcrypto/lib/cleanse';
-import random from 'bcrypto/lib/random';
-import pbkdf2 from 'bcrypto/lib/pbkdf2';
-import sha512 from 'bcrypto/lib/sha512';
-import * as wordlist from './wordlist';
-import * as common from './common';
-import nfkd from './nfkd';
-import { inspectSymbol } from '../utils';
+import sha256 from 'bcrypto/lib/sha256.js';
+import cleanse from 'bcrypto/lib/cleanse.js';
+import random from 'bcrypto/lib/random.js';
+import pbkdf2 from 'bcrypto/lib/pbkdf2.js';
+import sha512 from 'bcrypto/lib/sha512.js';
+
+import * as wordlist from './wordlist.js';
+import * as common from './common.js';
+import nfkd from './nfkd.js';
+import { inspectSymbol } from '../utils/index.js';
 
 /*
  * Constants

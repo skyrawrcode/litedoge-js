@@ -7,7 +7,7 @@
 'use strict';
 
 import assert from 'bsert';
-import hash256 from 'bcrypto/lib/hash256';
+import hash256 from 'bcrypto/lib/hash256.js';
 
 /**
  * Hash until the nonce overflows.

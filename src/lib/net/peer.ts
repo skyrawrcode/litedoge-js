@@ -9,32 +9,34 @@
 
 import assert from 'bsert';
 import EventEmitter from 'events';
-import { Lock } from 'bmutex';
-import { format } from 'util';
+import {Lock} from 'bmutex';
+import {format} from 'util';
 import tcp from 'btcp';
 import dns from 'bdns';
 import Logger from 'blgr';
-import { RollingFilter } from 'bfilter';
-import { BufferMap } from 'buffer-map';
-import {Parser} from './parser';
-import {Framer} from './framer';
-import * as packets from './packets';
-import * as consensus from '../protocol/consensus';
-import * as common from './common';
-import {InvItem, InvType} from '../primitives/invitem';
-import * as bip152 from './bip152';
-import {Block} from '../primitives/block';
-import {TX} from '../primitives/tx';
-import {NetAddress} from './netaddress';
-import {Network} from '../protocol/network';
+import {RollingFilter} from 'bfilter';
+import {BufferMap} from 'buffer-map';
+import BN from 'bcrypto/lib/native/bn';
+
+import {Parser} from './parser.js';
+import {Framer} from './framer.js';
+import * as packets from './packets.js';
+import * as consensus from '../protocol/consensus.js';
+import * as common from './common.js';
+import {InvItem, InvType} from '../primitives/invitem.js';
+import * as bip152 from './bip152.js';
+import {Block} from '../primitives/block.js';
+import {TX} from '../primitives/tx.js';
+import {NetAddress} from './netaddress.js';
+import {Network} from '../protocol/network.js';
+import {inspectSymbol} from '../utils/index.js';
+import {PoolOptionsOptions} from './pool.js';
+import {LoggerContext} from 'blgr/lib/logger';
+import {Socket} from 'net';
+
 const services = common.ServiceBits;
 
 const packetTypes = packets.PacketTypes;
-import { inspectSymbol } from '../utils';
-import { PoolOptionsOptions } from './pool';
-import { LoggerContext } from 'blgr/lib/logger';
-import BN from 'bcrypto/lib/native/bn';
-import { Socket } from 'net';
 
 /**
  * Represents a network peer.
@@ -66,20 +68,20 @@ import { Socket } from 'net';
  */
 
 export class Peer extends EventEmitter {
-  options: PeerOptions& PoolOptionsOptions
-  network:Network;
-  logger: Logger|LoggerContext;
-  
-  locker:Lock;
-  
-  parser:Parser;
-  framer:Framer;
-  
-  id:number;
-  socket:Socket;
-  opened:boolean;
-  outbound:boolean;
-  loader:boolean;
+  options: PeerOptions & PoolOptionsOptions
+  network: Network;
+  logger: Logger | LoggerContext;
+
+  locker: Lock;
+
+  parser: Parser;
+  framer: Framer;
+
+  id: number;
+  socket: Socket;
+  opened: boolean;
+  outbound: boolean;
+  loader: boolean;
   address: NetAddress;
   local: NetAddress;
   name: any;
@@ -131,6 +133,7 @@ export class Peer extends EventEmitter {
   txMap: BufferMap<number>;
   responseMap: Map<packets.PacketTypes, any>;
   compactBlocks: BufferMap<bip152.CompactBlock>;
+
   /**
    * Create a peer.
    * @alias module:net.Peer
@@ -2027,7 +2030,7 @@ export const TIMEOUT_INTERVAL = 20 * 60000;
 
 export class PeerOptions {
   network: Network;
-  logger: LoggerContext| Logger;
+  logger: LoggerContext | Logger;
   createSocket: any;
   version: number;
   services: common.ServiceBits;
@@ -2037,7 +2040,12 @@ export class PeerOptions {
   compact: boolean;
   headers: boolean;
   banScore: number;
-  
+  getHeight: () => number;
+  isFull: () => boolean;
+  createNonce: (hostName: string) => Buffer;
+  hasNonce: (nonce: any) => boolean;
+  getRate: (hash) => number;
+
   /**
    * Create peer options.
    * @constructor
@@ -2067,11 +2075,69 @@ export class PeerOptions {
       this.fromOptions(options);
   }
 
-  getHeight: ()=>number;
-  isFull: () =>boolean;
-  createNonce: (hostName:string)=>Buffer;
-  hasNonce: (nonce:any)=>boolean;
-  getRate:(hash)=>number;
+  /**
+   * Instantiate options from object.
+   * @param {Object} options
+   * @returns {PeerOptions}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Get the chain height.
+   * @private
+   * @returns {Number}
+   */
+
+  static getHeight() {
+    return 0;
+  }
+
+  /**
+   * Test whether the chain is synced.
+   * @private
+   * @returns {Boolean}
+   */
+
+  static isFull() {
+    return false;
+  }
+
+  /**
+   * Create a version packet nonce.
+   * @private
+   * @param {String} hostname
+   * @returns {Buffer}
+   */
+
+  static createNonce(hostname) {
+    return common.nonce();
+  }
+
+  /**
+   * Test whether version nonce is ours.
+   * @private
+   * @param {Buffer} nonce
+   * @returns {Boolean}
+   */
+
+  static hasNonce(nonce) {
+    return false;
+  }
+
+  /**
+   * Get fee rate for txid.
+   * @private
+   * @param {Hash} hash
+   * @returns {Rate}
+   */
+
+  static getRate(hash) {
+    return -1;
+  }
+
   /**
    * Inject properties from object.
    * @private
@@ -2162,70 +2228,6 @@ export class PeerOptions {
 
     return this;
   }
-
-  /**
-   * Instantiate options from object.
-   * @param {Object} options
-   * @returns {PeerOptions}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
-  }
-
-  /**
-   * Get the chain height.
-   * @private
-   * @returns {Number}
-   */
-
-  static getHeight() {
-    return 0;
-  }
-
-  /**
-   * Test whether the chain is synced.
-   * @private
-   * @returns {Boolean}
-   */
-
-  static isFull() {
-    return false;
-  }
-
-
-  /**
-   * Create a version packet nonce.
-   * @private
-   * @param {String} hostname
-   * @returns {Buffer}
-   */
-
-  static createNonce(hostname) {
-    return common.nonce();
-  }
-
-  /**
-   * Test whether version nonce is ours.
-   * @private
-   * @param {Buffer} nonce
-   * @returns {Boolean}
-   */
-
-  static hasNonce(nonce) {
-    return false;
-  }
-
-  /**
-   * Get fee rate for txid.
-   * @private
-   * @param {Hash} hash
-   * @returns {Rate}
-   */
-
-  static getRate(hash) {
-    return -1;
-  }
 }
 
 /**
@@ -2235,7 +2237,8 @@ export class PeerOptions {
 
 class RequestEntry {
   timeout: number;
-  jobs: {resolve, reject}[];
+  jobs: { resolve, reject }[];
+
   /**
    * Create a request entry.
    * @constructor

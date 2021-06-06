@@ -4,12 +4,11 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
 
 import assert from 'bsert';
-import { Output } from '..';
-import { Coin } from '../primitives/coin';
-import {CoinEntry} from './coinentry';
+
+import {Coin, Output} from '../primitives/index.js';
+import {CoinEntry} from './coinentry.js';
 
 /**
  * Coins
@@ -20,6 +19,7 @@ import {CoinEntry} from './coinentry';
 
 export class Coins {
   outputs: Map<any, any>;
+
   /**
    * Create coins.
    * @constructor
@@ -27,6 +27,17 @@ export class Coins {
 
   constructor() {
     this.outputs = new Map();
+  }
+
+  /**
+   * Instantiate a coins object from a transaction.
+   * @param {TX} tx
+   * @param {Number} height
+   * @returns {Coins}
+   */
+
+  static fromTX(tx: any, height: any): Coins {
+    return new this().fromTX(tx, height);
   }
 
   /**
@@ -207,17 +218,6 @@ export class Coins {
     }
 
     return this;
-  }
-
-  /**
-   * Instantiate a coins object from a transaction.
-   * @param {TX} tx
-   * @param {Number} height
-   * @returns {Coins}
-   */
-
-  static fromTX(tx: any, height: any): Coins {
-    return new this().fromTX(tx, height);
   }
 }
 

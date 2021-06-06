@@ -8,8 +8,8 @@
 'use strict';
 
 import EventEmitter from 'events';
-import * as util from '../utils/util';
-import * as binary from '../utils/binary';
+import * as util from '../utils/util.js';
+import * as binary from '../utils/binary.js';
 
 /**
  * Time Data
@@ -27,17 +27,18 @@ import * as binary from '../utils/binary';
 
 export class TimeData extends EventEmitter {
   samples: number[];
-  known:Map<string, number>;
-  limit:number;
-  offset:number;
-  checked:boolean;
+  known: Map<string, number>;
+  limit: number;
+  offset: number;
+  checked: boolean;
+
   /**
    * Create time data.
    * @constructor
    * @param {Number} [limit=200]
    */
 
-  constructor(limit?:number) {
+  constructor(limit?: number) {
     super();
 
     if (limit == null)
@@ -56,7 +57,7 @@ export class TimeData extends EventEmitter {
    * @param {Number} time
    */
 
-  add(id:string , time:number) {
+  add(id: string, time: number) {
     if (this.samples.length >= this.limit)
       return;
 

@@ -7,18 +7,18 @@
 'use strict';
 
 
-export * from './abstractblock';
-export * from './address';
-export * from './block';
-export * from './coin';
-export * from './headers';
-export * from './input';
-export * from './invitem';
-export * from './keyring';
-export * from './memblock';
-export * from './merkleblock';
-export * from './mtx';
-export * from './outpoint';
-export * from './output';
-export * from './tx';
-export * from './txmeta';
+export * from './abstractblock.js';
+export * from './address.js';
+export * from './block.js';
+export * from './coin.js';
+export * from './headers.js';
+export * from './input.js';
+export * from './invitem.js';
+export * from './keyring.js';
+export * from './memblock.js';
+export * from './merkleblock.js';
+export * from './mtx.js';
+export * from './outpoint.js';
+export * from './output.js';
+export * from './tx.js';
+export * from './txmeta.js';

@@ -7,9 +7,9 @@
 
 'use strict';
 
-import {Address, KeyRing, KeyRingOptions} from '../primitives';
-import { Network } from '../protocol';
-import {Path, pathTypes} from './path';
+import {Address, KeyRing, KeyRingOptions} from '../primitives/index.js';
+import { Network } from '../protocol/index.js';
+import {Path, pathTypes} from './path.js';
 
 export interface WalletKeyJson {
 

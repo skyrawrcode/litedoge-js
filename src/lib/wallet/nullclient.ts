@@ -8,8 +8,8 @@
 
 import assert from 'bsert';
 import EventEmitter from 'events';
-import { Network } from '../protocol';
-import { WalletDB } from './walletdb';
+import { Network } from '../protocol/index.js';
+import { WalletDB } from './walletdb.js';
 
 /**
  * Null Client

@@ -7,8 +7,8 @@
 
 'use strict';
 
-import bio, { BufferWriter, StaticWriter } from 'bufio';
-import * as util from '../utils/util';
+import bio, {BufferWriter, StaticWriter} from 'bufio';
+import * as util from '../utils/util.js';
 
 /**
  * Inv Item
@@ -19,8 +19,9 @@ import * as util from '../utils/util';
  */
 
 export class InvItem {
-  type:number;
-  hash:Buffer;
+  type: number;
+  hash: Buffer;
+
   /**
    * Create an inv item.
    * @constructor
@@ -28,9 +29,32 @@ export class InvItem {
    * @param {Hash} hash
    */
 
-  constructor(type?:number, hash?:Buffer) {
+  constructor(type?: number, hash?: Buffer) {
     this.type = type;
     this.hash = hash;
+  }
+
+  /**
+   * Instantiate inv item from buffer reader.
+   * @param {BufferReader} br
+   * @returns {InvItem}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate inv item from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {InvItem}
+   */
+
+  static fromRaw(data, enc) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
   }
 
   /**
@@ -47,7 +71,7 @@ export class InvItem {
    * @param {BufferWriter} bw
    */
 
-  toWriter(bw:BufferWriter|StaticWriter) {
+  toWriter(bw: BufferWriter | StaticWriter) {
     bw.writeU32(this.type);
     bw.writeHash(this.hash);
     return bw;
@@ -81,29 +105,6 @@ export class InvItem {
 
   fromRaw(data) {
     return this.fromReader(bio.read(data));
-  }
-
-  /**
-   * Instantiate inv item from buffer reader.
-   * @param {BufferReader} br
-   * @returns {InvItem}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate inv item from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {InvItem}
-   */
-
-  static fromRaw(data, enc) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
   }
 
   /**
@@ -153,11 +154,11 @@ export class InvItem {
  * @default
  */
 
-export enum InvType  {
-  TX=  1,
-  BLOCK=  2,
-  FILTERED_BLOCK= 3,
-  CMPCT_BLOCK= 4
+export enum InvType {
+  TX = 1,
+  BLOCK = 2,
+  FILTERED_BLOCK = 3,
+  CMPCT_BLOCK = 4
 };
 
 

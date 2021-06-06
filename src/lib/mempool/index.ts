@@ -9,7 +9,7 @@
 /**
  * @module mempool
  */
-export {PolicyEstimator} from "./fees";
-export *  as layout from "./layout"
-export {MempoolEntry} from "./mempoolentry";
-export {Mempool} from "./mempool";
+export {PolicyEstimator} from "./fees.js";
+export *  as layout from "./layout.js"
+export {MempoolEntry} from "./mempoolentry.js";
+export {Mempool} from "./mempool.js";

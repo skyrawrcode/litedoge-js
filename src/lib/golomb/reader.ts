@@ -4,7 +4,6 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
 
 import assert from 'bsert';
 import { U64 } from 'n64';

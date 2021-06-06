@@ -50,9 +50,9 @@
  * [full GPL license]: http://www.gnu.org/licenses/gpl-2.0-standalone.html
 */
 
-'use strict';
-
+// @ts-ignore
 import udata from './udata.json';
+
 const DEFAULT_FEATURE = [null, 0, {}];
 const CACHE_THRESHOLD = 10;
 const SBase = 0xac00;

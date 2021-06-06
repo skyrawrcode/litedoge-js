@@ -9,10 +9,11 @@
 import assert from 'assert';
 import bdb, { DB } from 'bdb';
 import bio from 'bufio';
-import {layout} from './layout';
-import {Address} from '../primitives/address';
-import {Indexer} from './indexer';
-import { Network } from '../protocol';
+
+import {layout} from './layout.js';
+import {Address} from '../primitives/address.js';
+import {Indexer} from './indexer.js';
+import { Network } from '../protocol/index.js';
 
 /*
  * AddrIndexer Database Layout:

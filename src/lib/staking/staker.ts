@@ -1,26 +1,28 @@
 import assert from 'bsert';
 import EventEmitter from 'events';
-import {ThreadStaker} from './threadstaker';
-import { BlockTemplate, BlockEntry } from '../mining/template';
-import {Amount} from '../btc/amount';
-import * as consensus from '../protocol/consensus';
-import { BufferMap } from "buffer-map";
+import {BufferMap} from "buffer-map";
 import Heap from 'bheep';
-import { Network, NetworkPOS } from '../protocol';
-import { LoggerContext } from 'blgr/lib/logger';
-import { WorkerPool } from '../workers';
-import { Chain } from '../blockchain';
-import { Lock } from 'bmutex';
-import { Pool } from '../net';
-import { Mempool } from '../mempool';
-import { Wallet } from '../wallet';
-import { Address } from '../primitives';
+import {LoggerContext} from 'blgr/lib/logger';
+import {Lock} from 'bmutex';
+
+import {ThreadStaker} from './threadstaker.js';
+import {BlockEntry, BlockTemplate} from '../mining/template.js';
+import {Amount} from '../btc/amount.js';
+import * as consensus from '../protocol/consensus.js';
+
+import {Network, NetworkPOS} from '../protocol/index.js';
+import {WorkerPool} from '../workers/index.js';
+import {Chain} from '../blockchain/index.js';
+import {Pool} from '../net/index.js';
+import {Mempool} from '../mempool/index.js';
+import {Wallet} from '../wallet/index.js';
+import {Address} from '../primitives/index.js';
 
 /**
-   *  To decrease granularity of timestamp
-   *  Supposed to be 2^n-1
-   * @type {number}
-   */
+ *  To decrease granularity of timestamp
+ *  Supposed to be 2^n-1
+ * @type {number}
+ */
 export const STAKE_TIMESTAMP_MASK = 15;
 
 export interface StakerOptions {
@@ -29,19 +31,19 @@ export interface StakerOptions {
   priorityThreshold: any;
   maxSigops: any;
   maxWeight: any;
-  staking:boolean;
-  opened:boolean;
-  network:Network;
-  logger:LoggerContext;
-  workers:WorkerPool
-  chain:Chain;
-  pool:Pool;
-  mempool:Mempool;
-  version?:number;
-  
-  reservedWeight:number;
-  reservedSigops:number;
-  priorityWeight:number;
+  staking: boolean;
+  opened: boolean;
+  network: Network;
+  logger: LoggerContext;
+  workers: WorkerPool
+  chain: Chain;
+  pool: Pool;
+  mempool: Mempool;
+  version?: number;
+
+  reservedWeight: number;
+  reservedSigops: number;
+  priorityWeight: number;
 }
 
 /**
@@ -52,19 +54,19 @@ export interface StakerOptions {
  */
 export class Staker extends EventEmitter {
 
-  options:StakerOptions;
-  staking:boolean;
-  opened:boolean;
-  network:Network;
-  logger:LoggerContext;
-  workers:WorkerPool
-  chain:Chain;
-  locker:Lock;
-  pool:Pool;
+  options: StakerOptions;
+  staking: boolean;
+  opened: boolean;
+  network: Network;
+  logger: LoggerContext;
+  workers: WorkerPool
+  chain: Chain;
+  locker: Lock;
+  pool: Pool;
   threadStaker: ThreadStaker;
-  pos:NetworkPOS;
-  mempool:Mempool;
-  wallet:Wallet;
+  pos: NetworkPOS;
+  mempool: Mempool;
+  wallet: Wallet;
 
   /**
    *
@@ -156,7 +158,7 @@ export class Staker extends EventEmitter {
    * @returns {Promise} - Returns {@link BlockTemplate}.
    */
 
-  async _createBlock(tip, address:Address) {
+  async _createBlock(tip, address: Address) {
     let version = this.options.version || -1;
 
     if (!tip)

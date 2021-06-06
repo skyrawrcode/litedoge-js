@@ -8,26 +8,25 @@
 'use strict';
 
 import assert from 'bsert';
-import { encoding } from 'bufio';
-import { BufferMap } from 'buffer-map';
-import {TX, TXJson} from './tx';
-import {Input, InputOptions} from './input';
-import {Output, OutputOptions} from './output';
-import {Coin} from './coin';
-import {Outpoint} from './outpoint';
-import {CoinView} from '../coins/coinview';
-import {Address} from './address';
-import {consensus, Network} from '../protocol';
-import {policy} from '../protocol';
-import {Amount} from '../btc/amount';
-import {Stack} from '../script/stack';
-import {util} from '../utils';
-import { inspectSymbol } from '../utils';
-import { Script } from '../script';
-import { SighashType, VerifyFlags } from '../script/common';
+import {encoding} from 'bufio';
+import {BufferMap} from 'buffer-map';
 import BufferReader from "bufio/lib/reader";
-import {WorkerPool} from "../workers";
-import { KeyRing } from './keyring';
+
+import {TX, TXJson} from './tx.js';
+import {Input, InputOptions} from './input.js';
+import {Output, OutputOptions} from './output.js';
+import {Coin} from './coin.js';
+import {Outpoint} from './outpoint.js';
+import {CoinView} from '../coins/coinview.js';
+import {Address} from './address.js';
+import {consensus, Network, policy} from '../protocol/index.js';
+import {Amount} from '../btc/amount.js';
+import {Stack} from '../script/stack.js';
+import {inspectSymbol, util} from '../utils/index.js';
+import {Script} from '../script/index.js';
+import {SighashType, VerifyFlags} from '../script/common.js';
+import {WorkerPool} from "../workers/index.js";
+import {KeyRing} from './keyring.js';
 
 export interface MTXOptions {
   changeIndex?: any;
@@ -44,7 +43,6 @@ export interface MTXJson extends TXJson {
 }
 
 
-
 /**
  * MTX
  * A mutable transaction object.
@@ -57,6 +55,7 @@ export interface MTXJson extends TXJson {
 export class MTX extends TX {
   changeIndex: number;
   view: CoinView;
+
   /**
    * Create a mutable transaction.
    * @alias module:primitives.MTX
@@ -73,6 +72,70 @@ export class MTX extends TX {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate MTX from options.
+   * @param {Object} options
+   * @returns {MTX}
+   */
+
+  static fromOptions(options: TX): MTX {
+    return new MTX().fromOptions(options);
+  }
+
+  /**
+   * Instantiate a transaction from a
+   * jsonified transaction object.
+   * @param {Object} json - The jsonified transaction object.
+   * @returns {MTX}
+   */
+
+  static fromJSON(json: MTXJson): MTX {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Instantiate a transaction from a buffer reader.
+   * @param {BufferReader} br
+   * @returns {MTX}
+   */
+
+  static fromReader(br: BufferReader): MTX {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate a transaction from a serialized Buffer.
+   * @param {Buffer} data
+   * @param {String?} enc - Encoding, can be `'hex'` or null.
+   * @returns {MTX}
+   */
+
+  static fromRaw(data: Buffer, enc?: 'hex' | null): MTX {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate MTX from TX.
+   * @param {TX} tx
+   * @returns {MTX}
+   */
+
+  static fromTX(tx: TX): MTX {
+    return new this().inject(tx);
+  }
+
+  /**
+   * Test whether an object is an MTX.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isMTX(obj: object): boolean {
+    return obj instanceof MTX;
   }
 
   /**
@@ -126,16 +189,6 @@ export class MTX extends TX {
   }
 
   /**
-   * Instantiate MTX from options.
-   * @param {Object} options
-   * @returns {MTX}
-   */
-
-  static fromOptions(options: TX): MTX {
-    return new MTX().fromOptions(options);
-  }
-
-  /**
    * Clone the transaction. Note that
    * this will not carry over the view.
    * @returns {MTX}
@@ -145,7 +198,7 @@ export class MTX extends TX {
     const mtx = new MTX();
     mtx.inject(this);
     mtx.changeIndex = this.changeIndex;
-    return mtx ;
+    return mtx;
   }
 
   /**
@@ -158,7 +211,7 @@ export class MTX extends TX {
    * mtx.addInput(new Input());
    */
 
-  addInput(options: InputOptions ): Input {
+  addInput(options: InputOptions): Input {
     const input = Input.fromOptions(options);
     this.inputs.push(input);
     return input;
@@ -244,7 +297,7 @@ export class MTX extends TX {
    */
 
   addOutput(script: Address | Script | Output | object, value: bigint | null = null): Output {
-    let output:Output;
+    let output: Output;
 
     if (value != null)
       output = Output.fromScript(script as Script | Address, value);
@@ -262,8 +315,9 @@ export class MTX extends TX {
    * @throws {ScriptError} on invalid inputs
    */
 
-  check(flags:VerifyFlags):void
-  check(flags?: VerifyFlags| CoinView): void {
+  check(flags: VerifyFlags): void
+
+  check(flags?: VerifyFlags | CoinView): void {
     super.check(this.view, flags as VerifyFlags);
   }
 
@@ -275,7 +329,7 @@ export class MTX extends TX {
    * @returns {Promise}
    */
 
-  checkAsync(flags?:VerifyFlags|CoinView, pool ?: VerifyFlags|WorkerPool): Promise<void> {
+  checkAsync(flags?: VerifyFlags | CoinView, pool ?: VerifyFlags | WorkerPool): Promise<void> {
     return super.checkAsync(this.view, flags as VerifyFlags, pool as WorkerPool);
   }
 
@@ -285,8 +339,7 @@ export class MTX extends TX {
    * @returns {Boolean} Whether the inputs are valid.
    */
 
-  verify(flags?: VerifyFlags|any): boolean
-  {
+  verify(flags?: VerifyFlags | any): boolean {
     try {
       this.check(flags as VerifyFlags);
     } catch (e) {
@@ -358,13 +411,17 @@ export class MTX extends TX {
    * @returns {Hash[]} hashes
    */
 
-  getInputHashes(enc:'hex'): string[] 
-  getInputHashes(enc?:'hex'|null): Buffer[] 
-  getInputHashes(enc?:'hex'|null): Buffer[]|string[] 
-  getInputHashes(view: CoinView | null|'hex', enc?:'hex'): string[] 
-  getInputHashes(view: CoinView | null|'hex', enc?:'hex'|null): Buffer[]
-  getInputHashes(view: CoinView | null|'hex', enc?:'hex'|null): Buffer[]|string[]
-  {
+  getInputHashes(enc: 'hex'): string[]
+
+  getInputHashes(enc?: 'hex' | null): Buffer[]
+
+  getInputHashes(enc?: 'hex' | null): Buffer[] | string[]
+
+  getInputHashes(view: CoinView | null | 'hex', enc?: 'hex'): string[]
+
+  getInputHashes(view: CoinView | null | 'hex', enc?: 'hex' | null): Buffer[]
+
+  getInputHashes(view: CoinView | null | 'hex', enc?: 'hex' | null): Buffer[] | string[] {
     return super.getInputHashes(this.view, enc);
   }
 
@@ -373,9 +430,11 @@ export class MTX extends TX {
    * @returns {Hash[]} hashes
    */
 
-  getHashes():Buffer[];
-  getHashes(enc:'hex'):string[];
-  getHashes(enc?:'hex'|null): string[]|Buffer[] {
+  getHashes(): Buffer[];
+
+  getHashes(enc: 'hex'): string[];
+
+  getHashes(enc?: 'hex' | null): string[] | Buffer[] {
     return super.getHashes(this.view, enc);
   }
 
@@ -952,7 +1011,7 @@ export class MTX extends TX {
    * @returns {Number} Number of inputs signed.
    */
 
-  sign(ring: KeyRing|KeyRing[], type: SighashType): number {
+  sign(ring: KeyRing | KeyRing[], type: SighashType): number {
     if (Array.isArray(ring)) {
       let total = 0;
       for (const key of ring)
@@ -997,7 +1056,7 @@ export class MTX extends TX {
    * @returns {Promise}
    */
 
-  async signAsync(ring: KeyRing|KeyRing[], type: SighashType | null, pool: WorkerPool | null): Promise<any> {
+  async signAsync(ring: KeyRing | KeyRing[], type: SighashType | null, pool: WorkerPool | null): Promise<any> {
     if (!pool)
       return this.sign(ring, type);
 
@@ -1378,40 +1437,6 @@ export class MTX extends TX {
   }
 
   /**
-   * Instantiate a transaction from a
-   * jsonified transaction object.
-   * @param {Object} json - The jsonified transaction object.
-   * @returns {MTX}
-   */
-
-  static fromJSON(json: MTXJson): MTX {
-    return new this().fromJSON(json);
-  }
-
-  /**
-   * Instantiate a transaction from a buffer reader.
-   * @param {BufferReader} br
-   * @returns {MTX}
-   */
-
-  static fromReader(br: BufferReader): MTX {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate a transaction from a serialized Buffer.
-   * @param {Buffer} data
-   * @param {String?} enc - Encoding, can be `'hex'` or null.
-   * @returns {MTX}
-   */
-
-  static fromRaw(data: Buffer, enc?: 'hex' | null): MTX {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
-
-  /**
    * Convert the MTX to a TX.
    * @returns {TX}
    */
@@ -1429,26 +1454,6 @@ export class MTX extends TX {
     return [this.toTX(), this.view];
   }
 
-  /**
-   * Instantiate MTX from TX.
-   * @param {TX} tx
-   * @returns {MTX}
-   */
-
-  static fromTX(tx: TX): MTX {
-    return new this().inject(tx);
-  }
-
-  /**
-   * Test whether an object is an MTX.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isMTX(obj: object): boolean {
-    return obj instanceof MTX;
-  }
-
 
 }
 
@@ -1460,16 +1465,17 @@ export interface CoinSelectorOptions {
   hardFee: bigint;
   rate: any;
   maxFee: bigint;
-  
+
   estimate: any;
   inputs: any;
   selection: string;
-  
+
   changeAddress: Address | string;
   subtractFee: boolean | number; //todo:: better type this
   round: boolean;
-  
+
 }
+
 /**
  * Coin Selector
  * @alias module:primitives.CoinSelector
@@ -1479,7 +1485,7 @@ export class CoinSelector {
   static MIN_FEE: bigint;
   static MAX_FEE: bigint;
   static FEE_RATE: bigint;
-  
+
   tx: MTX;
   coins: any[];
   outputValue: bigint;
@@ -1494,12 +1500,13 @@ export class CoinSelector {
   depth: number;
   hardFee: bigint;
   rate: any;
-  
+
   maxFee: bigint;
   round: boolean;
   changeAddress: any;
   inputs: any;
   estimate: any;
+
   /**
    * Create a coin selector.
    * @constructor
@@ -1749,11 +1756,11 @@ export class CoinSelector {
     // kb is easier to predict ahead of time.
     if (this.round) {
       const fee = policy.getRoundFee(size, this.rate);
-      return fee < CoinSelector.MAX_FEE?fee:CoinSelector.MAX_FEE;
+      return fee < CoinSelector.MAX_FEE ? fee : CoinSelector.MAX_FEE;
     }
 
     const fee = policy.getMinFee(size, this.rate);
-    return fee <  CoinSelector.MAX_FEE?fee:CoinSelector.MAX_FEE;
+    return fee < CoinSelector.MAX_FEE ? fee : CoinSelector.MAX_FEE;
   }
 
 
@@ -1886,7 +1893,7 @@ export class CoinSelector {
    */
 
   selectHard() {
-    this.fee = this.hardFee<  CoinSelector.MAX_FEE?this.hardFee:CoinSelector.MAX_FEE;
+    this.fee = this.hardFee < CoinSelector.MAX_FEE ? this.hardFee : CoinSelector.MAX_FEE;
     this.fund();
   }
 }
@@ -1932,7 +1939,7 @@ export class FundingError extends Error {
   type: string;
   availableFunds: bigint;
   requiredFunds: bigint;
-  
+
   /**
    * Create a funding error.
    */

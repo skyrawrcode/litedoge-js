@@ -8,9 +8,9 @@
 
 import assert from 'bsert';
 import bio from 'bufio';
-import {Address} from '../primitives/address';
+import {Address} from '../primitives/address.js';
 const {encoding} = bio;
-import { inspectSymbol } from '../utils';
+import { inspectSymbol } from '../utils/index.js';
 
 /**
  * Path types.

@@ -7,22 +7,22 @@
 'use strict';
 
 import assert from 'bsert';
-import bio, { StaticWriter } from 'bufio';
-import { Lock } from 'bmutex';
-import sha256 from 'bcrypto/lib/sha256';
-import hash256 from 'bcrypto/lib/hash256';
-import secp256k1 from 'bcrypto/lib/secp256k1';
-import pbkdf2 from 'bcrypto/lib/pbkdf2';
-import scrypt from 'bcrypto/lib/scrypt';
+import bio, {BufferWriter, StaticWriter} from 'bufio';
+import {Lock} from 'bmutex';
+import sha256 from 'bcrypto/lib/sha256.js';
+import hash256 from 'bcrypto/lib/hash256.js';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+import pbkdf2 from 'bcrypto/lib/pbkdf2.js';
+import scrypt from 'bcrypto/lib/scrypt.js';
 import {random} from 'bcrypto'
-import * as  util from '../utils/util';
-import { HDPrivateKey } from '../hd/private';
-import { Mnemonic } from '../hd/mnemonic';
-const { encoding } = bio;
-import { inspectSymbol } from '../utils';
-import { BufferWriter } from 'bufio';
-import { Network } from '../protocol';
-import { aes, cleanse } from 'bcrypto/lib/bcrypto';
+import * as  util from '../utils/util.js';
+import {HDPrivateKey} from '../hd/private.js';
+import {Mnemonic} from '../hd/mnemonic.js';
+import {inspectSymbol} from '../utils/index.js';
+import {Network} from '../protocol/index.js';
+import {aes, cleanse} from 'bcrypto';
+
+const {encoding} = bio;
 
 /**
  * Key derivation algorithms.
@@ -58,6 +58,9 @@ export class MasterKeyOptions {
  */
 
 export class MasterKey {
+  static algByVal: any;
+  static SALT: any;
+  static alg: MasterKeyAlg;
   encrypted: boolean;
   iv: any;
   ciphertext: any;
@@ -71,10 +74,8 @@ export class MasterKey {
   timer: any;
   until: number;
   locker: Lock;
-  static algByVal: any;
   rounds: any;
-  static SALT: any;
-  static alg: MasterKeyAlg;
+
   /**
    * Create a master key.
    * @constructor
@@ -100,6 +101,54 @@ export class MasterKey {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate master key from options.
+   * @returns {MasterKey}
+   */
+
+  static fromOptions(options): MasterKey {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate master key from serialized data.
+   * @returns {MasterKey}
+   */
+
+  static fromReader(br): MasterKey {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate master key from serialized data.
+   * @returns {MasterKey}
+   */
+
+  static fromRaw(raw): MasterKey {
+    return new this().fromRaw(raw);
+  }
+
+  /**
+   * Instantiate master key from an HDPrivateKey.
+   * @param {HDPrivateKey} key
+   * @param {Mnemonic?} mnemonic
+   * @returns {MasterKey}
+   */
+
+  static fromKey(key: HDPrivateKey, mnemonic: Mnemonic | null): MasterKey {
+    return new this().fromKey(key, mnemonic);
+  }
+
+  /**
+   * Test whether an object is a MasterKey.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isMasterKey(obj: object): boolean {
+    return obj instanceof MasterKey;
   }
 
   /**
@@ -170,15 +219,6 @@ export class MasterKey {
     assert(this.encrypted ? !this.key : this.key);
 
     return this;
-  }
-
-  /**
-   * Instantiate master key from options.
-   * @returns {MasterKey}
-   */
-
-  static fromOptions(options): MasterKey {
-    return new this().fromOptions(options);
   }
 
   /**
@@ -560,7 +600,7 @@ export class MasterKey {
    * `[enc-flag][iv?][ciphertext?][extended-key?]`
    */
 
-  toWriter(bw: BufferWriter | StaticWriter): BufferWriter|StaticWriter {
+  toWriter(bw: BufferWriter | StaticWriter): BufferWriter | StaticWriter {
     if (this.encrypted) {
       bw.writeU8(1);
       bw.writeVarBytes(this.iv);
@@ -636,15 +676,6 @@ export class MasterKey {
   }
 
   /**
-   * Instantiate master key from serialized data.
-   * @returns {MasterKey}
-   */
-
-  static fromReader(br): MasterKey {
-    return new this().fromReader(br);
-  }
-
-  /**
    * Inject properties from serialized data.
    * @private
    * @param {Buffer} raw
@@ -652,15 +683,6 @@ export class MasterKey {
 
   fromRaw(raw: Buffer) {
     return this.fromReader(bio.read(raw));
-  }
-
-  /**
-   * Instantiate master key from serialized data.
-   * @returns {MasterKey}
-   */
-
-  static fromRaw(raw): MasterKey {
-    return new this().fromRaw(raw);
   }
 
   /**
@@ -680,17 +702,6 @@ export class MasterKey {
   }
 
   /**
-   * Instantiate master key from an HDPrivateKey.
-   * @param {HDPrivateKey} key
-   * @param {Mnemonic?} mnemonic
-   * @returns {MasterKey}
-   */
-
-  static fromKey(key: HDPrivateKey, mnemonic: Mnemonic | null): MasterKey {
-    return new this().fromKey(key, mnemonic);
-  }
-
-  /**
    * Convert master key to a jsonifiable object.
    * @param {Network?} network
    * @param {Boolean?} unsafe - Whether to include
@@ -699,16 +710,16 @@ export class MasterKey {
    */
 
   toJSON(network: Network | null, unsafe: boolean | null): {
-    encrypted:boolean,
+    encrypted: boolean,
     key?: any,
     mnemonic?: any
     until?: any;
     iv?: string;
     ciphertext?: string;
-    algorithm?:string,
+    algorithm?: string,
     n?: number,
     r?: number,
-    p?:number
+    p?: number
   } {
     if (this.encrypted) {
       return {
@@ -746,16 +757,6 @@ export class MasterKey {
 
     return json;
   }
-
-  /**
-   * Test whether an object is a MasterKey.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isMasterKey(obj: object): boolean {
-    return obj instanceof MasterKey;
-  }
 }
 
 /**
@@ -765,7 +766,6 @@ export class MasterKey {
  */
 
 MasterKey.SALT = Buffer.from('bcoin', 'ascii');
-
 
 
 /*

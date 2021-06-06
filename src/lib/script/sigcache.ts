@@ -8,7 +8,7 @@
 
 import assert from 'bsert';
 import { BufferMap } from 'buffer-map';
-import secp256k1 from 'bcrypto/lib/secp256k1';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
 
 /**
  * Signature cache.

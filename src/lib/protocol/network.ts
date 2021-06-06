@@ -6,16 +6,16 @@
  */
 
 'use strict';
-import { BN } from 'bcrypto';
+import {BN} from 'bcrypto';
 import assert from 'bsert';
-import { binary } from '../utils';
-import * as networks from './networks';
-import * as consensus from './consensus';
-import { TimeData } from './timedata';
-import { inspectSymbol } from '../utils';
-import { NetworkOptions } from './networkoptions';
-import { NetworkType } from '../types'
-import { AbstractBlock, BlockOptions } from '../primitives';
+import {binary, inspectSymbol} from '../utils/index.js';
+import * as networks from './networks.js';
+import * as consensus from './consensus.js';
+import {TimeData} from './timedata.js';
+import {NetworkOptions} from './networkoptions.js';
+import {NetworkType} from '../types.js'
+import {BlockOptions} from '../primitives/index.js';
+
 const MODIFIER_INTERVAL_RATIO = 3;
 
 export interface NetworkPOS {
@@ -36,6 +36,9 @@ export interface NetworkPOS {
 export class Network {
   static main: Network;
   static primary: Network;
+  static type: NetworkType;
+  static testnet: any;
+  static regtest: any;
   genesis: BlockOptions;
   feeRate: any;
   type: NetworkType;
@@ -68,9 +71,7 @@ export class Network {
   time: TimeData;
   stakeModifierSelectionInterval: number;
   stakeModifierSections: any[];
-  static type:NetworkType;
-  static testnet: any;
-  static regtest: any;
+
   /**
    * Create a network.
    * @constructor
@@ -114,126 +115,6 @@ export class Network {
     this.stakeModifierSections = [];
     this.init();
 
-  }
-
-  /**
-   * Get a deployment by bit index.
-   * @param {Number} bit
-   */
-
-  init() {
-    let bits = 0;
-
-    for (const deployment of this.deploys)
-      bits |= 1 << deployment.bit;
-
-    bits |= consensus.VERSION_TOP_MASK;
-
-    this.unknownBits = ~bits >>> 0;
-
-    for (const key of Object.keys(this.checkpointMap)) {
-      const hash = this.checkpointMap[key];
-      const height = Number(key);
-
-      this.checkpoints.push({ hash, height });
-    }
-
-    this.checkpoints.sort(cmpNode);
-
-    this.calculateStakeModifierSections();
-    this.calculateStakeModifierSelectionInterval();
-  }
-
-  /**
-   * Get a deployment by bit index.
-   * @param {Number} bit
-   * @returns {Object}
-   */
-
-  byBit(bit: number): Deployment {
-    const index = binary.search(this.deploys, bit, cmpBit);
-
-    if (index === -1)
-      return null;
-
-    return this.deploys[index];
-  }
-
-  /**
-   * Get network adjusted time.
-   * @returns {Number}
-   */
-
-  now(): number {
-    return this.time.now();
-  }
-
-  /**
-   * Get acceptable future drifted network adjusted time.
-   * @returns {Number}
-   * @param {Number} time
-   * @param {Number} height
-   */
-  futureDrift(time: number, height: number): number {
-    return this.isProtocolV2(height) ?
-      time + 15 :
-      time + 10 * 60;
-  }
-
-  /**
-   * Get acceptable past drifted network adjusted time.
-   * @param time
-   * @param height
-   */
-  pastDrift(time, height) {
-    return this.isProtocolV2(height) ?
-      time :
-      time - 10 * 60;
-  }
-
-
-  /**
-   *
-   */
-  calculateStakeModifierSelectionInterval(): number {
-    let selectionInterval = 0;
-    for (let section = 0; section < 64; section++)
-      selectionInterval += this.getStakeModifierSelectionIntervalSection(section);
-    this.stakeModifierSelectionInterval = selectionInterval;
-    return selectionInterval;
-  }
-
-  calculateStakeModifierSections() {
-    for (let section = 0; section < 64; section++)
-      this.stakeModifierSections[section] = Math.floor((this.pos.modifierInterval * 63 / (63 + ((63 - section) * (MODIFIER_INTERVAL_RATIO - 1)))));
-  }
-
-  /**
-   *
-   * @returns {Number}
-   */
-  getStakeModifierSelectionInterval(): number {
-    return this.stakeModifierSelectionInterval;
-  }
-
-  /**
-   *
-   * @param section
-   * @returns {Number}
-   */
-  getStakeModifierSelectionIntervalSection(section): number {
-    assert(section >= 0 && section < 64);
-    return this.stakeModifierSections[section];
-  }
-
-
-  /**
-   * Get network adjusted time in milliseconds.
-   * @returns {Number}
-   */
-
-  ms(): number {
-    return this.time.ms();
   }
 
   /**
@@ -333,7 +214,7 @@ export class Network {
    * @param  name
    */
 
-  static by(value: any, compare: Function, network: Network |NetworkType| null, name: string): Network {
+  static by(value: any, compare: Function, network: Network | NetworkType | null, name: string): Network {
     if (network) {
       network = Network.get(network);
       if (compare(network, value))
@@ -390,7 +271,7 @@ export class Network {
    * @returns {Network}
    */
 
-  static fromPrivate(prefix, network: Network |NetworkType | null): Network {
+  static fromPrivate(prefix, network: Network | NetworkType | null): Network {
     return Network.by(prefix, cmpPriv, network, 'xprivkey');
   }
 
@@ -439,6 +320,134 @@ export class Network {
   }
 
   /**
+   * Test an object to see if it is a Network.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isNetwork(obj: object): boolean {
+    return obj instanceof Network;
+  }
+
+  /**
+   * Get a deployment by bit index.
+   * @param {Number} bit
+   */
+
+  init() {
+    let bits = 0;
+
+    for (const deployment of this.deploys)
+      bits |= 1 << deployment.bit;
+
+    bits |= consensus.VERSION_TOP_MASK;
+
+    this.unknownBits = ~bits >>> 0;
+
+    for (const key of Object.keys(this.checkpointMap)) {
+      const hash = this.checkpointMap[key];
+      const height = Number(key);
+
+      this.checkpoints.push({hash, height});
+    }
+
+    this.checkpoints.sort(cmpNode);
+
+    this.calculateStakeModifierSections();
+    this.calculateStakeModifierSelectionInterval();
+  }
+
+  /**
+   * Get a deployment by bit index.
+   * @param {Number} bit
+   * @returns {Object}
+   */
+
+  byBit(bit: number): Deployment {
+    const index = binary.search(this.deploys, bit, cmpBit);
+
+    if (index === -1)
+      return null;
+
+    return this.deploys[index];
+  }
+
+  /**
+   * Get network adjusted time.
+   * @returns {Number}
+   */
+
+  now(): number {
+    return this.time.now();
+  }
+
+  /**
+   * Get acceptable future drifted network adjusted time.
+   * @returns {Number}
+   * @param {Number} time
+   * @param {Number} height
+   */
+  futureDrift(time: number, height: number): number {
+    return this.isProtocolV2(height) ?
+      time + 15 :
+      time + 10 * 60;
+  }
+
+  /**
+   * Get acceptable past drifted network adjusted time.
+   * @param time
+   * @param height
+   */
+  pastDrift(time, height) {
+    return this.isProtocolV2(height) ?
+      time :
+      time - 10 * 60;
+  }
+
+  /**
+   *
+   */
+  calculateStakeModifierSelectionInterval(): number {
+    let selectionInterval = 0;
+    for (let section = 0; section < 64; section++)
+      selectionInterval += this.getStakeModifierSelectionIntervalSection(section);
+    this.stakeModifierSelectionInterval = selectionInterval;
+    return selectionInterval;
+  }
+
+  calculateStakeModifierSections() {
+    for (let section = 0; section < 64; section++)
+      this.stakeModifierSections[section] = Math.floor((this.pos.modifierInterval * 63 / (63 + ((63 - section) * (MODIFIER_INTERVAL_RATIO - 1)))));
+  }
+
+  /**
+   *
+   * @returns {Number}
+   */
+  getStakeModifierSelectionInterval(): number {
+    return this.stakeModifierSelectionInterval;
+  }
+
+  /**
+   *
+   * @param section
+   * @returns {Number}
+   */
+  getStakeModifierSelectionIntervalSection(section): number {
+    assert(section >= 0 && section < 64);
+    return this.stakeModifierSections[section];
+  }
+
+  /**
+   * Get network adjusted time in milliseconds.
+   * @returns {Number}
+   */
+
+  ms(): number {
+    return this.time.ms();
+  }
+
+  /**
    * Convert the network to a string.
    * @returns {String}
    */
@@ -455,17 +464,6 @@ export class Network {
   [inspectSymbol]() {
     return `<Network: ${this.type}>`;
   }
-
-  /**
-   * Test an object to see if it is a Network.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isNetwork(obj: object): boolean {
-    return obj instanceof Network;
-  }
-
 
   /**
    * Gets the spacing for blocks
@@ -538,9 +536,9 @@ export interface Deployment {
   threshold: number;
   timeout: number;
   startTime: number;
-  name:string;
-  force?:boolean;
-  required?:boolean;
+  name: string;
+  force?: boolean;
+  required?: boolean;
 }
 
 /*

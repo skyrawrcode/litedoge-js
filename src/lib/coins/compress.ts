@@ -3,9 +3,6 @@
  * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
  * https://github.com/bcoin-org/bcoin
  */
-
-'use strict';
-
 /**
  * @module coins/compress
  * @ignore
@@ -13,9 +10,10 @@
 
 import assert from 'bsert';
 import { BufferReader, BufferWriter, encoding } from 'bufio';
-import secp256k1 from 'bcrypto/lib/secp256k1';
-import {consensus} from '../protocol';
-import { Output } from '../primitives';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+
+import {consensus} from '../protocol/index.js';
+import { Output } from '../primitives/index.js';
 
 /*
  * Constants

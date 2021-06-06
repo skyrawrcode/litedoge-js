@@ -8,35 +8,34 @@
 
 import assert from 'bsert';
 import bio, {BufferReader, BufferWriter, StaticWriter} from 'bufio';
-import * as binary from '../utils/binary';
-import {Path} from './path';
-import * as common from './common';
-import {Script} from '../script';
-import {WalletKey} from './walletkey';
-import {HDPublicKey} from '../hd';
-import {inspectSymbol} from '../utils';
-import {WalletDB} from './walletdb';
-import {Network} from '../protocol';
-import { Address } from '../primitives';
-import { Wallet } from './wallet';
-
+import * as binary from '../utils/binary.js';
+import {Path} from './path.js';
+import * as common from './common.js';
+import {Script} from '../script/index.js';
+import {WalletKey} from './walletkey.js';
+import {HDPublicKey} from '../hd/index.js';
+import {inspectSymbol} from '../utils/index.js';
+import {WalletDB} from './walletdb.js';
+import {Network} from '../protocol/index.js';
+import {Address} from '../primitives/index.js';
+import {Wallet} from './wallet.js';
 
 
 export interface AccountOptions {
   watchOnly: any;
-  wid:number;
-  id:string;
-  accountKey:HDPublicKey;
-  name?:string;
+  wid: number;
+  id: string;
+  accountKey: HDPublicKey;
+  name?: string;
   initialized: boolean;
-  type: string|number;
-  changeDepth?:number;
-  receiveDepth?:number;
-  accountIndex:number;
-  m?:number;
-  n?:number;
-  lookahead?:number;
-  keys:[]
+  type: string | number;
+  changeDepth?: number;
+  receiveDepth?: number;
+  accountIndex: number;
+  m?: number;
+  n?: number;
+  lookahead?: number;
+  keys: []
 }
 
 /**
@@ -61,6 +60,8 @@ export enum AccountTypes {
  */
 
 export class Account {
+  static MAX_LOOKAHEAD: number;
+  static types = AccountTypes;
   accountIndex: number;
   name: string;
   wdb: WalletDB;
@@ -68,8 +69,6 @@ export class Account {
   wid: number;
   id: string;
   initialized: boolean;
-  static MAX_LOOKAHEAD: number;
-  static types = AccountTypes;
   watchOnly: boolean;
   type: AccountTypes;
   m: number;
@@ -89,7 +88,7 @@ export class Account {
    * @param options
    */
 
-  constructor(wdb: WalletDB, options?:AccountOptions) {
+  constructor(wdb: WalletDB, options?: AccountOptions) {
     assert(wdb, 'Database is required.');
 
     this.wdb = wdb;
@@ -115,12 +114,44 @@ export class Account {
   }
 
   /**
+   * Instantiate account from options.
+   * @param {WalletDB} wdb
+   * @param {Object} options
+   * @returns {Account}
+   */
+
+  static fromOptions(wdb, options) {
+    return new this(wdb).fromOptions(options);
+  }
+
+  /**
+   * Instantiate a account from serialized data.
+   * @param {WalletDB} data
+   * @param {Buffer} data
+   * @returns {Account}
+   */
+
+  static fromRaw(wdb, data) {
+    return new this(wdb).fromRaw(data);
+  }
+
+  /**
+   * Test an object to see if it is a Account.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isAccount(obj) {
+    return obj instanceof Account;
+  }
+
+  /**
    * Inject properties from options object.
    * @private
    * @param {Object} options
    */
 
-  fromOptions(options:AccountOptions) {
+  fromOptions(options: AccountOptions) {
     assert(options, 'Options are required.');
     assert((options.wid >>> 0) === options.wid);
     assert(common.isName(options.id), 'Bad Wallet ID.');
@@ -210,17 +241,6 @@ export class Account {
     }
 
     return this;
-  }
-
-  /**
-   * Instantiate account from options.
-   * @param {WalletDB} wdb
-   * @param {Object} options
-   * @returns {Account}
-   */
-
-  static fromOptions(wdb, options) {
-    return new this(wdb).fromOptions(options);
   }
 
   /**
@@ -384,7 +404,6 @@ export class Account {
     return this.createKey(b, 1);
   }
 
-
   /**
    * Create a new address (increments depth).
    * @param {Boolean} change
@@ -439,7 +458,6 @@ export class Account {
   deriveChange(index, master?) {
     return this.deriveKey(1, index, master);
   }
-
 
   /**
    * Derive an address from `path` object.
@@ -694,7 +712,6 @@ export class Account {
     return this.deriveChange(this.changeDepth - 1);
   }
 
-
   /**
    * Get current receive address.
    * @returns {Address}
@@ -714,7 +731,7 @@ export class Account {
    * @returns {Address}
    */
 
-  changeAddress():Address {
+  changeAddress(): Address {
     const key = this.changeKey();
 
     if (!key)
@@ -722,7 +739,6 @@ export class Account {
 
     return key.getAddress();
   }
-
 
   /**
    * Convert the account to a more inspection-friendly object.
@@ -857,29 +873,7 @@ export class Account {
 
     return this;
   }
-
-  /**
-   * Instantiate a account from serialized data.
-   * @param {WalletDB} data
-   * @param {Buffer} data
-   * @returns {Account}
-   */
-
-  static fromRaw(wdb, data) {
-    return new this(wdb).fromRaw(data);
-  }
-
-  /**
-   * Test an object to see if it is a Account.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isAccount(obj) {
-    return obj instanceof Account;
-  }
 }
-
 
 
 /**
@@ -897,7 +891,7 @@ function cmp(a, b) {
   return a.compare(b);
 }
 
-function writeKey(key, bw: BufferWriter|StaticWriter) {
+function writeKey(key, bw: BufferWriter | StaticWriter) {
   bw.writeU8(key.depth);
   bw.writeU32BE(key.parentFingerPrint);
   bw.writeU32BE(key.childIndex);

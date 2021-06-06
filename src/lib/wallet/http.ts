@@ -10,26 +10,28 @@
 import Logger from 'blgr';
 import assert from 'bsert';
 import Validator from 'bval';
-import base58 from 'bcrypto/lib/encoding/base58';
-import { MTX } from '../primitives/mtx';
-import { Outpoint } from '../primitives/outpoint';
-import { Script } from '../script/script';
-import sha256 from 'bcrypto/lib/sha256';
-import random from 'bcrypto/lib/random';
-import { safeEqual } from 'bcrypto/lib/safe';
-import { Network } from '../protocol/network';
-import { Address } from '../primitives/address';
-import { KeyRing } from '../primitives/keyring';
-import { Mnemonic } from '../hd/mnemonic';
-import { HDPrivateKey } from '../hd/private';
-import { HDPublicKey } from '../hd/public';
-import * as common from './common';
-import * as pkg from '../pkg';
-import { WalletDB } from './walletdb';
-import { Node } from '../node';
-import { LoggerContext } from 'blgr/lib/logger';
-import { Server } from 'bweb/lib/bweb';
+import base58 from 'bcrypto/lib/encoding/base58.js';
+import {LoggerContext} from 'blgr/lib/logger';
+import {Server} from 'bweb';
 import path from 'path';
+import sha256 from 'bcrypto/lib/sha256.js';
+import random from 'bcrypto/lib/random.js';
+
+import {safeEqual} from 'bcrypto/lib/safe.js';
+
+import {MTX} from '../primitives/mtx.js';
+import {Outpoint} from '../primitives/outpoint.js';
+import {Script} from '../script/script.js';
+import {Network} from '../protocol/network.js';
+import {Address} from '../primitives/address.js';
+import {KeyRing} from '../primitives/keyring.js';
+import {Mnemonic} from '../hd/mnemonic.js';
+import {HDPrivateKey} from '../hd/private.js';
+import {HDPublicKey} from '../hd/public.js';
+import * as common from './common.js';
+import * as pkg from '../pkg.js';
+import {WalletDB} from './walletdb.js';
+import {Node} from '../node/index.js';
 
 
 export interface HttpOptionsOptions {
@@ -229,7 +231,7 @@ export class HTTP extends Server {
       const valid = Validator.fromRequest(req);
       const height = valid.u32('height');
 
-      res.json(200, { success: true });
+      res.json(200, {success: true});
 
       await this.wdb.rescan(height);
     });
@@ -243,7 +245,7 @@ export class HTTP extends Server {
 
       await this.wdb.resend();
 
-      res.json(200, { success: true });
+      res.json(200, {success: true});
     });
 
     // Backup WalletDB
@@ -260,7 +262,7 @@ export class HTTP extends Server {
 
       await this.wdb.backup(path);
 
-      res.json(200, { success: true });
+      res.json(200, {success: true});
     });
 
     // List wallets
@@ -293,12 +295,12 @@ export class HTTP extends Server {
     // Create wallet
     this.put('/wallet/:id', async (req, res) => {
       const valid = Validator.fromRequest(req);
-      
+
       let masterStr = valid.str('master');
       let mnemonicStr = valid.str('mnemonic');
       let accountKeyStr = valid.str('accountKey');
 
-      let master:HDPrivateKey;
+      let master: HDPrivateKey;
       if (masterStr)
         master = HDPrivateKey.fromBase58(masterStr, this.network);
 
@@ -385,7 +387,7 @@ export class HTTP extends Server {
 
       await req.wallet.setPassphrase(passphrase, old);
 
-      res.json(200, { success: true });
+      res.json(200, {success: true});
     });
 
     // Unlock wallet
@@ -398,13 +400,13 @@ export class HTTP extends Server {
 
       await req.wallet.unlock(passphrase, timeout);
 
-      res.json(200, { success: true });
+      res.json(200, {success: true});
     });
 
     // Lock wallet
     this.post('/wallet/:id/lock', async (req, res) => {
       await req.wallet.lock();
-      res.json(200, { success: true });
+      res.json(200, {success: true});
     });
 
     // Import key
@@ -421,21 +423,21 @@ export class HTTP extends Server {
       if (pub) {
         const key = KeyRing.fromPublic(pub);
         await req.wallet.importKey(acct, key);
-        res.json(200, { success: true });
+        res.json(200, {success: true});
         return;
       }
 
       if (priv) {
         const key = KeyRing.fromSecret(priv, this.network);
         await req.wallet.importKey(acct, key, passphrase);
-        res.json(200, { success: true });
+        res.json(200, {success: true});
         return;
       }
 
       if (address) {
         const addr = Address.fromString(address, this.network);
         await req.wallet.importAddress(acct, addr);
-        res.json(200, { success: true });
+        res.json(200, {success: true});
         return;
       }
 
@@ -480,7 +482,7 @@ export class HTTP extends Server {
         let addrStr = valid.str('address');
         let script = valid.buf('script');
 
-        let addr:Address;
+        let addr: Address;
         if (addrStr)
           addr = Address.fromString(addrStr, this.network);
 
@@ -577,7 +579,7 @@ export class HTTP extends Server {
 
       await req.wallet.zap(acct, age);
 
-      res.json(200, { success: true });
+      res.json(200, {success: true});
     });
 
     // Abandon Wallet TX
@@ -589,7 +591,7 @@ export class HTTP extends Server {
 
       await req.wallet.abandon(hash);
 
-      res.json(200, { success: true });
+      res.json(200, {success: true});
     });
 
     // List blocks
@@ -685,7 +687,7 @@ export class HTTP extends Server {
         return;
       }
 
-      res.json(200, { privateKey: key.toSecret(this.network) });
+      res.json(200, {privateKey: key.toSecret(this.network)});
     });
 
     // Create address
@@ -759,7 +761,7 @@ export class HTTP extends Server {
 
       req.wallet.lockCoin(outpoint);
 
-      res.json(200, { success: true });
+      res.json(200, {success: true});
     });
 
     // Unlock coin
@@ -775,7 +777,7 @@ export class HTTP extends Server {
 
       req.wallet.unlockCoin(outpoint);
 
-      res.json(200, { success: true });
+      res.json(200, {success: true});
     });
 
     // Wallet Coin
@@ -891,7 +893,7 @@ export class HTTP extends Server {
     // Resend
     this.post('/wallet/:id/resend', async (req, res) => {
       await req.wallet.resend();
-      res.json(200, { success: true });
+      res.json(200, {success: true});
     });
   }
 
@@ -1085,6 +1087,7 @@ export class HTTPOptions {
   ssl = false;
   keyFile = null;
   certFile = null;
+
   /**
    * HTTPOptions
    * @alias module:http.HTTPOptions
@@ -1096,6 +1099,16 @@ export class HTTPOptions {
 
 
     this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate http options from object.
+   * @param {Object} options
+   * @returns {HTTPOptions}
+   */
+
+  static fromOptions(options) {
+    return new HTTPOptions().fromOptions(options);
   }
 
   /**
@@ -1202,16 +1215,6 @@ export class HTTPOptions {
     }
 
     return this;
-  }
-
-  /**
-   * Instantiate http options from object.
-   * @param {Object} options
-   * @returns {HTTPOptions}
-   */
-
-  static fromOptions(options) {
-    return new HTTPOptions().fromOptions(options);
   }
 }
 

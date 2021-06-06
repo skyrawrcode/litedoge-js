@@ -10,8 +10,8 @@
  * @module mining
  */
 
-export * as common from "./common";
-export {CPUMiner} from "./cpuminer";
-export {mine} from "./mine"
-export {Miner} from "./miner";
-export {BlockTemplate} from "./template";
+export * as common from "./common.js";
+export {CPUMiner} from "./cpuminer.js";
+export {mine} from "./mine.js"
+export {Miner} from "./miner.js";
+export {BlockTemplate} from "./template.js";

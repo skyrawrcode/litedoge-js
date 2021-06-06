@@ -12,7 +12,7 @@
  */
 
 import assert from 'bsert';
-import * as consensus from './consensus';
+import * as consensus from './consensus.js';
 
 /**
  * Maximum transaction version (policy).
@@ -93,9 +93,6 @@ export const MIN_TX_FEE = 1000000n;
 export const MIN_TX_FEEv2 = 10000000n;
 
 
-
-
-
 /**
  * Whether bare multisig outputs
  * should be relayed (policy).
@@ -163,7 +160,7 @@ export const MEMPOOL_EXPIRY_TIME = 72 * 60 * 60;
  * @default
  */
 
-export const  MEMPOOL_MAX_ORPHANS = 100;
+export const MEMPOOL_MAX_ORPHANS = 100;
 
 /**
  * Minimum block size to create. Block will be
@@ -209,9 +206,9 @@ export const BLOCK_PRIORITY_THRESHOLD = FREE_THRESHOLD;
  * @returns {Amount} fee
  */
 
-export  function getMinFee(size:number, rate?:bigint) {
+export function getMinFee(size: number, rate?: bigint) {
   if (rate == null)
-    rate =  MIN_RELAY;
+    rate = MIN_RELAY;
 
   assert(size >= 0);
   assert(rate >= 0n);
@@ -236,9 +233,9 @@ export  function getMinFee(size:number, rate?:bigint) {
  * @returns {Amount} fee
  */
 
-export function getRoundFee(size:number, rate:bigint):bigint {
+export function getRoundFee(size: number, rate: bigint): bigint {
   if (rate == null)
-    rate =  MIN_RELAY;
+    rate = MIN_RELAY;
 
   assert(size >= 0);
   assert(rate >= 0n);
@@ -261,7 +258,7 @@ export function getRoundFee(size:number, rate:bigint):bigint {
  * @returns {Rate}
  */
 
-export  function getRate(size:number, fee:bigint):bigint {
+export function getRate(size: number, fee: bigint): bigint {
   assert(size >= 0);
   assert(fee >= 0);
 

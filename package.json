@@ -99,8 +99,8 @@
   },
   "scripts": {
     "build": "tsc --build src --force",
-    "start": "node --experimental-specifier-resolution=node  ./dist/bin/node.js",
-    "ldogejs-node": "node --experimental-specifier-resolution=node  ./dist/bin/node.js",
+    "start": "node ./dist/bin/node.js",
+    "ldogejs-node": "node   ./dist/bin/node.js",
     "browserify": "browserify -s ldogejs lib/ldogejs-browser.js | uglifyjs -c > ldogejs.js",
     "clean": "rm -f {browser/,}{ldogejs.js,ldogejs-worker.js,app.js,worker.js}",
     "docs": "jsdoc -c jsdoc.json",

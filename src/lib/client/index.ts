@@ -4,5 +4,5 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-export * from "./node";
-export * from "./wallet"
+export * from "./node.js";
+export * from "./wallet.js";

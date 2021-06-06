@@ -6,22 +6,20 @@
 
 import assert from 'bsert';
 import EventEmitter from 'events';
-import { Lock } from 'bmutex';
-import * as util from '../utils/util';
-import {TX} from '../primitives/tx';
-import * as consensus from '../protocol/consensus';
-import {Output} from '../primitives/output';
-import { Amount } from '../btc';
-import { Staker, STAKE_TIMESTAMP_MASK } from './staker';
-import { Network, timedata } from '../protocol';
-import { LoggerContext } from 'blgr/lib/logger';
-import { WorkerPool } from '../workers';
-import { Chain } from '../blockchain';
-import { Pool } from '../net';
-import { Kernel } from './kernel';
-import { node } from '..';
-import { BlockTemplate } from '../mining';
-import { Wallet } from '../wallet';
+import {Lock} from 'bmutex';
+import {LoggerContext} from 'blgr/lib/logger';
+
+import * as util from '../utils/util.js';
+import {TX} from '../primitives/tx.js';
+import {Amount} from '../btc/index.js';
+import {STAKE_TIMESTAMP_MASK, Staker} from './staker.js';
+import {Network} from '../protocol/index.js';
+import {WorkerPool} from '../workers/index.js';
+import {Chain} from '../blockchain/index.js';
+import {Pool} from '../net/index.js';
+import {Kernel} from './kernel.js';
+import {BlockTemplate} from '../mining/index.js';
+import {Wallet} from '../wallet/index.js';
 
 /**
  * Thread Staker
@@ -32,25 +30,26 @@ import { Wallet } from '../wallet';
 
 export class ThreadStaker extends EventEmitter {
 
-  opened:boolean;
-  staker:Staker;
-  network:Network;
-  logger:LoggerContext;
-  workers:WorkerPool;
-  chain:Chain;
-  pool:Pool;
-  kernel:Kernel;
-  locker:Lock;
-  running:boolean;
-  stopping:boolean;
-  job:ThreadStakeJob;
-  stopJob: {resolve, reject};
+  opened: boolean;
+  staker: Staker;
+  network: Network;
+  logger: LoggerContext;
+  workers: WorkerPool;
+  chain: Chain;
+  pool: Pool;
+  kernel: Kernel;
+  locker: Lock;
+  running: boolean;
+  stopping: boolean;
+  job: ThreadStakeJob;
+  stopJob: { resolve, reject };
   activeDelay;
 
-  wallet:Wallet;
-  tryToSync:boolean;
+  wallet: Wallet;
+  tryToSync: boolean;
 
-  lastSearchTime:number;
+  lastSearchTime: number;
+
   /**
    * Create a Thread staker.
    * @constructor
@@ -74,7 +73,7 @@ export class ThreadStaker extends EventEmitter {
     this.job = null;
     this.stopJob = null;
     this.activeDelay = null;
-    
+
     this.init();
   }
 
@@ -300,7 +299,7 @@ export class ThreadStaker extends EventEmitter {
    * @returns {Promise} - Returns {@link Block}.
    */
 
-  async attemptStakeAsync(job:ThreadStakeJob) {
+  async attemptStakeAsync(job: ThreadStakeJob) {
 
     job.start ||= util.now();
     job.lastSearchTime = this.lastSearchTime;
@@ -332,7 +331,7 @@ export class ThreadStaker extends EventEmitter {
 
       const cs = await this.wallet.createCoinStake(job.attempt.bits, coinStakeTime, searchInterval);
       if (cs != null) {
-        const {coinstake , keyRing} = cs;
+        const {coinstake, keyRing} = cs;
         if (coinstake.time >= Math.max(this.chain.getPastTimeLimit(this.network, tip) + 1, this.network.pastDrift(tip.time, tip.height + 1))) {
           // make sure coinstake would meet timestamp protocol
           // as it would be the same as the block timestamp
@@ -479,12 +478,13 @@ export class ThreadStaker extends EventEmitter {
 
 class ThreadStakeJob {
   staker: ThreadStaker;
-  attempt:BlockTemplate;
-  destroyed:boolean;
-  committed:boolean;
+  attempt: BlockTemplate;
+  destroyed: boolean;
+  committed: boolean;
   start: number;
-  lastSearchTime:number;
-  lastSearchInterval:number;
+  lastSearchTime: number;
+  lastSearchInterval: number;
+
   /**
    * Create a mining job.
    * @constructor

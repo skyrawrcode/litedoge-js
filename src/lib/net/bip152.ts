@@ -11,15 +11,17 @@
  */
 
 import assert from 'bsert';
-import bio, { BufferReader, BufferWriter, StaticWriter } from 'bufio';
-import * as consensus from '../protocol/consensus';
-import sha256 from 'bcrypto/lib/sha256';
-import { siphash } from 'bcrypto/lib/siphash';
-import {AbstractBlock} from '../primitives/abstractblock';
-import {TX} from '../primitives/tx';
-import {Headers} from '../primitives/headers';
-import {Block} from '../primitives/block';
-import * as common from './common';
+import bio, {BufferReader, BufferWriter, StaticWriter} from 'bufio';
+import sha256 from 'bcrypto/lib/sha256.js';
+import {siphash} from 'bcrypto/lib/siphash.js';
+
+import * as consensus from '../protocol/consensus.js';
+import {AbstractBlock} from '../primitives/abstractblock.js';
+import {TX} from '../primitives/tx.js';
+import {Headers} from '../primitives/headers.js';
+import {Block} from '../primitives/block.js';
+import * as common from './common.js';
+
 const {encoding} = bio;
 
 /**
@@ -37,15 +39,16 @@ const {encoding} = bio;
  */
 
 export class CompactBlock extends AbstractBlock {
-  keyNonce:Buffer;
+  keyNonce: Buffer;
   ids: number[];
   ptx: [number, TX][] //prefilled transactions
   available: TX[]
-  idMap: Map<number,number>
-  count:number;
-  sipKey:Buffer;
-  totalTX:number; 
-  now:number;
+  idMap: Map<number, number>
+  count: number;
+  sipKey: Buffer;
+  totalTX: number;
+  now: number;
+
   /**
    * Create a compact block.
    * @constructor
@@ -68,6 +71,40 @@ export class CompactBlock extends AbstractBlock {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate compact block from options.
+   * @param {Object} options
+   * @returns {CompactBlock}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate a block from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {CompactBlock}
+   */
+
+  static fromRaw(data: Buffer, enc?: 'hex') {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate compact block from a block.
+   * @param {Block} block
+   * @param {Buffer?} nonce
+   * @returns {CompactBlock}
+   */
+
+  static fromBlock(block, nonce?) {
+    return new this().fromBlock(block, nonce);
   }
 
   /**
@@ -102,16 +139,6 @@ export class CompactBlock extends AbstractBlock {
     this.sipKey = this.getKey();
 
     return this;
-  }
-
-  /**
-   * Instantiate compact block from options.
-   * @param {Object} options
-   * @returns {CompactBlock}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
   }
 
   /**
@@ -166,19 +193,6 @@ export class CompactBlock extends AbstractBlock {
   }
 
   /**
-   * Instantiate a block from serialized data.
-   * @param {Buffer} data
-   * @param {String?} enc
-   * @returns {CompactBlock}
-   */
-
-  static fromRaw(data:Buffer, enc?:'hex') {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
-
-  /**
    * Serialize compact block.
    * @returns {Buffer}
    */
@@ -221,7 +235,7 @@ export class CompactBlock extends AbstractBlock {
    * @returns {Buffer}
    */
 
-  frameRaw():Buffer {
+  frameRaw(): Buffer {
     const size = this.getSize();
     return this.writeRaw(bio.write(size)).render();
   }
@@ -255,7 +269,7 @@ export class CompactBlock extends AbstractBlock {
    * @param {BufferWriter} bw
    */
 
-  writeRaw(bw:BufferWriter|StaticWriter) {
+  writeRaw(bw: BufferWriter | StaticWriter) {
     this.writeHead(bw);
 
     bw.writeBytes(this.keyNonce);
@@ -472,7 +486,7 @@ export class CompactBlock extends AbstractBlock {
    * @returns {CompactBlock}
    */
 
-  fromBlock(block,  nonce) {
+  fromBlock(block, nonce) {
     this.version = block.version;
     this.prevBlock = block.prevBlock;
     this.merkleRoot = block.merkleRoot;
@@ -505,17 +519,6 @@ export class CompactBlock extends AbstractBlock {
   }
 
   /**
-   * Instantiate compact block from a block.
-   * @param {Block} block
-   * @param {Buffer?} nonce
-   * @returns {CompactBlock}
-   */
-
-  static fromBlock(block, nonce?) {
-    return new this().fromBlock(block, nonce);
-  }
-
-  /**
    * Convert block to headers.
    * @returns {Headers}
    */
@@ -534,8 +537,9 @@ export class CompactBlock extends AbstractBlock {
  */
 
 export class TXRequest {
-  hash:Buffer;
+  hash: Buffer;
   indexes: number[];
+
   /**
    * TX Request
    * @constructor
@@ -548,6 +552,46 @@ export class TXRequest {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate request from options.
+   * @param {Object} options
+   * @returns {TXRequest}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate request from compact block.
+   * @param {CompactBlock} block
+   * @returns {TXRequest}
+   */
+
+  static fromCompact(block) {
+    return new this().fromCompact(block);
+  }
+
+  /**
+   * Instantiate request from buffer reader.
+   * @param {BufferReader} br
+   * @returns {TXRequest}
+   */
+
+  static fromReader(br: BufferReader) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate request from serialized data.
+   * @param {Buffer} data
+   * @returns {TXRequest}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
   }
 
   /**
@@ -564,16 +608,6 @@ export class TXRequest {
       this.indexes = options.indexes;
 
     return this;
-  }
-
-  /**
-   * Instantiate request from options.
-   * @param {Object} options
-   * @returns {TXRequest}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
   }
 
   /**
@@ -595,22 +629,12 @@ export class TXRequest {
   }
 
   /**
-   * Instantiate request from compact block.
-   * @param {CompactBlock} block
-   * @returns {TXRequest}
-   */
-
-  static fromCompact(block) {
-    return new this().fromCompact(block);
-  }
-
-  /**
    * Inject properties from buffer reader.
    * @param {BufferReader} br
    * @returns {TXRequest}
    */
 
-  fromReader(br:BufferReader) {
+  fromReader(br: BufferReader) {
     this.hash = br.readHash();
 
     const count = br.readVarint();
@@ -643,26 +667,6 @@ export class TXRequest {
 
   fromRaw(data) {
     return this.fromReader(bio.read(data));
-  }
-
-  /**
-   * Instantiate request from buffer reader.
-   * @param {BufferReader} br
-   * @returns {TXRequest}
-   */
-
-  static fromReader(br:BufferReader) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate request from serialized data.
-   * @param {Buffer} data
-   * @returns {TXRequest}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
   }
 
   /**
@@ -730,9 +734,10 @@ export class TXRequest {
  */
 
 export class TXResponse {
-  
-  hash:Buffer;
-  txs:TX[];
+
+  hash: Buffer;
+  txs: TX[];
+
   /**
    * Create a tx response.
    * @constructor
@@ -745,6 +750,46 @@ export class TXResponse {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate response from options.
+   * @param {Object} options
+   * @returns {TXResponse}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate response from buffer reader.
+   * @param {BufferReader} br
+   * @returns {TXResponse}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate response from serialized data.
+   * @param {Buffer} data
+   * @returns {TXResponse}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate response from block.
+   * @param {Block} block
+   * @returns {TXResponse}
+   */
+
+  static fromBlock(block, req) {
+    return new this().fromBlock(block, req);
   }
 
   /**
@@ -761,16 +806,6 @@ export class TXResponse {
       this.txs = options.txs;
 
     return this;
-  }
-
-  /**
-   * Instantiate response from options.
-   * @param {Object} options
-   * @returns {TXResponse}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
   }
 
   /**
@@ -803,26 +838,6 @@ export class TXResponse {
   }
 
   /**
-   * Instantiate response from buffer reader.
-   * @param {BufferReader} br
-   * @returns {TXResponse}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate response from serialized data.
-   * @param {Buffer} data
-   * @returns {TXResponse}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
-  }
-
-  /**
    * Inject properties from block.
    * @private
    * @param {Block} block
@@ -840,16 +855,6 @@ export class TXResponse {
     }
 
     return this;
-  }
-
-  /**
-   * Instantiate response from block.
-   * @param {Block} block
-   * @returns {TXResponse}
-   */
-
-  static fromBlock(block, req) {
-    return new this().fromBlock(block, req);
   }
 
   /**
@@ -920,7 +925,7 @@ export class TXResponse {
     bw.writeVarint(this.txs.length);
 
     for (const tx of this.txs) {
-        tx.toNormalWriter(bw);
+      tx.toNormalWriter(bw);
     }
 
     return bw;

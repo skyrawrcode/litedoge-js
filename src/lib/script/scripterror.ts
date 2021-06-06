@@ -6,7 +6,7 @@
 
 'use strict';
 
-import { Opcode } from "./opcode";
+import { Opcode } from "./opcode.js";
 
 /**
  * Script Error

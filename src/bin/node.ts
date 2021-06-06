@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 'use strict';
-import {FullNode} from '../lib/node';
-import {plugin} from '../lib/wallet';
+import {FullNode} from '../lib/node/index.js';
+import {plugin} from '../lib/wallet/index.js';
+import {createRequire} from "module";
 
+const require = createRequire(import.meta.url);
 process.title = 'litedoge';
 
 if (process.argv.indexOf('--help') !== -1
@@ -15,7 +17,7 @@ if (process.argv.indexOf('--help') !== -1
 
 if (process.argv.indexOf('--version') !== -1
   || process.argv.indexOf('-v') !== -1) {
-  const pkg = await import('../../package.json');
+  const pkg = require('../../package.json');
   console.log(pkg.version);
   process.exit(0);
   throw new Error('Could not exit.');

@@ -12,17 +12,17 @@ import fs from 'bfile';
 import IP from 'binet';
 import dns from 'bdns';
 import Logger from 'blgr';
-import murmur3 from 'bcrypto/lib/murmur3';
+import murmur3 from 'bcrypto/lib/murmur3.js';
 import List from 'blst';
-import { randomRange } from 'bcrypto/lib/random';
-import * as util from '../utils/util';
-import {Network} from '../protocol/network';
-import {NetAddress} from './netaddress';
-import * as common from './common';
-import * as seeds from './seeds';
-import { inspectSymbol } from '../utils';
-import { LoggerContext } from 'blgr/lib/logger';
-import { node } from '..';
+import {LoggerContext} from 'blgr/lib/logger';
+import {randomRange} from 'bcrypto/lib/random.js';
+
+import * as util from '../utils/util.js';
+import {Network} from '../protocol/network.js';
+import {NetAddress} from './netaddress.js';
+import * as common from './common.js';
+import * as seeds from './seeds/index.js';
+import {inspectSymbol} from '../utils/index.js';
 
 /*
  * Constants
@@ -36,27 +36,28 @@ const POOL32 = Buffer.allocUnsafe(32);
  */
 
 export class HostList {
-  options:HostListOptions;
-  network:Network;
-  logger:LoggerContext|Logger;
+  options: HostListOptions;
+  network: Network;
+  logger: LoggerContext | Logger;
   timer: NodeJS.Timeout;
-  address:NetAddress;
+  address: NetAddress;
   resolve: Function;
-  dnsSeeds:string[];
+  dnsSeeds: string[];
   dnsNodes: any[];
   map: Map<string, HostEntry>;
   fresh: Map<string, HostEntry>[];
-  totalFresh:number;
-  used:List[];
-  totalUsed:number;
-  nodes:  NetAddress[]
-  local: Map<string,LocalAddress>;
+  totalFresh: number;
+  used: List[];
+  totalUsed: number;
+  nodes: NetAddress[]
+  local: Map<string, LocalAddress>;
   needsFlush: boolean;
-  flushing:boolean;
+  flushing: boolean;
   /**
-   * Map< host name, time> 
+   * Map< host name, time>
    */
-  banned:Map<string,number>;
+  banned: Map<string, number>;
+
   /**
    * Create a host list.
    * @constructor
@@ -87,6 +88,17 @@ export class HostList {
     this.flushing = false;
 
     this.init();
+  }
+
+  /**
+   * Instantiate host list from json object.
+   * @param {Object} options
+   * @param {Object} json
+   * @returns {HostList}
+   */
+
+  static fromJSON(options, json) {
+    return new this(options).fromJSON(json);
   }
 
   /**
@@ -388,7 +400,7 @@ export class HostList {
 
     let factor = 1;
 
-    for (;;) {
+    for (; ;) {
       const i = random(buckets.length);
       const bucket = buckets[i];
 
@@ -426,7 +438,7 @@ export class HostList {
    * @returns {Map}
    */
 
-  freshBucket(entry:HostEntry) :Map<any,HostEntry>  {
+  freshBucket(entry: HostEntry): Map<any, HostEntry> {
     const addr = entry.addr;
     const src = entry.src;
     const data = concat32(addr.raw, src.raw);
@@ -456,7 +468,7 @@ export class HostList {
    * @returns {Boolean}
    */
 
-  add(addr:NetAddress, src?:NetAddress) {
+  add(addr: NetAddress, src?: NetAddress) {
     assert(addr.port !== 0);
 
     let entry = this.map.get(addr.hostname);
@@ -1205,17 +1217,6 @@ export class HostList {
 
     return this;
   }
-
-  /**
-   * Instantiate host list from json object.
-   * @param {Object} options
-   * @param {Object} json
-   * @returns {HostList}
-   */
-
-  static fromJSON(options, json) {
-    return new this(options).fromJSON(json);
-  }
 }
 
 /**
@@ -1279,14 +1280,14 @@ export const VERSION = 0;
  * @default
  */
 
-export enum scores  {
-  NONE= 0,
-  IF= 1,
-  BIND= 2,
-  UPNP= 3,
-  DNS= 3,
-  MANUAL= 4,
-  MAX= 5
+export enum scores {
+  NONE = 0,
+  IF = 1,
+  BIND = 2,
+  UPNP = 3,
+  DNS = 3,
+  MANUAL = 4,
+  MAX = 5
 };
 
 /**
@@ -1298,17 +1299,18 @@ class HostEntry {
 
   addr: NetAddress;
   src: NetAddress;
-  
 
-  used:boolean;
-  
+
+  used: boolean;
+
   refCount: number
-  attempts:number;
-  lastSuccess:number;
-  lastAttempt:number;
+  attempts: number;
+  lastSuccess: number;
+  lastAttempt: number;
   prev: HostEntry;
   next: HostEntry;
   value: HostEntry;
+
   /**
    * Create a host entry.
    * @constructor
@@ -1316,7 +1318,7 @@ class HostEntry {
    * @param {NetAddress} src
    */
 
-  constructor(addr?:NetAddress, src?:NetAddress) {
+  constructor(addr?: NetAddress, src?: NetAddress) {
     this.addr = addr || new NetAddress();
     this.src = src || new NetAddress();
     this.prev = null;
@@ -1329,6 +1331,28 @@ class HostEntry {
 
     if (addr)
       this.fromOptions(addr, src);
+  }
+
+  /**
+   * Instantiate host entry from options.
+   * @param {NetAddress} addr
+   * @param {NetAddress} src
+   * @returns {HostEntry}
+   */
+
+  static fromOptions(addr, src) {
+    return new this().fromOptions(addr, src);
+  }
+
+  /**
+   * Instantiate host entry from json object.
+   * @param {Object} json
+   * @param {Network} network
+   * @returns {HostEntry}
+   */
+
+  static fromJSON(json, network) {
+    return new this().fromJSON(json, network);
   }
 
   /**
@@ -1345,17 +1369,6 @@ class HostEntry {
     this.addr = addr;
     this.src = src;
     return this;
-  }
-
-  /**
-   * Instantiate host entry from options.
-   * @param {NetAddress} addr
-   * @param {NetAddress} src
-   * @returns {HostEntry}
-   */
-
-  static fromOptions(addr, src) {
-    return new this().fromOptions(addr, src);
   }
 
   /**
@@ -1472,17 +1485,6 @@ class HostEntry {
 
     return this;
   }
-
-  /**
-   * Instantiate host entry from json object.
-   * @param {Object} json
-   * @param {Network} network
-   * @returns {HostEntry}
-   */
-
-  static fromJSON(json, network) {
-    return new this().fromJSON(json, network);
-  }
 }
 
 /**
@@ -1491,8 +1493,9 @@ class HostEntry {
  */
 
 class LocalAddress {
-  addr:NetAddress;
-  score:number;
+  addr: NetAddress;
+  score: number;
+
   /**
    * Create a local address.
    * @constructor
@@ -1500,7 +1503,7 @@ class LocalAddress {
    * @param {Number?} score
    */
 
-  constructor(addr:NetAddress, score?:number) {
+  constructor(addr: NetAddress, score?: number) {
     this.addr = addr;
     this.score = score || 0;
   }
@@ -1512,24 +1515,25 @@ class LocalAddress {
  */
 
 class HostListOptions {
-  
-  network:Network;
-  logger:LoggerContext|Logger;
+
+  network: Network;
+  logger: LoggerContext | Logger;
   resolve = dns.lookup;
   host: string;
   port: number;
   services: common.ServiceBits
-  onion:boolean;
-  banTime:number;
-  address:NetAddress;
+  onion: boolean;
+  banTime: number;
+  address: NetAddress;
   seeds: string[];
   nodes: undefined[];
-  maxBuckets:number;
-  maxEntries:number;
+  maxBuckets: number;
+  maxEntries: number;
   prefix: string;
-  filename:string;
+  filename: string;
   memory: boolean;
-  flushInterval:number;
+  flushInterval: number;
+
   /**
    * Create host list options.
    * @constructor

@@ -4,12 +4,12 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
 
 import { BufferMap } from 'buffer-map';
-import {Coins} from './coins';
-import {UndoCoins} from './undocoins';
-import {CoinEntry} from './coinentry';
+
+import {Coins} from './coins.js';
+import {UndoCoins} from './undocoins.js';
+import {CoinEntry} from './coinentry.js';
 
 /**
  * Coin View

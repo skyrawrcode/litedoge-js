@@ -8,12 +8,12 @@
 'use strict';
 
 import assert from 'bsert';
-import hash256 from 'bcrypto/lib/hash256';
-import scrypt from 'bcrypto/lib/scrypt';
+import hash256 from 'bcrypto/lib/hash256.js';
+import scrypt from 'bcrypto/lib/scrypt.js';
 import bio, { BufferReader } from 'bufio';
-import * as util from '../utils/util';
-import {InvItem, InvType} from './invitem';
-import * as consensus from '../protocol/consensus';
+import * as util from '../utils/util.js';
+import {InvItem, InvType} from './invitem.js';
+import * as consensus from '../protocol/consensus.js';
 
 export interface BlockOptions {
   version:number;

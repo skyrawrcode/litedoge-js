@@ -6,15 +6,17 @@
 
 'use strict';
 
-import {ChainEntry} from "../blockchain/chainentry";
-import { TX, TXJson } from "./tx";
 
 import assert from 'bsert';
 import bio from 'bufio';
-import * as util from '../utils/util';
-import { inspectSymbol } from '../utils';
-import { CoinView } from "../coins/coinview";
-import { Network } from "../protocol";
+
+import {ChainEntry} from "../blockchain/chainentry.js";
+import { TX, TXJson } from "./tx.js";
+
+import * as util from '../utils/util.js';
+import { inspectSymbol } from '../utils/index.js';
+import { CoinView } from "../coins/coinview.js";
+import { Network } from "../protocol/index.js";
 
 export interface FormattedTXMeta {
   mtime: number;

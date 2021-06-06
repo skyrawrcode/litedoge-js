@@ -8,21 +8,22 @@
 'use strict';
 
 import bsert from 'bsert';
-import {Network} from '../protocol';
+import bio from 'bufio';
+
+import {Network, policy} from '../protocol/index.js';
+import {Amount} from '../btc/index.js';
+import {Address} from './address.js';
+import {Script} from '../script/index.js';
+import {inspectSymbol} from '../utils/index.js';
 
 const {assert} = bsert;
-import bio from 'bufio';
-import {Amount} from '../btc';
-import {Address} from './address';
-import {Script} from '../script';
 
-import {policy} from '../protocol';
-import {inspectSymbol} from '../utils';
-export interface OutputJson{
-  value?:string;
-  script?:string;
-  address?:Address;
+export interface OutputJson {
+  value?: string;
+  script?: string;
+  address?: Address;
 }
+
 export interface OutputOptions {
   address?: string | Address;
   script?: Script;
@@ -56,6 +57,70 @@ export class Output {
   }
 
   /**
+   * Instantiate output from options object.
+   * @param {Object} options
+   * @returns {Output}
+   */
+
+  static fromOptions(options: OutputOptions): Output {
+    return new Output().fromOptions(options);
+  }
+
+  /**
+   * Instantiate output from script/value pair.
+   * @param {Script|Address} script
+   * @param {BigInt} value
+   * @returns {Output}
+   */
+
+  static fromScript(script: Script | Address, value: bigint): Output {
+    return new this().fromScript(script, value);
+  }
+
+  /**
+   * Instantiate an Output from a jsonified output object.
+   * @param {Object} json - The jsonified output object.
+   * @returns {Output}
+   */
+
+  static fromJSON(json) {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Instantiate an output from a buffer reader.
+   * @param {BufferReader} br
+   * @returns {Output}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate an output from a serialized Buffer.
+   * @param {Buffer} data
+   * @param {String?} enc - Encoding, can be `'hex'` or null.
+   * @returns {Output}
+   */
+
+  static fromRaw(data, enc) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Test an object to see if it is an Output.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isOutput(obj) {
+    return obj instanceof Output;
+  }
+
+  /**
    * Inject properties from options object.
    * @private
    * @param {Object} options
@@ -76,16 +141,6 @@ export class Output {
       this.script.fromAddress(options.address);
 
     return this;
-  }
-
-  /**
-   * Instantiate output from options object.
-   * @param {Object} options
-   * @returns {Output}
-   */
-
-  static fromOptions(options: OutputOptions): Output {
-    return new Output().fromOptions(options);
   }
 
   /**
@@ -111,17 +166,6 @@ export class Output {
     this.value = value;
 
     return this;
-  }
-
-  /**
-   * Instantiate output from script/value pair.
-   * @param {Script|Address} script
-   * @param {BigInt} value
-   * @returns {Output}
-   */
-
-  static fromScript(script: Script | Address, value: bigint): Output {
-    return new this().fromScript(script, value);
   }
 
   /**
@@ -189,7 +233,7 @@ export class Output {
    * @returns {Hash} hash
    */
 
-  getHash(enc?:'hex') {
+  getHash(enc?: 'hex') {
     const addr = this.getAddress();
 
     if (!addr)
@@ -251,7 +295,7 @@ export class Output {
    * @returns {Number}
    */
 
-  getDustThreshold(rate?:bigint):bigint {
+  getDustThreshold(rate?: bigint): bigint {
 
     if (this.script.isUnspendable())
       return 0n;
@@ -277,7 +321,7 @@ export class Output {
    * @returns {Boolean}
    */
 
-  isDust(rate?:bigint):boolean {
+  isDust(rate?: bigint): boolean {
     return this.value < this.getDustThreshold(rate);
   }
 
@@ -293,16 +337,6 @@ export class Output {
     this.value = BigInt(json.value);
     this.script.fromJSON(json.script);
     return this;
-  }
-
-  /**
-   * Instantiate an Output from a jsonified output object.
-   * @param {Object} json - The jsonified output object.
-   * @returns {Output}
-   */
-
-  static fromJSON(json) {
-    return new this().fromJSON(json);
   }
 
   /**
@@ -355,40 +389,6 @@ export class Output {
    */
   isEmpty() {
     return this.value === 0n && this.script.length === 0;
-  }
-
-
-  /**
-   * Instantiate an output from a buffer reader.
-   * @param {BufferReader} br
-   * @returns {Output}
-   */
-
-  static fromReader(br) {
-    return new this().fromReader(br);
-  }
-
-  /**
-   * Instantiate an output from a serialized Buffer.
-   * @param {Buffer} data
-   * @param {String?} enc - Encoding, can be `'hex'` or null.
-   * @returns {Output}
-   */
-
-  static fromRaw(data, enc) {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
-
-  /**
-   * Test an object to see if it is an Output.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isOutput(obj) {
-    return obj instanceof Output;
   }
 
 

@@ -7,11 +7,11 @@
 'use strict';
 
 import bio from 'bufio';
-import * as policy from '../protocol/policy';
-import * as util from '../utils/util';
-import {Script} from '../script/script';
-import {TX} from '../primitives/tx';
-import { Amount, Hash } from '../types';
+import * as policy from '../protocol/policy.js';
+import * as util from '../utils/util.js';
+import {Script} from '../script/script.js';
+import {TX} from '../primitives/tx.js';
+import {Amount, Hash} from '../types.js';
 
 /**
  * Mempool Entry
@@ -26,20 +26,21 @@ import { Amount, Hash } from '../types';
 
 export class MempoolEntry {
   tx: TX;
-  height:number;
-  priority:number;
-  time:number;
-  value:Amount;
-  size:number;
-  sigops:number;
-  fee:Amount;
-  deltaFee:Amount;
+  height: number;
+  priority: number;
+  time: number;
+  value: Amount;
+  size: number;
+  sigops: number;
+  fee: Amount;
+  deltaFee: Amount;
 
-  coinbase:boolean;
-  coinstake:boolean;
-  dependencies:boolean;
-  descFee:Amount;
-  descSize:number;
+  coinbase: boolean;
+  coinstake: boolean;
+  dependencies: boolean;
+  descFee: Amount;
+  descSize: number;
+
   /**
    * Create a mempool entry.
    * @constructor
@@ -72,6 +73,37 @@ export class MempoolEntry {
   }
 
   /**
+   * Instantiate mempool entry from options.
+   * @param {Object} options
+   * @returns {MempoolEntry}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Create a mempool entry from a TX.
+   * @param {TX} tx
+   * @param {Number} height - Entry height.
+   * @returns {MempoolEntry}
+   */
+
+  static fromTX(tx, view, height) {
+    return new this().fromTX(tx, view, height);
+  }
+
+  /**
+   * Instantiate entry from serialized data.
+   * @param {Buffer} data
+   * @returns {MempoolEntry}
+   */
+
+  static fromRaw(data) {
+    return new this().fromRaw(data);
+  }
+
+  /**
    * Inject properties from options object.
    * @private
    * @param {Object} options
@@ -93,16 +125,6 @@ export class MempoolEntry {
     this.descFee = options.descFee;
     this.descSize = options.descSize;
     return this;
-  }
-
-  /**
-   * Instantiate mempool entry from options.
-   * @param {Object} options
-   * @returns {MempoolEntry}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
   }
 
   /**
@@ -154,25 +176,16 @@ export class MempoolEntry {
   }
 
   /**
-   * Create a mempool entry from a TX.
-   * @param {TX} tx
-   * @param {Number} height - Entry height.
-   * @returns {MempoolEntry}
-   */
-
-  static fromTX(tx, view, height) {
-    return new this().fromTX(tx, view, height);
-  }
-
-  /**
    * Calculate transaction hash.
    * @param {String?} enc
    * @returns {Hash}
    */
 
-  hash():Buffer;
-  hash(enc: 'hex') : string;
-  hash(enc?:'hex'|null): Hash{
+  hash(): Buffer;
+
+  hash(enc: 'hex'): string;
+
+  hash(enc?: 'hex' | null): Hash {
     return this.tx.hash(enc);
   }
 
@@ -380,16 +393,6 @@ export class MempoolEntry {
     this.descFee = this.fee;
     this.descSize = this.size;
     return this;
-  }
-
-  /**
-   * Instantiate entry from serialized data.
-   * @param {Buffer} data
-   * @returns {MempoolEntry}
-   */
-
-  static fromRaw(data) {
-    return new this().fromRaw(data);
   }
 }
 

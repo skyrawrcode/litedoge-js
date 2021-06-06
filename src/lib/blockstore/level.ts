@@ -6,11 +6,12 @@
 
 'use strict';
 
-import bdb, { DB } from 'bdb';
+import bdb, {DB} from 'bdb';
 import fs from 'bfile';
-import {AbstractBlockStore} from './abstract';
-import {layout} from './layout';
-import { BlockStoreTypes } from './common';
+
+import {AbstractBlockStore} from './abstract.js';
+import {layout} from './layout.js';
+import {BlockStoreTypes} from './common.js';
 
 /**
  * LevelDB Block Store
@@ -22,6 +23,7 @@ import { BlockStoreTypes } from './common';
 export class LevelBlockStore extends AbstractBlockStore {
   location: string;
   db: DB;
+
   /**
    * Create a blockstore that stores blocks in LevelDB.
    * @constructor

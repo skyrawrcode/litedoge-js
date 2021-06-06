@@ -8,33 +8,33 @@
 'use strict';
 
 import assert from 'bsert';
-import bio, { BufferReader, BufferWriter, StaticWriter } from 'bufio';
-import hash256 from 'bcrypto/lib/hash256';
-import secp256k1 from 'bcrypto/lib/secp256k1';
-import { BufferSet } from 'buffer-map';
-import * as util from '../utils/util';
-import {Amount} from '../btc/amount';
-import {Network} from '../protocol/network';
-import {Script} from '../script/script';
+import bio, {BufferReader, BufferWriter, StaticWriter} from 'bufio';
+import {BloomFilter} from 'bfilter/lib/bfilter';
+import hash256 from 'bcrypto/lib/hash256.js';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+import {BufferSet} from 'buffer-map';
 
-import {Outpoint} from './outpoint';
-import {InvItem, InvType} from './invitem';
-import {consensus} from '../protocol';
-import {policy} from '../protocol';
-import {ScriptError} from '../script/scripterror';
+import * as util from '../utils/util.js';
+import {Amount} from '../btc/amount.js';
+import {Network} from '../protocol/network.js';
+import {Script} from '../script/script.js';
+
+import {Outpoint} from './outpoint.js';
+import {InvItem, InvType} from './invitem.js';
+import {consensus, policy} from '../protocol/index.js';
+import {ScriptError} from '../script/scripterror.js';
+import {inspectSymbol} from '../utils/index.js';
+import {Input, InputJson} from './input.js';
+import {Output, OutputJson} from './output.js';
+import {CoinView} from '../coins/coinview.js';
+import {SighashType, VerifyFlags} from '../script/common.js';
+import {Coin} from './coin.js';
+import {WorkerPool} from '../workers/index.js';
+import {Address} from './address.js';
+
+import {ChainEntry} from '../blockchain/chainentry.js';
+
 const {encoding} = bio;
-const {hashType} = Script;
-import { inspectSymbol } from '../utils';
-import { Input, InputJson, InputOptions } from './input';
-import { Output, OutputJson, OutputOptions } from './output';
-import { CoinView } from '../coins/coinview';
-import { SighashType, VerifyFlags } from '../script/common';
-import { Coin } from './coin';
-import { WorkerPool } from '../workers';
-import { Address } from './address';
-
-import { ChainEntry } from '../blockchain/chainentry';
-import { BloomFilter } from 'bfilter/lib/bfilter';
 
 
 export interface TXOptions {
@@ -66,14 +66,14 @@ export class TX {
   locktime: number;
 
   mutable: boolean;
-  private _hash: Buffer ;
+  changeIndex: any;
+  private _hash: Buffer;
   private _hhash: string;
   private _raw: Buffer;
   private _offset: number;
   private _block: boolean;
   private _size: number;
   private _sigops: number;
-  changeIndex: any;
 
   /**
    * Create a transaction.
@@ -102,6 +102,61 @@ export class TX {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate TX from options object.
+   * @param {Object} options
+   * @returns {TX}
+   */
+
+  static fromOptions(options: TXOptions): TX {
+    return new this().fromOptions(options);
+  }
+
+  /**
+   * Instantiate a transaction from a
+   * jsonified transaction object.
+   * @param {Object} json - The jsonified transaction object.
+   * @returns {TX}
+   */
+
+  static fromJSON(json: TXJson): TX {
+    return new this().fromJSON(json);
+  }
+
+  /**
+   * Instantiate a transaction from a serialized Buffer.
+   * @param {Buffer} data
+   * @param {String|null} enc? - Encoding, can be `'hex'` or null.
+   * @returns {TX}
+   */
+
+  static fromRaw(data: Buffer, enc: 'hex' | null = null): TX {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Instantiate a transaction from a buffer reader.
+   * @param {BufferReader} br
+   * @param {Boolean} block
+   * @returns {TX}
+   */
+
+  static fromReader(br: BufferReader, block: boolean = null): TX {
+    return new this().fromReader(br, block);
+  }
+
+  /**
+   * Test whether an object is a TX.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isTX(obj: object): boolean {
+    return obj instanceof TX;
   }
 
   /**
@@ -147,16 +202,6 @@ export class TX {
   }
 
   /**
-   * Instantiate TX from options object.
-   * @param {Object} options
-   * @returns {TX}
-   */
-
-  static fromOptions(options: TXOptions): TX {
-    return new this().fromOptions(options);
-  }
-
-  /**
    * Clone the transaction.
    * @returns {TX}
    */
@@ -173,9 +218,9 @@ export class TX {
    * @returns {TX}
    */
 
-  inject(tx: {version:number, inputs:Input[], outputs:Output[], locktime:number} ) {
+  inject(tx: { version: number, inputs: Input[], outputs: Output[], locktime: number }) {
     this.version = tx.version;
-    
+
     for (const input of tx.inputs)
       this.inputs.push(input.clone());
 
@@ -203,7 +248,6 @@ export class TX {
 
   }
 
-
   /**
    * Hash the transaction.
    * @param  enc - Can be `'hex'` or `null`.
@@ -211,7 +255,9 @@ export class TX {
    */
 
   hash(): Buffer;
-  hash(enc:'hex'): string
+
+  hash(enc: 'hex'): string
+
   hash(enc?: 'hex'): any {
     let h = this._hash;
 
@@ -233,7 +279,6 @@ export class TX {
 
     return h;
   }
-
 
   /**
    * Serialize the transaction. Note
@@ -260,7 +305,7 @@ export class TX {
    * @param {Boolean?} block
    */
 
-  toWriter(bw: BufferWriter|StaticWriter, block: boolean | null = null) {
+  toWriter(bw: BufferWriter | StaticWriter, block: boolean | null = null) {
     if (this.mutable) {
       return this.writeNormal(bw);
     }
@@ -280,7 +325,7 @@ export class TX {
    * @param {BufferWriter} bw
    */
 
-  toNormalWriter(bw: BufferWriter|StaticWriter) {
+  toNormalWriter(bw: BufferWriter | StaticWriter) {
 
     return this.toWriter(bw);
   }
@@ -395,7 +440,6 @@ export class TX {
     return raw.size;
   }
 
-
   /**
    * Get the signature hash of the transaction for signing verifying.
    * @param {Number} index - Index of input being signed/verified.
@@ -429,7 +473,7 @@ export class TX {
   signatureHashV0(index: number, prev: Script, type: SighashType): Buffer {
 
 
-    if ((type & 0x1f) === hashType.SINGLE) {
+    if ((type & 0x1f) === SighashType.SINGLE) {
       // litedoged used to return 1 as an error code:
       // it ended up being treated like a hash.
       if (index >= this.outputs.length) {
@@ -450,7 +494,7 @@ export class TX {
     bw.writeU32(this.version);
     bw.writeU32(this.time);
     // Serialize inputs.
-    if (type & hashType.ANYONECANPAY) {
+    if (type & SighashType.ANYONECANPAY) {
       // Serialize only the current
       // input if ANYONECANPAY.
       const input = this.inputs[index];
@@ -486,8 +530,8 @@ export class TX {
 
         // Sequences are 0 if NONE or SINGLE.
         switch (type & 0x1f) {
-          case hashType.NONE:
-          case hashType.SINGLE:
+          case SighashType.NONE:
+          case SighashType.SINGLE:
             bw.writeU32(0);
             break;
           default:
@@ -499,12 +543,12 @@ export class TX {
 
     // Serialize outputs.
     switch (type & 0x1f) {
-      case hashType.NONE: {
+      case SighashType.NONE: {
         // No outputs if NONE.
         bw.writeVarint(0);
         break;
       }
-      case hashType.SINGLE: {
+      case SighashType.SINGLE: {
         const output = this.outputs[index];
 
         // Drop all outputs after the
@@ -556,7 +600,7 @@ export class TX {
     size += 4; //version
     size += 4; //time
 
-    if (type & hashType.ANYONECANPAY) {
+    if (type & SighashType.ANYONECANPAY) {
       size += 1;
       size += 36;
       size += prev.getVarSize();
@@ -570,10 +614,10 @@ export class TX {
     }
 
     switch (type & 0x1f) {
-      case hashType.NONE:
+      case SighashType.NONE:
         size += 1;
         break;
-      case hashType.SINGLE:
+      case SighashType.SINGLE:
         size += encoding.sizeVarint(index + 1);
         size += 9 * index;
         size += this.outputs[index].getSize();
@@ -623,7 +667,7 @@ export class TX {
 
   signature(index: number, prev: Script, value: bigint, key: Buffer, type: SighashType, version: number): Buffer {
     if (type == null)
-      type = hashType.ALL;
+      type = SighashType.ALL;
 
     if (version == null)
       version = 0;
@@ -645,7 +689,7 @@ export class TX {
    * @throws {ScriptError} on invalid inputs
    */
 
-  check(view: CoinView|VerifyFlags, flags?: VerifyFlags | null):void {
+  check(view: CoinView | VerifyFlags, flags?: VerifyFlags | null): void {
     view = view as CoinView;
     if (this.inputs.length === 0)
       throw new ScriptError('UNKNOWN_ERROR', 'No inputs.');
@@ -701,8 +745,8 @@ export class TX {
    * @returns {Promise}
    */
 
-  async checkAsync(view: CoinView|VerifyFlags, flags: VerifyFlags | null, pool: WorkerPool | null): Promise<void> {
-    
+  async checkAsync(view: CoinView | VerifyFlags, flags: VerifyFlags | null, pool: WorkerPool | null): Promise<void> {
+
     if (this.inputs.length === 0)
       throw new ScriptError('UNKNOWN_ERROR', 'No inputs.');
 
@@ -751,9 +795,11 @@ export class TX {
    * @returns {Boolean} Whether the inputs are valid.
    */
 
-  verify(flags:VerifyFlags) :boolean
-  verify(view:CoinView, flags?:VerifyFlags|null):boolean 
-  verify(view: CoinView|VerifyFlags, flags?: VerifyFlags | null): boolean {
+  verify(flags: VerifyFlags): boolean
+
+  verify(view: CoinView, flags?: VerifyFlags | null): boolean
+
+  verify(view: CoinView | VerifyFlags, flags?: VerifyFlags | null): boolean {
     try {
       this.check(view, flags);
     } catch (e) {
@@ -917,7 +963,7 @@ export class TX {
    * @returns {Array} [addrs, table]
    */
 
-  _getInputAddresses(view: CoinView): [Address[] ,BufferSet] {
+  _getInputAddresses(view: CoinView): [Address[], BufferSet] {
     const table = new BufferSet();
     const addrs = [];
 
@@ -948,7 +994,7 @@ export class TX {
    * @returns {Array} [addrs, table]
    */
 
-  _getOutputAddresses(): [any[],BufferSet] {
+  _getOutputAddresses(): [any[], BufferSet] {
     const table = new BufferSet();
     const addrs: Address[] = [];
 
@@ -1030,25 +1076,28 @@ export class TX {
    * @returns {Hash[]} hashes
    */
 
-  getInputHashes(view: CoinView | null, enc:'hex'): string[] 
-  getInputHashes(view: CoinView | null, enc?:'hex'|null): Buffer[]
-  getInputHashes(view: CoinView | null, enc?:'hex'|null): Buffer[]|string[]
-  {
+  getInputHashes(view: CoinView | null, enc: 'hex'): string[]
+
+  getInputHashes(view: CoinView | null, enc?: 'hex' | null): Buffer[]
+
+  getInputHashes(view: CoinView | null, enc?: 'hex' | null): Buffer[] | string[] {
     const [, table] = this._getInputAddresses(view);
     if (enc === 'hex') {
       return table.toArray().map(h => h.toString('hex'));
     }
-    
-      return table.toArray();
-   }
+
+    return table.toArray();
+  }
 
   /**
    * Get all output address hashes.
    * @returns {Hash[]} hashes
    */
-   getOutputHashes():Buffer[]
-   getOutputHashes(enc:'hex'):string[]
-   getOutputHashes(enc?:'hex'):Buffer[]|string[] {
+  getOutputHashes(): Buffer[]
+
+  getOutputHashes(enc: 'hex'): string[]
+
+  getOutputHashes(enc?: 'hex'): Buffer[] | string[] {
     const [, table] = this._getOutputAddresses();
 
     if (enc !== 'hex')
@@ -1063,7 +1112,7 @@ export class TX {
    * @returns {Hash[]} hashes
    */
 
-  getHashes(view: CoinView | null, enc?:'hex'|null): string[] | Buffer[] {
+  getHashes(view: CoinView | null, enc?: 'hex' | null): string[] | Buffer[] {
     const [, table] = this._getAddresses(view);
 
     if (enc !== 'hex')
@@ -1242,7 +1291,6 @@ export class TX {
 
     return total;
   }
-
 
   /**
    * Calculate sigops cost.
@@ -1458,7 +1506,6 @@ export class TX {
 
     return true;
   }
-
 
   /**
    * Perform contextual checks to verify input, output,
@@ -1789,7 +1836,6 @@ export class TX {
     return util.revHex(this.hash());
   }
 
-
   /**
    * Get little-endian tx hash.
    * @returns {Hash}
@@ -1798,7 +1844,6 @@ export class TX {
   txid(): string {
     return this.rhash();
   }
-
 
   /**
    * Convert the tx to an inv item.
@@ -1815,7 +1860,7 @@ export class TX {
    * @returns {Object}
    */
 
-  [inspectSymbol]():FormattedTX {
+  [inspectSymbol](): FormattedTX {
     return this.format();
   }
 
@@ -1897,12 +1942,12 @@ export class TX {
    */
 
   getJSON(network?: Network, view?: CoinView, entry?: ChainEntry, index?: number): TXJson {
-    let rate:bigint,
-        fee:bigint,
-        height:number,
-        block:string,
-        time:number,
-        date:string;
+    let rate: bigint,
+      fee: bigint,
+      height: number,
+      block: string,
+      time: number,
+      date: string;
 
     if (view) {
       fee = this.getFee(view);
@@ -1966,41 +2011,6 @@ export class TX {
     this.locktime = json.locktime;
 
     return this;
-  }
-
-  /**
-   * Instantiate a transaction from a
-   * jsonified transaction object.
-   * @param {Object} json - The jsonified transaction object.
-   * @returns {TX}
-   */
-
-  static fromJSON(json: TXJson): TX {
-    return new this().fromJSON(json);
-  }
-
-  /**
-   * Instantiate a transaction from a serialized Buffer.
-   * @param {Buffer} data
-   * @param {String|null} enc? - Encoding, can be `'hex'` or null.
-   * @returns {TX}
-   */
-
-  static fromRaw(data: Buffer, enc: 'hex' | null = null): TX {
-    if (typeof data === 'string')
-      data = Buffer.from(data, enc);
-    return new this().fromRaw(data);
-  }
-
-  /**
-   * Instantiate a transaction from a buffer reader.
-   * @param {BufferReader} br
-   * @param {Boolean} block
-   * @returns {TX}
-   */
-
-  static fromReader(br: BufferReader, block: boolean = null): TX {
-    return new this().fromReader(br, block);
   }
 
   /**
@@ -2068,7 +2078,6 @@ export class TX {
     return raw;
   }
 
-
   /**
    * Serialize transaction.
    * @private
@@ -2076,7 +2085,7 @@ export class TX {
    * @returns {BufferWriter}
    */
 
-  writeNormal(bw: BufferWriter|StaticWriter): BufferWriter|StaticWriter {
+  writeNormal(bw: BufferWriter | StaticWriter): BufferWriter | StaticWriter {
     if (this.inputs.length === 0 && this.outputs.length !== 0)
       throw new Error('Cannot serialize zero-input tx.');
 
@@ -2095,7 +2104,6 @@ export class TX {
 
     return bw;
   }
-
 
   /**
    * Calculate the real size of the transaction
@@ -2121,36 +2129,27 @@ export class TX {
 
     return new RawTX(base);
   }
-
-
-  /**
-   * Test whether an object is a TX.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isTX(obj: object): boolean {
-    return obj instanceof TX;
-  }
 }
-export interface TXJson{
-  hash:string;
-  fee:string;
-  rate:string;
-  mtime:number;
-  height:number;
-  block:string;
+
+export interface TXJson {
+  hash: string;
+  fee: string;
+  rate: string;
+  mtime: number;
+  height: number;
+  block: string;
   time: number;
-  date:string;
-  index:number;
-  version:number;
-  inputs:InputJson[]
-  outputs:OutputJson[];
+  date: string;
+  index: number;
+  version: number;
+  inputs: InputJson[]
+  outputs: OutputJson[];
   locktime: number;
   confirmations?: number;
-  hex:string;
+  hex: string;
 }
-export interface FormattedTX{
+
+export interface FormattedTX {
 
 }
 

@@ -6,17 +6,19 @@
 
 'use strict';
 
-import { isAbsolute, resolve, join } from 'path';
+import {isAbsolute, join, resolve} from 'path';
 import bdb from 'bdb';
 import assert from 'bsert';
 import fs from 'bfile';
 import bio from 'bufio';
-import hash256 from 'bcrypto/lib/hash256';
-import {Network} from '../protocol/network';
-import {AbstractBlockStore} from './abstract';
-import { BlockRecord, FileRecord } from './records';
-import {layout} from './layout';
-import { BlockStorePrefixes, BlockStoreTypes } from './common';
+import hash256 from 'bcrypto/lib/hash256.js';
+
+import {Network} from '../protocol/network.js';
+import {AbstractBlockStore} from './abstract.js';
+import {BlockRecord, FileRecord} from './records.js';
+import {layout} from './layout.js';
+import {BlockStorePrefixes, BlockStoreTypes} from './common.js';
+
 /**
  * File Block Store
  *
@@ -31,6 +33,7 @@ export class FileBlockStore extends AbstractBlockStore {
   maxFileLength: number;
   network: Network;
   writing: any;
+
   /**
    * Create a blockstore that stores blocks in files.
    * @constructor
@@ -71,7 +74,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async check(type:number) {
+  async check(type: number) {
     const prefix = BlockStorePrefixes[type];
     const regexp = new RegExp(`^${prefix}(\\d{5})\\.dat$`);
     const all = await fs.readdir(this.location);
@@ -100,7 +103,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async _index(type:number) {
+  async _index(type: number) {
     const {missing, filenos} = await this.check(type);
 
     if (!missing)
@@ -181,7 +184,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async index():Promise<void> {
+  async index(): Promise<void> {
     await this._index(BlockStoreTypes.BLOCK);
     await this._index(BlockStoreTypes.MERKLE);
     await this._index(BlockStoreTypes.UNDO);
@@ -320,7 +323,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async writeMerkle(hash:Buffer, data:Buffer):Promise<boolean> {
+  async writeMerkle(hash: Buffer, data: Buffer): Promise<boolean> {
     return this._write(BlockStoreTypes.MERKLE, hash, data);
   }
 
@@ -331,7 +334,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async writeUndo(hash:Buffer, data:Buffer):Promise<boolean> {
+  async writeUndo(hash: Buffer, data: Buffer): Promise<boolean> {
     return this._write(BlockStoreTypes.UNDO, hash, data);
   }
 
@@ -342,7 +345,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async write(hash:Buffer, data:Buffer) :Promise<boolean> {
+  async write(hash: Buffer, data: Buffer): Promise<boolean> {
     return this._write(BlockStoreTypes.BLOCK, hash, data);
   }
 
@@ -353,7 +356,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async writeFilter(hash:Buffer, data:Buffer):Promise<boolean> {
+  async writeFilter(hash: Buffer, data: Buffer): Promise<boolean> {
     return this._write(BlockStoreTypes.FILTER, hash, data);
   }
 
@@ -368,7 +371,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async _write(type:number, hash:Buffer, data:Buffer):Promise<boolean> {
+  async _write(type: number, hash: Buffer, data: Buffer): Promise<boolean> {
     if (this.writing[type])
       throw new Error('Already writing.');
 
@@ -461,7 +464,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async readMerkle(hash:Buffer):Promise<Buffer> {
+  async readMerkle(hash: Buffer): Promise<Buffer> {
     return this._read(BlockStoreTypes.MERKLE, hash);
   }
 
@@ -505,7 +508,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async readFilterHeader(hash) :Promise<Buffer> {
+  async readFilterHeader(hash): Promise<Buffer> {
     return this._read(BlockStoreTypes.FILTER, hash, 0, 32);
   }
 
@@ -520,7 +523,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async _read(type:number, hash:Buffer, offset?:number, length?:number):Promise<Buffer> {
+  async _read(type: number, hash: Buffer, offset?: number, length?: number): Promise<Buffer> {
     const raw = await this.db.get(layout.b.encode(type, hash));
     if (!raw)
       return null;
@@ -566,7 +569,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async pruneMerkle(hash:Buffer):Promise<boolean> {
+  async pruneMerkle(hash: Buffer): Promise<boolean> {
     return this._prune(BlockStoreTypes.MERKLE, hash);
   }
 
@@ -576,7 +579,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async pruneUndo(hash:Buffer):Promise<boolean> {
+  async pruneUndo(hash: Buffer): Promise<boolean> {
     return this._prune(BlockStoreTypes.UNDO, hash);
   }
 
@@ -586,7 +589,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async prune(hash:Buffer):Promise<boolean> {
+  async prune(hash: Buffer): Promise<boolean> {
     return this._prune(BlockStoreTypes.BLOCK, hash);
   }
 
@@ -596,7 +599,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async pruneFilter(hash:Buffer):Promise<boolean> {
+  async pruneFilter(hash: Buffer): Promise<boolean> {
     return this._prune(BlockStoreTypes.FILTER, hash);
   }
 
@@ -610,7 +613,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async _prune(type:number, hash:Buffer):Promise<boolean> {
+  async _prune(type: number, hash: Buffer): Promise<boolean> {
     const braw = await this.db.get(layout.b.encode(type, hash));
     if (!braw)
       return false;
@@ -681,7 +684,7 @@ export class FileBlockStore extends AbstractBlockStore {
    * @returns {Promise}
    */
 
-  async has(hash:Buffer):Promise<boolean> {
+  async has(hash: Buffer): Promise<boolean> {
     return await this.db.has(layout.b.encode(BlockStoreTypes.BLOCK, hash));
   }
 }

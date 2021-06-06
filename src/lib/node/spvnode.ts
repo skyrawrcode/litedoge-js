@@ -8,11 +8,11 @@
 'use strict';
 
 import assert from 'bsert';
-import {Chain} from '../blockchain/chain';
-import {Pool} from '../net/pool';
-import {Node} from './node';
-import {HTTP} from './http';
-import {RPC} from './rpc';
+import {Chain} from '../blockchain/chain.js';
+import {Pool} from '../net/pool.js';
+import {Node} from './node.js';
+import {HTTP} from './http.js';
+import {RPC} from './rpc.js';
 
 /**
  * SPV Node

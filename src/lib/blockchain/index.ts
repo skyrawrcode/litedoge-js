@@ -4,8 +4,8 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-export {ChainDB} from "./chaindb";
-export {ChainEntry} from './chainentry'
-export {Chain} from './chain'
-export * as common from './common';
-export {layout} from './layout';
+export {ChainDB} from "./chaindb.js";
+export {ChainEntry} from './chainentry.js'
+export {Chain} from './chain.js'
+export * as common from './common.js';
+export {layout} from './layout.js';

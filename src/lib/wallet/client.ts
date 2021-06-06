@@ -8,10 +8,10 @@
 'use strict';
 
 import assert from 'bsert';
-import {NodeClient} from '../client/node';
-import * as util from '../utils/util';
-import {TX} from '../primitives/tx';
-import hash256 from 'bcrypto/lib/hash256';
+import {NodeClient} from '../client/node.js';
+import * as util from '../utils/util.js';
+import {TX} from '../primitives/tx.js';
+import hash256 from 'bcrypto/lib/hash256.js';
 
 const parsers = {
   'block connect': (entry, txs) => parseBlock(entry, txs),

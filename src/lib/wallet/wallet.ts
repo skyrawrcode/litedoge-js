@@ -9,35 +9,36 @@
 
 
 import assert from 'bsert';
-import Logger from "blgr";
 import EventEmitter from 'events';
-import base58 from 'bcrypto/lib/encoding/base58';
-import hash160 from 'bcrypto/lib/hash160';
-import hash256 from 'bcrypto/lib/hash256';
+import base58 from 'bcrypto/lib/encoding/base58.js';
+import hash160 from 'bcrypto/lib/hash160.js';
+import hash256 from 'bcrypto/lib/hash256.js';
 import bio from 'bufio';
-import { BN, cleanse } from 'bcrypto/lib/bcrypto';
-import { Balance, Details, TXDB } from './txdb';
-import { Path } from './path';
-import * as common from './common';
-import { Script } from '../script/script';
+import {BN, cleanse} from 'bcrypto';
+import {BufferSet} from 'buffer-map';
+import {Lock} from 'bmutex';
+import {LoggerContext} from 'blgr/lib/logger';
+
+
+import {Balance, Details, TXDB} from './txdb.js';
+import {Path} from './path.js';
+import * as common from './common.js';
+import {Script} from '../script/script.js';
+import {WalletKey} from './walletkey.js';
+import * as HD from '../hd/hd.js';
+import {Address, CoinSelector, Input, KeyRing, MTX, Output, TX} from '../primitives/index.js';
+import {Account} from './account.js';
+import {MasterKey} from './masterkey.js';
+import {consensus, Network, policy} from '../protocol/index.js';
+import {inspectSymbol} from '../utils/index.js';
+import {WalletDB} from './walletdb.js';
+import {Kernel, StakeKernel} from '../staking/kernel.js';
+import {SighashType} from '../script/common.js';
+import {TXRecord} from './records.js';
+
 const scriptTypes = Script.types;
-import { WalletKey } from './walletkey';
-import * as HD from '../hd/hd';
-import { Input, Output, Address, TX, MTX, CoinSelector, KeyRing } from '../primitives';
-import { Account } from './account';
-import { MasterKey } from './masterkey';
-import { Network, policy } from '../protocol';
-import * as consensus from '../protocol/consensus';
-const { encoding } = bio;
-const { Mnemonic } = HD;
-import { inspectSymbol } from '../utils';
-import { BufferSet } from 'buffer-map';
-import { WalletDB } from './walletdb';
-import { Kernel, StakeKernel } from '../staking/kernel';
-import { Lock } from 'bmutex';
-import { SighashType } from '../script/common';
-import { LoggerContext } from 'blgr/lib/logger';
-import { TXRecord } from './records';
+const {encoding} = bio;
+const {Mnemonic} = HD;
 
 
 export const StakeSplitAge = 9 * 24 * 60 * 60;
@@ -66,6 +67,7 @@ export class Wallet extends EventEmitter {
   watchOnly: boolean;
   maxAncestors: number;
   db: any;
+
   /**
    * Create a w.
    * @constructor
@@ -100,6 +102,37 @@ export class Wallet extends EventEmitter {
 
     if (options)
       this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate wallet from options.
+   * @param {WalletDB} wdb
+   * @param {Object} options
+   * @returns {Wallet}
+   */
+
+  static fromOptions(wdb, options) {
+    return new this(wdb).fromOptions(options);
+  }
+
+  /**
+   * Instantiate a wallet from serialized data.
+   * @param {Buffer} data
+   * @returns {Wallet}
+   */
+
+  static fromRaw(wdb, data) {
+    return new this(wdb).fromRaw(data);
+  }
+
+  /**
+   * Test an object to see if it is a Wallet.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isWallet(obj) {
+    return obj instanceof Wallet;
   }
 
   /**
@@ -174,17 +207,6 @@ export class Wallet extends EventEmitter {
     this.token = token;
 
     return this;
-  }
-
-  /**
-   * Instantiate wallet from options.
-   * @param {WalletDB} wdb
-   * @param {Object} options
-   * @returns {Wallet}
-   */
-
-  static fromOptions(wdb, options) {
-    return new this(wdb).fromOptions(options);
   }
 
   /**
@@ -693,7 +715,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns Array.
    */
 
-  getAddressHashes(acct?:string|number) {
+  getAddressHashes(acct?: string | number) {
     if (acct != null)
       return this.getAccountHashes(acct);
     return this.wdb.getWalletHashes(this.wid);
@@ -720,7 +742,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Account}.
    */
 
-  async getAccount(acct:string|number):Promise<Account> {
+  async getAccount(acct: string | number): Promise<Account> {
     const index = await this.getAccountIndex(acct);
 
     if (index === -1)
@@ -807,7 +829,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link WalletKey}.
    */
 
-  createReceive(acct:number|string = 0) {
+  createReceive(acct: number | string = 0) {
     return this.createKey(acct, 0);
   }
 
@@ -820,7 +842,6 @@ export class Wallet extends EventEmitter {
   createChange(acct = 0) {
     return this.createKey(acct, 1);
   }
-
 
   /**
    * Create a new address (increments depth).
@@ -930,7 +951,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Path}.
    */
 
-  async getPaths(acct?:string|number) {
+  async getPaths(acct?: string | number) {
     if (acct != null)
       return this.getAccountPaths(acct);
 
@@ -979,7 +1000,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise}
    */
 
-  async importKey(acct:string|number, ring:KeyRing, passphrase?:string|Buffer) {
+  async importKey(acct: string | number, ring: KeyRing, passphrase?: string | Buffer) {
     const unlock = await this.writeLock.lock();
     try {
       return await this._importKey(acct, ring, passphrase);
@@ -997,7 +1018,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise}
    */
 
-  async _importKey(acct, ring, passphrase):Promise<void> {
+  async _importKey(acct, ring, passphrase): Promise<void> {
     if (!this.watchOnly) {
       if (!ring.privateKey)
         throw new Error('Cannot import pubkey into non watch-only wallet.');
@@ -1108,7 +1129,7 @@ export class Wallet extends EventEmitter {
    * fee from existing outputs rather than adding more inputs.
    */
 
-  async fund(mtx:MTX, options, force?:boolean) {
+  async fund(mtx: MTX, options, force?: boolean) {
     const unlock = await this.fundLock.lock(force);
     try {
       return await this._fund(mtx, options);
@@ -1310,7 +1331,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link TX}.
    */
 
-  async send(options, passphrase?:string) {
+  async send(options, passphrase?: string) {
     const unlock = await this.fundLock.lock();
     try {
       return await this._send(options, passphrase);
@@ -1517,7 +1538,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise}
    */
 
-  async getKey(address):Promise<KeyRing> {
+  async getKey(address): Promise<KeyRing> {
     const hash = Address.getHash(address);
     const path = await this.getPath(hash);
 
@@ -1540,7 +1561,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise}
    */
 
-  async getPrivateKey(address: Address | Buffer, passphrase?: Buffer | string):Promise<KeyRing> {
+  async getPrivateKey(address: Address | Buffer, passphrase?: Buffer | string): Promise<KeyRing> {
     const hash = Address.getHash(address);
     const path = await this.getPath(hash);
 
@@ -1733,7 +1754,7 @@ export class Wallet extends EventEmitter {
 
     const rings = await this.deriveInputs(mtx);
 
-    return mtx.signAsync(rings, Script.hashType.ALL, this.wdb.workers);
+    return mtx.signAsync(rings, SighashType.ALL, this.wdb.workers);
   }
 
   /**
@@ -1754,7 +1775,7 @@ export class Wallet extends EventEmitter {
    */
 
   async _getPendingAncestors(tx, set) {
-    for (const { prevout } of tx.inputs) {
+    for (const {prevout} of tx.inputs) {
       const hash = prevout.hash;
 
       if (set.has(hash))
@@ -1814,7 +1835,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Details}.
    */
 
-  toDetails(wtx:TXRecord):Promise<Details> {
+  toDetails(wtx: TXRecord): Promise<Details> {
     return this.txdb.toDetails(wtx);
   }
 
@@ -2040,7 +2061,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link TX}[].
    */
 
-  async getHistory(acct?:number|string) {
+  async getHistory(acct?: number | string) {
     const account = await this.ensureIndex(acct);
     return this.txdb.getHistory(account);
   }
@@ -2051,7 +2072,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Coin}[].
    */
 
-  async getCoins(acct?:string|number) {
+  async getCoins(acct?: string | number) {
     const account = await this.ensureIndex(acct);
     return this.txdb.getCoins(account);
   }
@@ -2169,7 +2190,7 @@ export class Wallet extends EventEmitter {
    * @returns {Promise} - Returns {@link Balance}.
    */
 
-  async getBalance(acct?: number|string): Promise<Balance> {
+  async getBalance(acct?: number | string): Promise<Balance> {
     const account = await this.ensureIndex(acct);
     return this.txdb.getBalance(account);
   }
@@ -2239,14 +2260,13 @@ export class Wallet extends EventEmitter {
     return account.changeDepth;
   }
 
-
   /**
    * Get current receive address.
    * @param {Number} [acct=0]
    * @returns {Address}
    */
 
-  async receiveAddress(acct:string|number = 0):Promise<Address> {
+  async receiveAddress(acct: string | number = 0): Promise<Address> {
     const account = await this.getAccount(acct);
     if (!account)
       throw new Error('Account not found.');
@@ -2265,7 +2285,6 @@ export class Wallet extends EventEmitter {
       throw new Error('Account not found.');
     return account.changeAddress();
   }
-
 
   /**
    * Get current receive key.
@@ -2305,7 +2324,7 @@ export class Wallet extends EventEmitter {
     let tip = this.wdb.state.height; //maybe not this
     let prev = await this.wdb.getEntry(tip);
 
-    const coinStakeTx = new MTX({ time: time });
+    const coinStakeTx = new MTX({time: time});
     //Mark coin stake transaction
     coinStakeTx.addOutput(new Output());
 
@@ -2392,9 +2411,8 @@ export class Wallet extends EventEmitter {
     if (bytes >= consensus.MAX_BLOCK_SIZE_GEN / 5)
       throw new Error("exceeded coinstake size limit")
     //Successfully generated coinstake holy shit.
-    return { coinstake: coinStakeTx, keyRing: walletKey };
+    return {coinstake: coinStakeTx, keyRing: walletKey};
   }
-
 
   /**
    *
@@ -2414,7 +2432,7 @@ export class Wallet extends EventEmitter {
       // Search nSearchInterval seconds back up to nMaxStakeSearchInterval
       const kernel = await this.kernel.checkStakeKernelHash(prev, bits, blockFrom, prevTx, coin, time - n)
       if (kernel != null) {
-        return {interval: n , kernel: kernel};
+        return {interval: n, kernel: kernel};
       }
     }
   }
@@ -2578,26 +2596,6 @@ export class Wallet extends EventEmitter {
     this.master.fromReader(br);
 
     return this;
-  }
-
-  /**
-   * Instantiate a wallet from serialized data.
-   * @param {Buffer} data
-   * @returns {Wallet}
-   */
-
-  static fromRaw(wdb, data) {
-    return new this(wdb).fromRaw(data);
-  }
-
-  /**
-   * Test an object to see if it is a Wallet.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isWallet(obj) {
-    return obj instanceof Wallet;
   }
 
   /**

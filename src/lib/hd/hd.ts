@@ -4,18 +4,17 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
-
 import assert from 'bsert';
-export * from './mnemonic';
-import {HDPrivateKey} from './private';
-import {HDPublicKey} from './public';
-export * from './private';
-export * from './public';
+
+export * from './mnemonic.js';
+import {HDPrivateKey} from './private.js';
+import {HDPublicKey} from './public.js';
+export * from './private.js';
+export * from './public.js';
 export const PrivateKey = HDPrivateKey;
 export const PublicKey = HDPublicKey;
-export * as common from './common';
-export * as wordlist from './wordlist';
+export * as common from './common.js';
+export * as wordlist from './wordlist.js';
 
 /**
  * Instantiate an HD key (public or private) from an base58 string.

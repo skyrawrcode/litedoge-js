@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import {WalletNode} from '../lib/wallet/node';
-import {version} from '../../package.json'
+import {WalletNode} from '../lib/wallet/node.js';
+
+import {version} from '../lib/pkg.js'
 
 process.title = 'bwallet';
 

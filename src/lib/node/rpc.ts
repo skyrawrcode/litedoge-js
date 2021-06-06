@@ -6,44 +6,38 @@
 
 'use strict';
 
-import { Chain, ChainEntry } from "../blockchain";
+import {Chain, ChainEntry} from "../blockchain/index.js";
 
 import assert from 'bsert';
 import bweb from 'bweb';
-import { Lock } from 'bmutex';
+import {Lock} from 'bmutex';
 import IP from 'binet';
 import Validator from 'bval';
-import { BufferMap, BufferSet } from 'buffer-map';
-import hash160 from 'bcrypto/lib/hash160';
-import { safeEqual } from 'bcrypto/lib/safe';
-import secp256k1 from 'bcrypto/lib/secp256k1';
-import * as util from '../utils/util';
-import * as messageUtil from '../utils/message';
-import * as common from '../blockchain/common';
-import {Amount} from '../btc/amount';
-import {NetAddress} from '../net/netaddress';
-import {Script} from '../script/script';
-import {Address} from '../primitives/address';
-import {Block} from '../primitives/block';
-import {Headers} from '../primitives/headers';
-import {Input} from '../primitives/input';
-import {KeyRing} from '../primitives/keyring';
-import {MerkleBlock} from '../primitives/merkleblock';
-import {MTX} from '../primitives/mtx';
-import {Network} from '../protocol/network';
-import {Outpoint} from '../primitives/outpoint';
-import {Output} from '../primitives/output';
-import {TX} from '../primitives/tx';
-import * as consensus from '../protocol/consensus';
-import * as pkg from '../pkg';
-import { WorkerPool } from "../workers";
-import { Mempool, PolicyEstimator } from "../mempool";
-import { Pool } from "../net";
-import { LoggerContext } from "blgr/lib/logger";
-import { BlockTemplate, Miner } from "../mining";
-import { Node } from "./node";
-import { ScriptTypes } from "../script/common";
-import { Wallet } from "../wallet";
+import {BufferMap, BufferSet} from 'buffer-map';
+import hash160 from 'bcrypto/lib/hash160.js';
+import {safeEqual} from 'bcrypto/lib/safe.js';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+import {LoggerContext} from "blgr/lib/logger";
+
+
+import * as util from '../utils/util.js';
+import * as messageUtil from '../utils/message.js';
+import * as common from '../blockchain/common.js';
+import {Amount} from '../btc/amount.js';
+import {NetAddress} from '../net/netaddress.js';
+import {Script} from '../script/script.js';
+import {Address, Block, Headers, Input, KeyRing, MerkleBlock, MTX, Outpoint, Output, TX} from '../primitives/index.js'
+import {Network} from '../protocol/network.js';
+import * as consensus from '../protocol/consensus.js';
+import * as pkg from '../pkg.js';
+import {WorkerPool} from "../workers/index.js";
+import {Mempool, PolicyEstimator} from "../mempool/index.js";
+import {Pool} from "../net/index.js";
+import {BlockTemplate, Miner} from "../mining/index.js";
+import {Node} from "./node.js";
+import {ScriptTypes, SighashType} from "../script/common.js";
+import {Wallet} from "../wallet/index.js";
+
 const RPCBase = bweb.RPC;
 const RPCError = bweb.RPCError;
 
@@ -90,27 +84,28 @@ const errs = {
  */
 
 export class RPC extends RPCBase {
-  node:Node;
+  node: Node;
 
-  network:Network;
-  workers:WorkerPool
-  chain:Chain;
-  mempool:Mempool;
-  pool:Pool;
-  fees:PolicyEstimator;
+  network: Network;
+  workers: WorkerPool
+  chain: Chain;
+  mempool: Mempool;
+  pool: Pool;
+  fees: PolicyEstimator;
   miner: Miner;
-  logger:LoggerContext
-  locker:Lock;
+  logger: LoggerContext
+  locker: Lock;
   wallet: Wallet;
-  mining:boolean;
-  procLimit:number;
+  mining: boolean;
+  procLimit: number;
   attempt: BlockTemplate;
-  lastActivity:number;
-  boundChain:boolean;
-  nonce1:number;
-  nonce2:number;
-  merkleMap: BufferMap<[number,number]>;
-  pollers: {resolve, reject}[];
+  lastActivity: number;
+  boundChain: boolean;
+  nonce1: number;
+  nonce2: number;
+  merkleMap: BufferMap<[number, number]>;
+  pollers: { resolve, reject }[];
+
   /**
    * Create RPC.
    * @param {Node} node
@@ -1447,7 +1442,6 @@ export class RPC extends RPCBase {
       });
     }
 
- 
 
     // Calculate version based on given rules.
     let version = attempt.version;
@@ -1516,7 +1510,7 @@ export class RPC extends RPCBase {
         flags: attempt.coinbaseFlags.toString('hex')
       },
       coinbasevalue: undefined,
-      coinstakevalue:undefined,
+      coinstakevalue: undefined,
       coinbasetxn: undefined,
       transactions: txs
     };
@@ -1932,7 +1926,7 @@ export class RPC extends RPCBase {
     tx.view = await this.mempool.getSpentView(tx);
 
     const map = new BufferMap<KeyRing>();
-    const keys:KeyRing[] = [];
+    const keys: KeyRing[] = [];
 
     if (secrets) {
       const valid = new Validator(secrets);
@@ -1991,14 +1985,14 @@ export class RPC extends RPCBase {
       }
     }
 
-    let type = Script.hashType.ALL;
+    let type =  SighashType.ALL;
     if (sighash) {
-      const parts:string[] = sighash.split('|');
+      const parts: string[] = sighash.split('|');
 
       if (parts.length < 1 || parts.length > 2)
         throw new RPCError(errs.INVALID_PARAMETER, 'Invalid sighash type.');
 
-      type = Script.hashType[parts[0]];
+      type = SighashType[parts[0]];
 
       if (type == null)
         throw new RPCError(errs.INVALID_PARAMETER, 'Invalid sighash type.');
@@ -2006,7 +2000,7 @@ export class RPC extends RPCBase {
       if (parts.length === 2) {
         if (parts[1] !== 'ANYONECANPAY')
           throw new RPCError(errs.INVALID_PARAMETER, 'Invalid sighash type.');
-        type |= Script.hashType.ANYONECANPAY;
+        type |= SighashType.ANYONECANPAY;
       }
     }
 
@@ -2489,7 +2483,7 @@ export class RPC extends RPCBase {
     return forks;
   }
 
-  async getHashRate(lookup, height?:number) {
+  async getHashRate(lookup, height?: number) {
     let tip = this.chain.tip;
 
     if (height != null)
@@ -2562,7 +2556,7 @@ export class RPC extends RPCBase {
     throw new Error('Fork not found.');
   }
 
-  txToJSON(tx, entry?:ChainEntry) {
+  txToJSON(tx, entry?: ChainEntry) {
     let height = -1;
     let time = 0;
     let hash = null;
@@ -2629,7 +2623,7 @@ export class RPC extends RPCBase {
     };
   }
 
-  scriptToJSON(script, hex?:boolean) {
+  scriptToJSON(script, hex?: boolean) {
     const type = script.getType();
 
     const json = {

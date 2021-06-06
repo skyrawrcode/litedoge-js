@@ -6,23 +6,24 @@
 
 'use strict';
 
-import { BufferReader, BufferWriter, StaticWriter } from "bufio";
-import { NetworkType } from "../types";
+import bio, {BufferReader, BufferWriter, StaticWriter} from "bufio";
 
 import assert from 'bsert';
-import bio from 'bufio';
-import base58 from 'bcrypto/lib/encoding/base58';
-import sha512 from 'bcrypto/lib/sha512';
-import hash160 from 'bcrypto/lib/hash160';
-import hash256 from 'bcrypto/lib/hash256';
-import cleanse from 'bcrypto/lib/cleanse';
-import random from 'bcrypto/lib/random';
-import secp256k1 from 'bcrypto/lib/secp256k1';
-import { Network } from '../protocol/network';
-import * as consensus from '../protocol/consensus';
-import * as common from './common';
-import { Mnemonic } from './mnemonic';
-import { HDPublicKey } from './public';
+import base58 from 'bcrypto/lib/encoding/base58.js';
+import sha512 from 'bcrypto/lib/sha512.js';
+import hash160 from 'bcrypto/lib/hash160.js';
+import hash256 from 'bcrypto/lib/hash256.js';
+import cleanse from 'bcrypto/lib/cleanse.js';
+import random from 'bcrypto/lib/random.js';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+
+import {Network} from '../protocol/network.js';
+import * as consensus from '../protocol/consensus.js';
+import * as common from './common.js';
+import {Mnemonic} from './mnemonic.js';
+import {HDPublicKey} from './public.js';
+import {NetworkType} from "../types.js";
+
 
 /*
  * Constants
@@ -38,6 +39,7 @@ export interface HDPrivateKeyOptions {
   privateKey: Buffer;
 
 }
+
 /**
  * HDPrivateKey
  * @alias module:hd.PrivateKey
@@ -57,6 +59,7 @@ export class HDPrivateKey {
   publicKey: Buffer;
   fingerPrint: number;
   _hdPublicKey: HDPublicKey;
+
   /**
    * Create an hd private key.
    * @constructor
@@ -85,6 +88,186 @@ export class HDPrivateKey {
   }
 
   /**
+   * Instantiate HD private key from options object.
+   * @param {Object} options
+   * @returns {HDPrivateKey}
+   */
+
+  static fromOptions(options: HDPrivateKeyOptions): HDPrivateKey {
+    return new HDPrivateKey().fromOptions(options);
+  }
+
+  /**
+   * Test whether an object is in the form of a base58 xprivkey.
+   * @param {String} data
+   * @param {Network?} network
+   * @returns {Boolean}
+   */
+
+  static isBase58(data: string, network?: Network | null): boolean {
+    if (typeof data !== 'string')
+      return false;
+
+    if (data.length < 4)
+      return false;
+
+    const prefix = data.substring(0, 4);
+
+    try {
+      Network.fromPrivate58(prefix, network);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Test whether a buffer has a valid network prefix.
+   * @param {Buffer} data
+   * @param {Network?} network
+   * @returns {Boolean}
+   */
+
+  static isRaw(data: Buffer, network: Network | null): boolean {
+    if (!Buffer.isBuffer(data))
+      return false;
+
+    if (data.length < 4)
+      return false;
+
+    const version = data.readUInt32BE(0);
+
+    try {
+      Network.fromPrivate(version, network);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Test whether a string is a valid path.
+   * @param {String} path
+   * @returns {Boolean}
+   */
+
+  static isValidPath(path: string): boolean {
+    try {
+      common.parsePath(path, true);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Instantiate an hd private key from a 512 bit seed.
+   * @param {Buffer} seed
+   * @returns {HDPrivateKey}
+   */
+
+  static fromSeed(seed: Buffer): HDPrivateKey {
+    return new this().fromSeed(seed);
+  }
+
+  /**
+   * Instantiate an hd private key from a mnemonic.
+   * @param {Mnemonic} mnemonic
+   * @param {String?} passphrase
+   * @returns {HDPrivateKey}
+   */
+
+  static fromMnemonic(mnemonic: Mnemonic, passphrase?: string | null): HDPrivateKey {
+    return new this().fromMnemonic(mnemonic, passphrase);
+  }
+
+  /**
+   * Instantiate an hd private key from a phrase.
+   * @param {String} phrase
+   * @returns {HDPrivateKey}
+   */
+
+  static fromPhrase(phrase: string): HDPrivateKey {
+    return new this().fromPhrase(phrase);
+  }
+
+  /**
+   * Create an hd private key from a key and entropy bytes.
+   * @param {Buffer} key
+   * @param {Buffer} entropy
+   * @returns {HDPrivateKey}
+   */
+
+  static fromKey(key: Buffer, entropy: Buffer): HDPrivateKey {
+    return new this().fromKey(key, entropy);
+  }
+
+  /**
+   * Generate an hd private key.
+   * @returns {HDPrivateKey}
+   */
+
+  static generate(): HDPrivateKey {
+    const key = secp256k1.privateKeyGenerate();
+    const entropy = random.randomBytes(32);
+    return HDPrivateKey.fromKey(key, entropy);
+  }
+
+  /**
+   * Instantiate an HD private key from a base58 string.
+   * @param {Base58String} xkey
+   * @param {Network?} network
+   * @returns {HDPrivateKey}
+   */
+
+  static fromBase58(xkey: string, network: Network | null): HDPrivateKey {
+    return new this().fromBase58(xkey, network);
+  }
+
+  /**
+   * Instantiate key from buffer reader.
+   * @param {BufferReader} br
+   * @param {(Network|NetworkType)?} network
+   * @returns {HDPrivateKey}
+   */
+
+  static fromReader(br: BufferReader, network: (Network | NetworkType) | null): HDPrivateKey {
+    return new this().fromReader(br, network);
+  }
+
+  /**
+   * Instantiate key from serialized data.
+   * @param {Buffer} data
+   * @param {(Network|NetworkType)?} network
+   * @returns {HDPrivateKey}
+   */
+
+  static fromRaw(data: Buffer, network: (Network | NetworkType) | null): HDPrivateKey {
+    return new this().fromRaw(data, network);
+  }
+
+  /**
+   * Instantiate an HDPrivateKey from a jsonified key object.
+   * @param {Object} json - The jsonified key object.
+   * @param {Network?} network
+   * @returns {HDPrivateKey}
+   */
+
+  static fromJSON(json: object, network: Network | null): HDPrivateKey {
+    return new this().fromJSON(json, network);
+  }
+
+  /**
+   * Test whether an object is an HDPrivateKey.
+   * @param {Object} obj
+   * @returns {Boolean}
+   */
+
+  static isHDPrivateKey(obj: object): boolean {
+    return obj instanceof HDPrivateKey;
+  }
+
+  /**
    * Inject properties from options object.
    * @private
    * @param {Object} options
@@ -106,16 +289,6 @@ export class HDPrivateKey {
     this.publicKey = secp256k1.publicKeyCreate(options.privateKey, true);
 
     return this;
-  }
-
-  /**
-   * Instantiate HD private key from options object.
-   * @param {Object} options
-   * @returns {HDPrivateKey}
-   */
-
-  static fromOptions(options: HDPrivateKeyOptions): HDPrivateKey {
-    return new HDPrivateKey().fromOptions(options);
   }
 
   /**
@@ -144,7 +317,7 @@ export class HDPrivateKey {
    * @returns {Base58String}
    */
 
-  xprivkey(network:Network): string {
+  xprivkey(network: Network): string {
     return this.toBase58(network);
   }
 
@@ -153,7 +326,7 @@ export class HDPrivateKey {
    * @returns {Base58String}
    */
 
-  xpubkey(network:Network): string {
+  xpubkey(network: Network): string {
     return this.toPublic().xpubkey(network);
   }
 
@@ -300,69 +473,6 @@ export class HDPrivateKey {
   }
 
   /**
-   * Test whether an object is in the form of a base58 xprivkey.
-   * @param {String} data
-   * @param {Network?} network
-   * @returns {Boolean}
-   */
-
-  static isBase58(data: string, network?: Network | null): boolean {
-    if (typeof data !== 'string')
-      return false;
-
-    if (data.length < 4)
-      return false;
-
-    const prefix = data.substring(0, 4);
-
-    try {
-      Network.fromPrivate58(prefix, network);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /**
-   * Test whether a buffer has a valid network prefix.
-   * @param {Buffer} data
-   * @param {Network?} network
-   * @returns {Boolean}
-   */
-
-  static isRaw(data: Buffer, network: Network | null): boolean {
-    if (!Buffer.isBuffer(data))
-      return false;
-
-    if (data.length < 4)
-      return false;
-
-    const version = data.readUInt32BE(0);
-
-    try {
-      Network.fromPrivate(version, network);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /**
-   * Test whether a string is a valid path.
-   * @param {String} path
-   * @returns {Boolean}
-   */
-
-  static isValidPath(path: string): boolean {
-    try {
-      common.parsePath(path, true);
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /**
    * Derive a key from a derivation path.
    * @param {String} path
    * @returns {HDPrivateKey}
@@ -372,7 +482,7 @@ export class HDPrivateKey {
   derivePath(path: string): HDPrivateKey {
     const indexes = common.parsePath(path, true);
 
-    let key:HDPrivateKey = this;
+    let key: HDPrivateKey = this;
 
     for (const index of indexes)
       key = key.derive(index);
@@ -402,7 +512,7 @@ export class HDPrivateKey {
    * @returns {Boolean}
    */
 
-  compare(key:HDPrivateKey):number {
+  compare(key: HDPrivateKey): number {
     assert(HDPrivateKey.isHDPrivateKey(key));
 
     let cmp = this.depth - key.depth;
@@ -466,16 +576,6 @@ export class HDPrivateKey {
   }
 
   /**
-   * Instantiate an hd private key from a 512 bit seed.
-   * @param {Buffer} seed
-   * @returns {HDPrivateKey}
-   */
-
-  static fromSeed(seed: Buffer): HDPrivateKey {
-    return new this().fromSeed(seed);
-  }
-
-  /**
    * Inject properties from a mnemonic.
    * @private
    * @param {Mnemonic} mnemonic
@@ -488,17 +588,6 @@ export class HDPrivateKey {
   }
 
   /**
-   * Instantiate an hd private key from a mnemonic.
-   * @param {Mnemonic} mnemonic
-   * @param {String?} passphrase
-   * @returns {HDPrivateKey}
-   */
-
-  static fromMnemonic(mnemonic: Mnemonic, passphrase?: string | null): HDPrivateKey {
-    return new this().fromMnemonic(mnemonic, passphrase);
-  }
-
-  /**
    * Inject properties from a mnemonic.
    * @private
    * @param {String} mnemonic
@@ -508,16 +597,6 @@ export class HDPrivateKey {
     const mnemonic = Mnemonic.fromPhrase(phrase);
     this.fromMnemonic(mnemonic);
     return this;
-  }
-
-  /**
-   * Instantiate an hd private key from a phrase.
-   * @param {String} phrase
-   * @returns {HDPrivateKey}
-   */
-
-  static fromPhrase(phrase: string): HDPrivateKey {
-    return new this().fromPhrase(phrase);
   }
 
   /**
@@ -540,28 +619,6 @@ export class HDPrivateKey {
   }
 
   /**
-   * Create an hd private key from a key and entropy bytes.
-   * @param {Buffer} key
-   * @param {Buffer} entropy
-   * @returns {HDPrivateKey}
-   */
-
-  static fromKey(key: Buffer, entropy: Buffer): HDPrivateKey {
-    return new this().fromKey(key, entropy);
-  }
-
-  /**
-   * Generate an hd private key.
-   * @returns {HDPrivateKey}
-   */
-
-  static generate(): HDPrivateKey {
-    const key = secp256k1.privateKeyGenerate();
-    const entropy = random.randomBytes(32);
-    return HDPrivateKey.fromKey(key, entropy);
-  }
-
-  /**
    * Inject properties from base58 key.
    * @private
    * @param {Base58String} xkey
@@ -580,7 +637,7 @@ export class HDPrivateKey {
    * @param {(Network|NetworkType)?} network
    */
 
-  fromReader(br: BufferReader, network: (Network|NetworkType) | null) {
+  fromReader(br: BufferReader, network: (Network | NetworkType) | null) {
     const version = br.readU32BE();
 
     Network.fromPrivate(version, network);
@@ -634,7 +691,7 @@ export class HDPrivateKey {
    * @param {(Network|NetworkType)?} network
    */
 
-  toWriter(bw: BufferWriter|StaticWriter, network: (Network | NetworkType) | null) {
+  toWriter(bw: BufferWriter | StaticWriter, network: (Network | NetworkType) | null) {
     network = Network.get(network);
 
     bw.writeU32BE(network.keyPrefix.xprivkey);
@@ -657,39 +714,6 @@ export class HDPrivateKey {
 
   toRaw(network: (Network | NetworkType) | null): Buffer {
     return this.toWriter(bio.write(82), network).render();
-  }
-
-  /**
-   * Instantiate an HD private key from a base58 string.
-   * @param {Base58String} xkey
-   * @param {Network?} network
-   * @returns {HDPrivateKey}
-   */
-
-  static fromBase58(xkey: string, network: Network | null): HDPrivateKey {
-    return new this().fromBase58(xkey, network);
-  }
-
-  /**
-   * Instantiate key from buffer reader.
-   * @param {BufferReader} br
-   * @param {(Network|NetworkType)?} network
-   * @returns {HDPrivateKey}
-   */
-
-  static fromReader(br: BufferReader, network: (Network | NetworkType) | null): HDPrivateKey {
-    return new this().fromReader(br, network);
-  }
-
-  /**
-   * Instantiate key from serialized data.
-   * @param {Buffer} data
-   * @param {(Network|NetworkType)?} network
-   * @returns {HDPrivateKey}
-   */
-
-  static fromRaw(data: Buffer, network: (Network | NetworkType) | null): HDPrivateKey {
-    return new this().fromRaw(data, network);
   }
 
   /**
@@ -716,26 +740,5 @@ export class HDPrivateKey {
     this.fromBase58(json.xprivkey, network);
 
     return this;
-  }
-
-  /**
-   * Instantiate an HDPrivateKey from a jsonified key object.
-   * @param {Object} json - The jsonified key object.
-   * @param {Network?} network
-   * @returns {HDPrivateKey}
-   */
-
-  static fromJSON(json: object, network: Network | null): HDPrivateKey {
-    return new this().fromJSON(json, network);
-  }
-
-  /**
-   * Test whether an object is an HDPrivateKey.
-   * @param {Object} obj
-   * @returns {Boolean}
-   */
-
-  static isHDPrivateKey(obj: object): boolean {
-    return obj instanceof HDPrivateKey;
   }
 }

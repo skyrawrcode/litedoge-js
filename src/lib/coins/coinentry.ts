@@ -3,15 +3,11 @@
  * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
  * https://github.com/bcoin-org/bcoin
  */
-
-'use strict';
-
-import { Output } from "../primitives";
-
 import assert from 'bsert';
 import bio from 'bufio';
-import {Coin} from '../primitives/coin';
-import * as compress from './compress';
+
+import { Output, Coin } from "../primitives/index.js";
+import * as compress from './compress.js';
 const {encoding} = bio;
 
 /*

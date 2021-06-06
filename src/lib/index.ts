@@ -7,8 +7,8 @@
 
 /* eslint prefer-arrow-callback: "off" */
 
-import {Network} from './protocol'
-import { NetworkType } from './types';
+import {Network} from './protocol/index.js'
+import { NetworkType } from './types.js';
 
 
 /**

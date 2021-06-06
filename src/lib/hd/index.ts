@@ -4,6 +4,4 @@
  * https://github.com/bcoin-org/bcoin
  */
 
-'use strict';
-
-export * from './hd';
+export * from './hd.js';

@@ -8,9 +8,9 @@
 'use strict';
 
 import assert from 'bsert';
-import {Network} from '../protocol/network';
-import hash256 from 'bcrypto/lib/hash256';
+import hash256 from 'bcrypto/lib/hash256.js';
 
+import {Network} from '../protocol/network.js';
 /**
  * Protocol Message Framer
  * @alias module:net.Framer

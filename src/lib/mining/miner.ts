@@ -7,24 +7,24 @@
 
 'use strict';
 
-import { LoggerContext } from "blgr/lib/logger";
-import { Chain, ChainEntry } from "../blockchain";
-import { WorkerPool } from "../workers";
-
+import {LoggerContext} from "blgr/lib/logger";
 import assert from 'bsert';
+import {Lock} from "bmutex";
 import EventEmitter from 'events';
 import Heap from 'bheep';
-import { BufferMap } from 'buffer-map';
-import random from 'bcrypto/lib/random';
-import {Amount} from '../btc/amount';
-import {Address} from '../primitives/address';
-import {BlockTemplate, BlockEntry} from './template';
-import {Network} from '../protocol/network';
-import * as consensus from '../protocol/consensus';
-import * as policy from '../protocol/policy';
-import {CPUMiner} from './cpuminer';
-import { Mempool } from "../mempool";
-import { Lock } from "bmutex";
+import {BufferMap} from 'buffer-map';
+import random from 'bcrypto/lib/random.js';
+
+import {Amount} from '../btc/amount.js';
+import {Address} from '../primitives/address.js';
+import {BlockEntry, BlockTemplate} from './template.js';
+import {Network} from '../protocol/network.js';
+import * as consensus from '../protocol/consensus.js';
+import * as policy from '../protocol/policy.js';
+import {CPUMiner} from './cpuminer.js';
+import {Mempool} from "../mempool/index.js";
+import {Chain, ChainEntry} from "../blockchain/index.js";
+import {WorkerPool} from "../workers/index.js";
 
 /**
  * Miner
@@ -34,16 +34,17 @@ import { Lock } from "bmutex";
  */
 
 export class Miner extends EventEmitter {
-  opened:boolean;
-  options:MinerOptions;
-  network:Network;
-  logger:LoggerContext;
-  workers:WorkerPool;
-  chain:Chain;
-  mempool:Mempool;
+  opened: boolean;
+  options: MinerOptions;
+  network: Network;
+  logger: LoggerContext;
+  workers: WorkerPool;
+  chain: Chain;
+  mempool: Mempool;
   addresses: Address[]
   locker: Lock;
-  cpu:CPUMiner;
+  cpu: CPUMiner;
+
   /**
    * Create a bitcoin miner.
    * @constructor
@@ -115,7 +116,7 @@ export class Miner extends EventEmitter {
    * @returns {Promise} - Returns {@link BlockTemplate}.
    */
 
-  async createBlock(tip?:ChainEntry, address?:Address):Promise<BlockTemplate> {
+  async createBlock(tip?: ChainEntry, address?: Address): Promise<BlockTemplate> {
     const unlock = await this.locker.lock();
     try {
       return await this._createBlock(tip, address);
@@ -383,13 +384,13 @@ export class Miner extends EventEmitter {
  */
 
 class MinerOptions {
-  network:Network;
-  logger:LoggerContext;
-  workers:WorkerPool;
-  chain:Chain;
-  mempool:Mempool;
-  version:number;
-  addresses:Address[];
+  network: Network;
+  logger: LoggerContext;
+  workers: WorkerPool;
+  chain: Chain;
+  mempool: Mempool;
+  version: number;
+  addresses: Address[];
   coinbaseFlags: Buffer;
   preverify: boolean;
   minWeight: number;
@@ -427,6 +428,16 @@ class MinerOptions {
     this.reservedSigops = 400;
 
     this.fromOptions(options);
+  }
+
+  /**
+   * Instantiate miner options from object.
+   * @param {Object} options
+   * @returns {MinerOptions}
+   */
+
+  static fromOptions(options) {
+    return new this().fromOptions(options);
   }
 
   /**
@@ -535,16 +546,6 @@ class MinerOptions {
     }
 
     return this;
-  }
-
-  /**
-   * Instantiate miner options from object.
-   * @param {Object} options
-   * @returns {MinerOptions}
-   */
-
-  static fromOptions(options) {
-    return new this().fromOptions(options);
   }
 }
 

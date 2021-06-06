@@ -10,6 +10,6 @@
  * @module indexer
  */
 
-export {Indexer} from "./indexer";
-export {TXIndexer} from "./txindexer";
-export {AddrIndexer} from "./addrindexer";
+export {Indexer} from "./indexer.js";
+export {TXIndexer} from "./txindexer.js";
+export {AddrIndexer} from "./addrindexer.js";

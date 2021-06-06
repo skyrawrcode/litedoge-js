@@ -6,8 +6,8 @@
 
 'use strict';
 
-import secp256k1 from 'bcrypto/lib/secp256k1';
-import { derive } from 'bcrypto/lib/scrypt';
+import secp256k1 from 'bcrypto/lib/secp256k1.js';
+import { derive } from 'bcrypto/lib/scrypt.js';
 import {
   WorkerPacketTypes,
   CheckResultPacket,
@@ -19,8 +19,8 @@ import {
   MineResultPacket,
   ScryptResultPacket,
   ErrorResultPacket
-} from './packets';
-import {mine} from "../mining";
+} from './packets.js';
+import {mine} from "../mining/index.js";
 
 /**
  * @exports workers/jobs

@@ -9,7 +9,7 @@
 
 import assert from 'bsert';
 import EventEmitter from 'events';
-import { Lock } from 'bmutex';
+import {Lock} from 'bmutex';
 import IP from 'binet';
 import dns from 'bdns';
 import tcp from 'btcp';
@@ -17,24 +17,26 @@ import UPNP from 'bupnp';
 import socks from 'bsocks';
 import List from 'blst';
 import Logger from 'blgr';
-import { BloomFilter, RollingFilter } from 'bfilter';
-import { BufferMap, BufferSet } from 'buffer-map';
-import * as util from '../utils/util';
-import * as common from './common';
-import * as chainCommon from '../blockchain/common';
-import {Address} from '../primitives/address';
-import * as BIP152 from './bip152';
-import {Network} from '../protocol/network';
-import {Peer} from './peer';
-import {HostList, scores} from './hostlist';
-import {InvItem, InvType} from '../primitives/invitem';
-import * as  packets from './packets';
+import {BloomFilter, RollingFilter} from 'bfilter';
+import {BufferMap, BufferSet} from 'buffer-map';
+import {LoggerContext} from 'blgr/lib/logger';
+
+import * as util from '../utils/util.js';
+import * as common from './common.js';
+import * as chainCommon from '../blockchain/common.js';
+import {Address} from '../primitives/address.js';
+import * as BIP152 from './bip152.js';
+import {Network} from '../protocol/network.js';
+import {Peer} from './peer.js';
+import {HostList, scores} from './hostlist.js';
+import {InvItem, InvType} from '../primitives/invitem.js';
+import * as  packets from './packets.js';
+import {inspectSymbol} from '../utils/index.js';
+import {Mempool} from '../mempool/mempool.js';
+import {Chain} from '../blockchain/index.js';
+
 const services = common.ServiceBits;
 const packetTypes = packets.PacketTypes;
-import { inspectSymbol } from '../utils';
-import { Mempool } from '../mempool/mempool';
-import { LoggerContext } from 'blgr/lib/logger';
-import { Chain } from '../blockchain';
 
 
 /**
@@ -46,9 +48,9 @@ import { Chain } from '../blockchain';
 
 export class Pool extends EventEmitter {
   opened: boolean;
-  options:PoolOptions;
-  network:Network;
-  logger: Logger|LoggerContext;
+  options: PoolOptions;
+  network: Network;
+  logger: Logger | LoggerContext;
   chain: Chain;
   mempool: Mempool;
   server: any;
@@ -74,6 +76,7 @@ export class Pool extends EventEmitter {
   hosts: any;
   id: number;
   timer: any;
+
   /**
    * Create a pool.
    * @constructor
@@ -125,6 +128,10 @@ export class Pool extends EventEmitter {
       this.txFilter = new RollingFilter(50000, 0.000001);
 
     this.init();
+  }
+
+  static DISCOVERY_INTERVAL(arg0: () => Promise<void>, DISCOVERY_INTERVAL: any): any {
+    throw new Error('Method not implemented.');
   }
 
   /**
@@ -401,9 +408,6 @@ export class Pool extends EventEmitter {
     assert(this.timer == null, 'Timer already started.');
     this.timer = setInterval(() => this.discover(), DISCOVERY_INTERVAL);
   }
-  static DISCOVERY_INTERVAL(arg0: () => Promise<void>, DISCOVERY_INTERVAL: any): any {
-    throw new Error('Method not implemented.');
-  }
 
   /**
    * Stop discovery timer.
@@ -497,7 +501,7 @@ export class Pool extends EventEmitter {
    * @returns {Promise}
    */
 
-  async discoverSeeds(checkPeers?:boolean) {
+  async discoverSeeds(checkPeers?: boolean) {
     if (!this.options.discover)
       return;
 
@@ -700,7 +704,7 @@ export class Pool extends EventEmitter {
    * Send a sync to each peer.
    */
 
-  sync(force?:boolean) {
+  sync(force?: boolean) {
     this.resync(force);
   }
 
@@ -2801,6 +2805,7 @@ export class Pool extends EventEmitter {
 
     peer.send(new packets.GetBlockTxnPacket(block.toRequest()));
   }
+
   destroy() {
     throw new Error('Method not implemented.');
   }
@@ -3232,7 +3237,7 @@ export class Pool extends EventEmitter {
    * @returns {Promise}
    */
 
-  async getBlocks(peer, tip, stop?:Buffer) {
+  async getBlocks(peer, tip, stop?: Buffer) {
     const locator = await this.chain.getLocator(tip);
     peer.sendGetBlocks(locator, stop);
   }
@@ -3537,7 +3542,8 @@ export class Pool extends EventEmitter {
  */
 
 export const DISCOVERY_INTERVAL = 120000;
-export interface PoolOptionsOptions{
+
+export interface PoolOptionsOptions {
   seeds?: any;
   nodes?: any;
   only?: any;
@@ -3573,11 +3579,12 @@ export interface PoolOptionsOptions{
   memory?: boolean;
   services?: any;
   requiredServices?: any;
-  network?:Network;
-  logger?:Logger|LoggerContext;
-  chain:Chain;
-  
+  network?: Network;
+  logger?: Logger | LoggerContext;
+  chain: Chain;
+
 }
+
 /**
  * Pool Options
  * @alias module:net.PoolOptions
@@ -3587,7 +3594,7 @@ class PoolOptions {
   port: number;
   host: string;
   network: Network;
-  logger: Logger|LoggerContext;
+  logger: Logger | LoggerContext;
   chain: Chain;
   mempool: Mempool;
   discover: boolean;
@@ -3623,12 +3630,13 @@ class PoolOptions {
   options?: any;
   maxOutbound?: number;
   createServer?: (handler?: Function) => any;
+
   /**
    * Create pool options.
    * @constructor
    */
 
-  constructor(options?:PoolOptionsOptions) {
+  constructor(options?: PoolOptionsOptions) {
     this.network = Network.primary;
     this.logger = null;
     this.chain = null;
@@ -3674,13 +3682,23 @@ class PoolOptions {
   }
 
   /**
+   * Instantiate options from object.
+   * @param {Object} options
+   * @returns {PoolOptions}
+   */
+
+  static fromOptions(options) {
+    return new PoolOptions().fromOptions(options);
+  }
+
+  /**
    * Inject properties from object.
    * @private
    * @param {Object} options
    * @returns {PoolOptions}
    */
 
-  fromOptions(options:PoolOptionsOptions) {
+  fromOptions(options: PoolOptionsOptions) {
     assert(options, 'Pool requires options.');
     assert(options.chain && typeof options.chain === 'object',
       'Pool options require a blockchain.');
@@ -3915,16 +3933,6 @@ class PoolOptions {
   }
 
   /**
-   * Instantiate options from object.
-   * @param {Object} options
-   * @returns {PoolOptions}
-   */
-
-  static fromOptions(options) {
-    return new PoolOptions().fromOptions(options);
-  }
-
-  /**
    * Get the chain height.
    * @private
    * @returns {Number}
@@ -4049,6 +4057,7 @@ class PeerList {
   load: any;
   inbound: number;
   outbound: number;
+
   /**
    * Create peer list.
    * @constructor
@@ -4069,7 +4078,7 @@ class PeerList {
    * @returns {Peer}
    */
 
-  head():Peer {
+  head(): Peer {
     return this.list.head;
   }
 
@@ -4199,6 +4208,7 @@ class BroadcastItem extends EventEmitter {
   msg: any;
   jobs: any[];
   timeout: any;
+
   /**
    * Create broadcast item.
    * @constructor
@@ -4368,6 +4378,7 @@ class BroadcastItem extends EventEmitter {
 class NonceList {
   map: BufferMap<string>;
   hosts: Map<string, Buffer>;
+
   /**
    * Create nonce list.
    * @constructor
@@ -4424,6 +4435,7 @@ class HeaderEntry {
   height: any;
   prev: any;
   next: any;
+
   /**
    * Create header entry.
    * @constructor

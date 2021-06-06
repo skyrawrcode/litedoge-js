@@ -5,9 +5,10 @@
  */
 
 import assert from 'bsert';
-import * as consensus from '../protocol/consensus';
 import {BN} from 'bcrypto';
-import * as common from './common';
+
+import * as consensus from '../protocol/consensus.js';
+import * as common from './common.js';
 
 
 /*
