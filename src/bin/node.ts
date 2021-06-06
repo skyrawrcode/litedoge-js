@@ -1,0 +1,59 @@
+#!/usr/bin/env node
+
+'use strict';
+import {FullNode} from '../lib/node/index.js';
+import {plugin} from '../lib/wallet/index.js';
+import {createRequire} from "module";
+
+const require = createRequire(import.meta.url);
+process.title = 'litedoge';
+
+if (process.argv.indexOf('--help') !== -1
+  || process.argv.indexOf('-h') !== -1) {
+  console.error('See the ldogejs docs at: https://github.com/bcoin-org/bcoin/tree/master/docs.');
+  process.exit(1);
+  throw new Error('Could not exit.');
+}
+
+if (process.argv.indexOf('--version') !== -1
+  || process.argv.indexOf('-v') !== -1) {
+  const pkg = require('../../package.json');
+  console.log(pkg.version);
+  process.exit(0);
+  throw new Error('Could not exit.');
+}
+
+export const node = new FullNode({
+  file: true,
+  argv: true,
+  env: true,
+  logFile: true,
+  logConsole: true,
+  logLevel: 'debug',
+  memory: false,
+  workers: true,
+  listen: true
+});
+
+// Temporary hack
+if (!node.config.bool('no-wallet') && !node.has('walletdb')) {
+  node.use(plugin);
+}
+
+process.on('unhandledRejection', (err, promise) => {
+  throw err;
+});
+
+process.on('SIGINT', async () => {
+  await node.close();
+});
+
+(async () => {
+  await node.ensure();
+  await node.open();
+  await node.connect();
+  node.startSync();
+})().catch((err) => {
+  console.error(err.stack);
+  process.exit(1);
+});

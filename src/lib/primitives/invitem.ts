@@ -1,0 +1,164 @@
+/*!
+ * invitem.js - inv item object for ldogejs
+ * Copyright (c) 2014-2015, Fedor Indutny (MIT License)
+ * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+import bio, {BufferWriter, StaticWriter} from 'bufio';
+import * as util from '../utils/util.js';
+
+/**
+ * Inv Item
+ * @alias module:primitives.InvItem
+ * @constructor
+ * @property {InvType} type
+ * @property {Hash} hash
+ */
+
+export class InvItem {
+  type: number;
+  hash: Buffer;
+
+  /**
+   * Create an inv item.
+   * @constructor
+   * @param {Number} type
+   * @param {Hash} hash
+   */
+
+  constructor(type?: number, hash?: Buffer) {
+    this.type = type;
+    this.hash = hash;
+  }
+
+  /**
+   * Instantiate inv item from buffer reader.
+   * @param {BufferReader} br
+   * @returns {InvItem}
+   */
+
+  static fromReader(br) {
+    return new this().fromReader(br);
+  }
+
+  /**
+   * Instantiate inv item from serialized data.
+   * @param {Buffer} data
+   * @param {String?} enc
+   * @returns {InvItem}
+   */
+
+  static fromRaw(data, enc) {
+    if (typeof data === 'string')
+      data = Buffer.from(data, enc);
+    return new this().fromRaw(data);
+  }
+
+  /**
+   * Write inv item to buffer writer.
+   * @param {BufferWriter} bw
+   */
+
+  getSize() {
+    return 36;
+  }
+
+  /**
+   * Write inv item to buffer writer.
+   * @param {BufferWriter} bw
+   */
+
+  toWriter(bw: BufferWriter | StaticWriter) {
+    bw.writeU32(this.type);
+    bw.writeHash(this.hash);
+    return bw;
+  }
+
+  /**
+   * Serialize inv item.
+   * @returns {Buffer}
+   */
+
+  toRaw() {
+    return this.toWriter(bio.write(36)).render();
+  }
+
+  /**
+   * Inject properties from buffer reader.
+   * @private
+   * @param {BufferReader} br
+   */
+
+  fromReader(br) {
+    this.type = br.readU32();
+    this.hash = br.readHash();
+    return this;
+  }
+
+  /**
+   * Inject properties from serialized data.
+   * @param {Buffer} data
+   */
+
+  fromRaw(data) {
+    return this.fromReader(bio.read(data));
+  }
+
+  /**
+   * Test whether the inv item is a block.
+   * @returns {Boolean}
+   */
+
+  isBlock() {
+    switch (this.type) {
+      case InvType.BLOCK:
+      case InvType.FILTERED_BLOCK:
+      case InvType.CMPCT_BLOCK:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Test whether the inv item is a tx.
+   * @returns {Boolean}
+   */
+
+  isTX() {
+    switch (this.type) {
+      case InvType.TX:
+        return true;
+      default:
+        return false;
+    }
+  }
+
+
+  /**
+   * Get little-endian hash.
+   * @returns {Hash}
+   */
+
+  rhash() {
+    return util.revHex(this.hash);
+  }
+}
+
+/**
+ * Inv types.
+ * @enum {Number}
+ * @default
+ */
+
+export enum InvType {
+  TX = 1,
+  BLOCK = 2,
+  FILTERED_BLOCK = 3,
+  CMPCT_BLOCK = 4
+};
+
+

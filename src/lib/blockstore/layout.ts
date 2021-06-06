@@ -1,0 +1,31 @@
+/*!
+ * blockstore/layout.js - file blockstore data layout for ldogejs
+ * Copyright (c) 2019, Braydon Fuller (MIT License).
+ * https://github.com/bcoin-org/bcoin
+ */
+
+'use strict';
+
+import bdb from 'bdb';
+
+interface layout {
+  V: bdb.Key;
+  F: bdb.Key;
+  f: bdb.Key;
+  b: bdb.Key;
+}
+/*
+ * Database Layout:
+ *   V -> db version
+ *   F[type] -> last file record by type
+ *   f[type][fileno] -> file record by type and file number
+ *   b[type][hash] -> block record by type and block hash
+ */
+
+export const layout:layout = {
+  V: bdb.key('V'),
+  F: bdb.key('F', ['uint32']),
+  f: bdb.key('f', ['uint32', 'uint32']),
+  b: bdb.key('b', ['uint32', 'hash256'])
+};
+

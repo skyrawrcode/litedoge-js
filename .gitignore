@@ -10,3 +10,7 @@ coverage/
 yarn.lock
 webpack.*.js
 .idea/
+
+dist/
+
+tsconfig.tsbuildinfo

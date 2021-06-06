@@ -38,25 +38,25 @@ Common wallet commands:
 
 ```bash
 # View primary wallet
-$ bwallet-cli get
+$ bwallet-cli.js get
 
 # View transaction history
-$ bwallet-cli history
+$ bwallet-cli.js history
 
 # Send a transaction
-$ bwallet-cli send <address> 0.01
+$ bwallet-cli.js send <address> 0.01
 
 # View balance
-$ bwallet-cli balance
+$ bwallet-cli.js balance
 
 # Derive new address
-$ bwallet-cli address
+$ bwallet-cli.js address
 
 # Create a new account
-$ bwallet-cli account create foo
+$ bwallet-cli.js account create foo
 
 # Send from account
-$ bwallet-cli send <address> 0.01 --account=foo
+$ bwallet-cli.js send <address> 0.01 --account=foo
 ```
 
 Get more help:
@@ -64,6 +64,6 @@ Get more help:
 ```bash
 $ ldogejs-cli help
 $ ldogejs-cli rpc help
-$ bwallet-cli help
-$ bwallet-cli rpc help
+$ bwallet-cli.js help
+$ bwallet-cli.js rpc help
 ```

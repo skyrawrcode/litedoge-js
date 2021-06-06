@@ -3,7 +3,7 @@
 By default, the mainnet ldogejs config files will reside in `~/.ldogejs/ldogejs.conf`
 and `~/.ldogejs/wallet.conf`. Any parameter passed to ldogejs at startup will have
 precedence over the config file. Even if you are just running `ldogejs-cli` or
-`bwallet-cli` (to access a remote server, for example) the configuration
+`bwallet-cli.js` (to access a remote server, for example) the configuration
 files would still reside in `~/.ldogejs/`
 
 For example:
