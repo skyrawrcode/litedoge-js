@@ -98,7 +98,7 @@
     "bwallet-cli": "dist/bin/bwallet-cli.js"
   },
   "scripts": {
-    "build": "tsc --build src --force",
+    "build": "tsc --build src",
     "start": "node ./dist/bin/node.js",
     "ldogejs-node": "node   ./dist/bin/node.js",
     "browserify": "browserify -s ldogejs lib/ldogejs-browser.js | uglifyjs -c > ldogejs.js",
