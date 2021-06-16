@@ -1,70 +1,73 @@
 'use strict';
 
-const assert = require('bsert');
-const {tmpdir} = require('os');
-const path = require('path');
-const fs = require('bfile');
-const bio = require('bufio');
-const {randomBytes} = require('bcrypto/lib/random');
-const Block = require('../../lib/primitives/block');
-const MerkleBlock = require('../../lib/primitives/merkleblock');
-const Headers = require('../../lib/primitives/headers');
-const {CompactBlock} = require('../../lib/net/bip152');
-const TX = require('../../lib/primitives/tx');
-const Output = require('../../lib/primitives/output');
-const CoinView = require('../../lib/coins/coinview');
+import {randomBytes} from "bcrypto/lib/random.js";
+import fs from "bfile";
+import assert from "bsert";
+import bio from "bufio";
+import {tmpdir} from "os";
 
-const common = exports;
+import path from "path";
+import {CoinView} from "../../dist/lib/coins/coinview.js";
+import {CompactBlock} from "../../dist/lib/net/bip152.js";
 
-common.readFile = function readFile(name, enc) {
+import {Block} from "../../dist/lib/primitives/block.js";
+import {Headers} from "../../dist/lib/primitives/headers.js";
+import {MerkleBlock} from "../../dist/lib/primitives/merkleblock.js";
+import {Output} from "../../dist/lib/primitives/output.js";
+
+import {TX} from "../../dist/lib/primitives/tx.js";
+
+//TODO:: switch to exports
+
+export function readFile(name, enc) {
   const file = path.resolve(__dirname, '..', 'data', name);
   return fs.readFileSync(file, enc);
 };
 
-common.writeFile = function writeFile(name, data) {
+export function writeFile(name, data) {
   const file = path.resolve(__dirname, '..', 'data', name);
   return fs.writeFileSync(file, data);
 };
 
-common.exists = function exists(name) {
+export function exists(name) {
   const file = path.resolve(__dirname, '..', 'data', name);
   return fs.existsSync(file);
 };
 
-common.readBlock = function readBlock(name) {
-  const raw = common.readFile(`${name}.raw`);
+export function readBlock(name) {
+  const raw = readFile(`${name}.raw`);
 
-  if (!common.exists(`${name}-undo.raw`))
+  if (!exists(`${name}-undo.raw`))
     return new BlockContext(Block, raw);
 
-  const undoRaw = common.readFile(`${name}-undo.raw`);
+  const undoRaw = readFile(`${name}-undo.raw`);
 
   return new BlockContext(Block, raw, undoRaw);
 };
 
-common.readMerkle = function readMerkle(name) {
-  const raw = common.readFile(`${name}.raw`);
+export function readMerkle(name) {
+  const raw = readFile(`${name}.raw`);
   return new BlockContext(MerkleBlock, raw);
 };
 
-common.readCompact = function readCompact(name) {
-  const raw = common.readFile(`${name}.raw`);
+export function readCompact(name) {
+  const raw = readFile(`${name}.raw`);
   return new BlockContext(CompactBlock, raw);
 };
 
-common.readTX = function readTX(name) {
-  const raw = common.readFile(`${name}.raw`);
+export function readTX(name) {
+  const raw = readFile(`${name}.raw`);
 
-  if (!common.exists(`${name}-undo.raw`))
+  if (!exists(`${name}-undo.raw`))
     return new TXContext(raw);
 
-  const undoRaw = common.readFile(`${name}-undo.raw`);
+  const undoRaw = readFile(`${name}-undo.raw`);
 
   return new TXContext(raw, undoRaw);
 };
 
-common.writeBlock = function writeBlock(name, block, view) {
-  common.writeFile(`${name}.raw`, block.toRaw());
+export function writeBlock(name, block, view) {
+  writeFile(`${name}.raw`, block.toRaw());
 
   if (!view)
     return;
@@ -72,11 +75,11 @@ common.writeBlock = function writeBlock(name, block, view) {
   const undo = makeBlockUndo(block, view);
   const undoRaw = serializeUndo(undo);
 
-  common.writeFile(`${name}-undo.raw`, undoRaw);
+  writeFile(`${name}-undo.raw`, undoRaw);
 };
 
-common.writeTX = function writeTX(name, tx, view) {
-  common.writeFile(`${name}.raw`, tx.toRaw());
+export function writeTX(name, tx, view) {
+  writeFile(`${name}.raw`, tx.toRaw());
 
   if (!view)
     return;
@@ -84,17 +87,17 @@ common.writeTX = function writeTX(name, tx, view) {
   const undo = makeTXUndo(tx, view);
   const undoRaw = serializeUndo(undo);
 
-  common.writeFile(`${name}-undo.raw`, undoRaw);
+  writeFile(`${name}-undo.raw`, undoRaw);
 };
 
-common.testdir = function(name) {
+export function testdir(name) {
   assert(/^[a-z]+$/.test(name), 'Invalid name');
 
   const uniq = randomBytes(4).toString('hex');
   return path.join(tmpdir(), `ldogejs-test-${name}-${uniq}`);
 };
 
-common.rimraf = async function(p) {
+export async function rimraf(p) {
   const allowed = /ldogejs\-test\-[a-z]+\-[a-f0-9]{8}((\\|\/)[a-z]+)?$/;
   if (!allowed.test(p))
     throw new Error(`Path not allowed: ${p}.`);
@@ -102,7 +105,7 @@ common.rimraf = async function(p) {
   return await fs.rimraf(p);
 };
 
-common.forValue = async function(obj, key, val, timeout = 30000) {
+export async function forValue(obj, key, val, timeout = 30000) {
   assert(typeof obj === 'object');
   assert(typeof key === 'string');
 
@@ -210,9 +213,11 @@ class BlockContext {
     this.raw = raw;
     this.undoRaw = undoRaw || null;
   }
+
   getRaw() {
     return this.raw;
   }
+
   getBlock() {
     const Block = this.ctor;
     const block = Block.fromRaw(this.raw);
@@ -227,6 +232,7 @@ class BlockContext {
 
     return [block, view];
   }
+
   getHeaders() {
     return Headers.fromHead(this.raw);
   }
@@ -237,9 +243,11 @@ class TXContext {
     this.raw = raw;
     this.undoRaw = undoRaw || null;
   }
+
   getRaw() {
     return this.raw;
   }
+
   getTX() {
     const tx = TX.fromRaw(this.raw);
 

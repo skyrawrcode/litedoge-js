@@ -3,28 +3,29 @@
 
 'use strict';
 
-const assert = require('bsert');
-const {WalletClient} = require('../lib/client');
-const consensus = require('../lib/protocol/consensus');
-const util = require('../lib/utils/util');
-const hash256 = require('bcrypto/lib/hash256');
-const random = require('bcrypto/lib/random');
-const FullNode = require('../lib/node/fullnode');
-const WalletDB = require('../lib/wallet/walletdb');
-const WorkerPool = require('../lib/workers/workerpool');
-const Address = require('../lib/primitives/address');
-const MTX = require('../lib/primitives/mtx');
-const Coin = require('../lib/primitives/coin');
-const KeyRing = require('../lib/primitives/keyring');
-const Input = require('../lib/primitives/input');
-const Outpoint = require('../lib/primitives/outpoint');
-const Script = require('../lib/script/script');
-const HD = require('../lib/hd');
-const Wallet = require('../lib/wallet/wallet');
-const nodejsUtil = require('util');
-const HDPrivateKey = require('../lib/hd/private');
-const policy = require('../lib/protocol/policy');
-const {forValue} = require('./util/common');
+import hash256 from "bcrypto/lib/hash256.js";
+import random from "bcrypto/lib/random.js";
+import assert from "bsert";
+import nodejsUtil from "util";
+import {WalletClient} from "../dist/lib/client/index.js";
+import * as HD from "../dist/lib/hd/index.js";
+import {HDPrivateKey} from "../dist/lib/hd/private.js";
+import {FullNode} from "../dist/lib/node/fullnode.js";
+import {Address} from "../dist/lib/primitives/address.js";
+import {Coin} from "../dist/lib/primitives/coin.js";
+import {Input} from "../dist/lib/primitives/input.js";
+import {KeyRing} from "../dist/lib/primitives/keyring.js";
+import {MTX} from "../dist/lib/primitives/mtx.js";
+import {Outpoint} from "../dist/lib/primitives/outpoint.js";
+import * as consensus from "../dist/lib/protocol/consensus.js";
+import * as policy from "../dist/lib/protocol/policy.js";
+import {Script} from "../dist/lib/script/script.js";
+import * as util from "../dist/lib/utils/util.js";
+import {Wallet} from "../dist/lib/wallet/wallet.js";
+import {WalletDB} from "../dist/lib/wallet/walletdb.js";
+import {WorkerPool} from "../dist/lib/workers/workerpool.js";
+
+import {forValue} from "./util/common.js";
 
 const KEY1 = 'xprv9s21ZrQH143K3Aj6xQBymM31Zb4BVc7wxqfUhMZrzewdDVCt'
   + 'qUP9iWfcHgJofs25xbaUpCps9GDXj83NiWvQCAkWQhVj5J4CorfnpKX94AZ';
@@ -41,7 +42,7 @@ const workers = new WorkerPool({
   size: 2
 });
 
-const wdb = new WalletDB({ workers });
+const wdb = new WalletDB({workers});
 
 let currentWallet = null;
 let importedWallet = null;
@@ -57,7 +58,7 @@ function fromU32(num) {
 
 function curBlock(wdb) {
   return fakeBlock(wdb.state.height);
-};
+}
 
 function nextBlock(wdb) {
   return fakeBlock(wdb.state.height + 1);
@@ -84,10 +85,10 @@ function dummyInput() {
   return Input.fromOutpoint(new Outpoint(hash, 0));
 }
 
-async function testP2PKH( nesting) {
+async function testP2PKH(nesting) {
   const flags = Script.flags.STANDARD_VERIFY_FLAGS;
   const receiveAddress = nesting ? 'nestedAddress' : 'receiveAddress';
-  const type =  Address.types.PUBKEYHASH;
+  const type = Address.types.PUBKEYHASH;
   const wallet = await wdb.create({});
 
   const waddr = await wallet.receiveAddress();
@@ -98,12 +99,12 @@ async function testP2PKH( nesting) {
 
   const src = new MTX();
   src.addInput(dummyInput());
-  src.addOutput(await wallet[receiveAddress](), 5460 * 2);
-  src.addOutput(new Address(), 2 * 5460);
+  src.addOutput(await wallet.receiveAddress(), BigInt(5460 * 2));
+  src.addOutput(new Address(), BigInt(2 * 5460));
 
   const mtx = new MTX();
   mtx.addTX(src, 0);
-  mtx.addOutput(await wallet.receiveAddress(), 5460);
+  mtx.addOutput(await wallet.receiveAddress(), BigInt(5460));
 
   await wallet.sign(mtx);
 
@@ -112,7 +113,7 @@ async function testP2PKH( nesting) {
   assert(tx.verify(view, flags));
 }
 
-async function testP2SH( nesting) {
+async function testP2SH(nesting) {
   const flags = Script.flags.STANDARD_VERIFY_FLAGS;
   const receiveAddress = nesting ? 'nestedAddress' : 'receiveAddress';
   const receiveDepth = nesting ? 'nestedDepth' : 'receiveDepth';
@@ -229,7 +230,7 @@ async function testP2SH( nesting) {
   assert.strictEqual(tx.getFee(view), 10000);
 }
 
-describe('Wallet', function() {
+describe('Wallet', function () {
   this.timeout(process.browser ? 20000 : 5000);
 
   before(async () => {
@@ -255,7 +256,7 @@ describe('Wallet', function() {
   });
 
   it('should validate existing address', () => {
-    assert(Address.fromString('1KQ1wMNwXHUYj1nV2xzsRcKUH8gVFpTFUc', 'main'));
+    assert(Address.fromString('dawNdPDu6KSJZ5WnouC8X2yhA7ugphc1wh', 'main'));
   });
 
   it('should fail to validate invalid address', () => {
@@ -302,12 +303,12 @@ describe('Wallet', function() {
     // Input transaction (bare 1-of-2 multisig)
     const src = new MTX();
     src.addInput(dummyInput());
-    src.addOutput(script, 5460 * 2);
-    src.addOutput(new Address(), 5460 * 2);
+    src.addOutput(script, BigInt(5460 * 2));
+    src.addOutput(new Address(), BigInt(5460 * 2));
 
     const tx = new MTX();
     tx.addTX(src, 0);
-    tx.addOutput(await wallet.receiveAddress(), 5460);
+    tx.addOutput(await wallet.receiveAddress(), BigInt(5460));
 
     const maxSize = await tx.estimateSize();
 
@@ -325,13 +326,13 @@ describe('Wallet', function() {
     // balance: 51000
     const t1 = new MTX();
     t1.addInput(dummyInput());
-    t1.addOutput(await alice.receiveAddress(), 50000);
-    t1.addOutput(await alice.receiveAddress(), 1000);
+    t1.addOutput(await alice.receiveAddress(), BigInt(50000));
+    t1.addOutput(await alice.receiveAddress(), BigInt(1000));
 
     const t2 = new MTX();
     t2.addTX(t1, 0); // 50000
-    t2.addOutput(await alice.receiveAddress(), 24000);
-    t2.addOutput(await alice.receiveAddress(), 24000);
+    t2.addOutput(await alice.receiveAddress(), BigInt(24000));
+    t2.addOutput(await alice.receiveAddress(), BigInt(24000));
 
     // Save for later.
     doubleSpendWallet = alice;
@@ -343,7 +344,7 @@ describe('Wallet', function() {
     const t3 = new MTX();
     t3.addTX(t1, 1); // 1000
     t3.addTX(t2, 0); // 24000
-    t3.addOutput(await alice.receiveAddress(), 23000);
+    t3.addOutput(await alice.receiveAddress(), BigInt(23000));
 
     // balance: 47000
     await alice.sign(t3);
@@ -351,15 +352,15 @@ describe('Wallet', function() {
     const t4 = new MTX();
     t4.addTX(t2, 1); // 24000
     t4.addTX(t3, 0); // 23000
-    t4.addOutput(await alice.receiveAddress(), 11000);
-    t4.addOutput(await alice.receiveAddress(), 11000);
+    t4.addOutput(await alice.receiveAddress(), BigInt(11000));
+    t4.addOutput(await alice.receiveAddress(), BigInt(11000));
 
     // balance: 22000
     await alice.sign(t4);
 
     const f1 = new MTX();
     f1.addTX(t4, 1); // 11000
-    f1.addOutput(await bob.receiveAddress(), 10000);
+    f1.addOutput(await bob.receiveAddress(), BigInt(10000));
 
     // balance: 11000
     await alice.sign(f1);
@@ -368,35 +369,35 @@ describe('Wallet', function() {
       await wdb.addTX(t4.toTX());
 
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 22000);
+      assert.strictEqual(balance.unconfirmed, BigInt(22000));
     }
 
     {
       await wdb.addTX(t1.toTX());
 
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 73000);
+      assert.strictEqual(balance.unconfirmed, BigInt(73000));
     }
 
     {
       await wdb.addTX(t2.toTX());
 
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 71000);
+      assert.strictEqual(balance.unconfirmed, BigInt(71000));
     }
 
     {
       await wdb.addTX(t3.toTX());
 
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 69000);
+      assert.strictEqual(balance.unconfirmed, BigInt(69000));
     }
 
     {
       await wdb.addTX(f1.toTX());
 
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 58000);
+      assert.strictEqual(balance.unconfirmed, BigInt(58000));
 
       const txs = await alice.getHistory();
       assert(txs.some((wtx) => {
@@ -406,7 +407,7 @@ describe('Wallet', function() {
 
     {
       const balance = await bob.getBalance();
-      assert.strictEqual(balance.unconfirmed, 10000);
+      assert.strictEqual(balance.unconfirmed, BigInt(10000));
 
       const txs = await bob.getHistory();
       assert(txs.some((wtx) => {
@@ -425,8 +426,8 @@ describe('Wallet', function() {
 
     {
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 11000);
-      assert.strictEqual(balance.confirmed, 11000);
+      assert.strictEqual(balance.unconfirmed, BigInt(11000));
+      assert.strictEqual(balance.confirmed, BigInt(11000));
 
       const txs = await alice.getHistory();
       assert(txs.some((wtx) => {
@@ -436,8 +437,8 @@ describe('Wallet', function() {
 
     {
       const balance = await bob.getBalance();
-      assert.strictEqual(balance.unconfirmed, 10000);
-      assert.strictEqual(balance.confirmed, 10000);
+      assert.strictEqual(balance.unconfirmed, BigInt(10000));
+      assert.strictEqual(balance.confirmed, BigInt(10000));
 
       const txs = await bob.getHistory();
       assert(txs.some((wtx) => {
@@ -459,12 +460,12 @@ describe('Wallet', function() {
       const total = txs.reduce((t, wtx) => {
         return t + wtx.tx.getOutputValue();
       }, 0);
-      assert.strictEqual(total, 154000);
+      assert.strictEqual(total, BigInt(154000));
     }
 
     {
       const balance = await wallet.getBalance();
-      assert.strictEqual(balance.unconfirmed, 11000);
+      assert.strictEqual(balance.unconfirmed, BigInt(11000));
       assert.strictEqual(balance.confirmed, 0);
     }
 
@@ -498,9 +499,9 @@ describe('Wallet', function() {
     const t1 = new MTX();
     const input = dummyInput();
     t1.addInput(input);
-    t1.addOutput(await wallet.receiveAddress(), 50000);
+    t1.addOutput(await wallet.receiveAddress(), BigInt(50000));
     await wdb.addTX(t1.toTX());
-    assert.strictEqual((await wallet.getBalance()).unconfirmed, 50000);
+    assert.strictEqual((await wallet.getBalance()).unconfirmed, BigInt(50000));
 
     let conflict = 0;
     wallet.on('conflict', () => {
@@ -509,10 +510,10 @@ describe('Wallet', function() {
 
     const t2 = new MTX();
     t2.addInput(input);
-    t2.addOutput(new Address(), 5000);
+    t2.addOutput(new Address(), BigInt(5000));
     await wdb.addTX(t2.toTX());
     assert.strictEqual(conflict, 1);
-    assert.strictEqual((await wallet.getBalance()).unconfirmed, 0);
+    assert.strictEqual((await wallet.getBalance()).unconfirmed, BigInt(0));
   });
 
   it('should handle double-spend (multiple inputs)', async () => {
@@ -526,9 +527,9 @@ describe('Wallet', function() {
     const txa = new MTX();
     txa.addInput(input0);
     txa.addInput(input1);
-    txa.addOutput(address, 50000);
+    txa.addOutput(address, BigInt(50000));
     await wdb.addTX(txa.toTX());
-    assert.strictEqual((await wallet.getBalance()).unconfirmed, 50000);
+    assert.strictEqual((await wallet.getBalance()).unconfirmed, BigInt(50000));
 
     let conflict = 0;
     wallet.on('conflict', () => {
@@ -538,11 +539,11 @@ describe('Wallet', function() {
     const txb = new MTX();
     txb.addInput(input0);
     txb.addInput(input1);
-    txb.addOutput(address, 49000);
+    txb.addOutput(address, BigInt(49000));
     await wdb.addTX(txb.toTX());
 
     assert.strictEqual(conflict, 1);
-    assert.strictEqual((await wallet.getBalance()).unconfirmed, 49000);
+    assert.strictEqual((await wallet.getBalance()).unconfirmed, BigInt(49000));
   });
 
   it('should handle double-spend (with block)', async () => {
@@ -556,9 +557,9 @@ describe('Wallet', function() {
     const txa = new MTX();
     txa.addInput(input0);
     txa.addInput(input1);
-    txa.addOutput(address, 50000);
+    txa.addOutput(address, BigInt(50000));
     await wdb.addTX(txa.toTX());
-    assert.strictEqual((await wallet.getBalance()).unconfirmed, 50000);
+    assert.strictEqual((await wallet.getBalance()).unconfirmed, BigInt(50000));
 
     let conflict = 0;
     wallet.on('conflict', () => {
@@ -568,12 +569,12 @@ describe('Wallet', function() {
     const txb = new MTX();
     txb.addInput(input0);
     txb.addInput(input1);
-    txb.addOutput(address, 49000);
+    txb.addOutput(address, BigInt(49000));
 
     await wdb.addBlock(nextBlock(wdb), [txb.toTX()]);
     assert.strictEqual(conflict, 1);
-    assert.strictEqual((await wallet.getBalance()).unconfirmed, 49000);
-    assert.strictEqual((await wallet.getBalance()).confirmed, 49000);
+    assert.strictEqual((await wallet.getBalance()).unconfirmed, BigInt(49000));
+    assert.strictEqual((await wallet.getBalance()).confirmed, BigInt(49000));
   });
 
   it('should recover from interrupt when removing conflict', async () => {
@@ -587,11 +588,11 @@ describe('Wallet', function() {
     const txa = new MTX();
     txa.addInput(input0);
     txa.addInput(input1);
-    txa.addOutput(address, 50000);
+    txa.addOutput(address, BigInt(50000));
 
     await wdb.addTX(txa.toTX());
-    assert.strictEqual((await wallet.getBalance()).unconfirmed, 50000);
-    assert.strictEqual((await wallet.getBalance()).confirmed, 0);
+    assert.strictEqual((await wallet.getBalance()).unconfirmed, BigInt(50000));
+    assert.strictEqual((await wallet.getBalance()).confirmed, BigInt(0));
 
     let conflict = 0;
     wallet.on('conflict', () => {
@@ -601,7 +602,7 @@ describe('Wallet', function() {
     const txb = new MTX();
     txb.addInput(input0);
     txb.addInput(input1);
-    txb.addOutput(address, 49000);
+    txb.addOutput(address, BigInt(49000));
 
     assert.strictEqual(wdb.height, 1);
 
@@ -623,15 +624,15 @@ describe('Wallet', function() {
     wallet.txdb.removeConflict = removeConflict;
 
     assert.strictEqual(conflict, 0);
-    assert.strictEqual((await wallet.getBalance()).unconfirmed, 50000);
-    assert.strictEqual((await wallet.getBalance()).confirmed, 0);
+    assert.strictEqual((await wallet.getBalance()).unconfirmed, BigInt(50000));
+    assert.strictEqual((await wallet.getBalance()).confirmed, BigInt(0));
     assert.strictEqual(wdb.height, 1);
 
     await wdb.addBlock(entry, [txb.toTX()]);
 
     assert.strictEqual(conflict, 1);
-    assert.strictEqual((await wallet.getBalance()).unconfirmed, 49000);
-    assert.strictEqual((await wallet.getBalance()).confirmed, 49000);
+    assert.strictEqual((await wallet.getBalance()).unconfirmed, BigInt(49000));
+    assert.strictEqual((await wallet.getBalance()).confirmed, BigInt(49000));
     assert.strictEqual(wdb.height, 2);
   });
 
@@ -642,15 +643,15 @@ describe('Wallet', function() {
     // Coinbase
     const t1 = new MTX();
     t1.addInput(dummyInput());
-    t1.addOutput(await alice.receiveAddress(), 50000);
-    t1.addOutput(await alice.receiveAddress(), 1000);
+    t1.addOutput(await alice.receiveAddress(), BigInt(50000));
+    t1.addOutput(await alice.receiveAddress(), BigInt(1000));
 
     // balance: 51000
 
     const t2 = new MTX();
     t2.addTX(t1, 0); // 50000
-    t2.addOutput(await alice.receiveAddress(), 24000);
-    t2.addOutput(await alice.receiveAddress(), 24000);
+    t2.addOutput(await alice.receiveAddress(), BigInt(24000));
+    t2.addOutput(await alice.receiveAddress(), BigInt(24000));
 
     // balance: 49000
     await alice.sign(t2);
@@ -658,7 +659,7 @@ describe('Wallet', function() {
     const t3 = new MTX();
     t3.addTX(t1, 1); // 1000
     t3.addTX(t2, 0); // 24000
-    t3.addOutput(await alice.receiveAddress(), 23000);
+    t3.addOutput(await alice.receiveAddress(), BigInt(23000));
 
     // balance: 47000
     await alice.sign(t3);
@@ -666,15 +667,15 @@ describe('Wallet', function() {
     const t4 = new MTX();
     t4.addTX(t2, 1); // 24000
     t4.addTX(t3, 0); // 23000
-    t4.addOutput(await alice.receiveAddress(), 11000);
-    t4.addOutput(await alice.receiveAddress(), 11000);
+    t4.addOutput(await alice.receiveAddress(), BigInt(11000));
+    t4.addOutput(await alice.receiveAddress(), BigInt(11000));
 
     // balance: 22000
     await alice.sign(t4);
 
     const f1 = new MTX();
     f1.addTX(t4, 1); // 11000
-    f1.addOutput(await bob.receiveAddress(), 10000);
+    f1.addOutput(await bob.receiveAddress(), BigInt(10000));
 
     // balance: 11000
     await alice.sign(f1);
@@ -682,32 +683,33 @@ describe('Wallet', function() {
     {
       await wdb.addTX(t4.toTX());
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 22000);
+      assert.strictEqual(balance.unconfirmed, BigInt(22000));
     }
 
     {
       await wdb.addTX(t1.toTX());
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 73000);
+      assert.strictEqual(balance.unconfirmed, BigInt(73000));
     }
 
     {
       await wdb.addTX(t2.toTX());
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 71000);
+      assert.strictEqual(balance.unconfirmed, BigInt(71000));
     }
 
     {
       await wdb.addTX(t3.toTX());
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 69000);
+      assert.strictEqual(balance.unconfirmed, BigInt(69000));
     }
 
     {
       await wdb.addTX(f1.toTX());
 
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 58000);
+      //broke
+      assert.strictEqual(balance.unconfirmed, BigInt(58000));
 
       const txs = await alice.getHistory();
       assert(txs.some((wtx) => {
@@ -717,7 +719,7 @@ describe('Wallet', function() {
 
     {
       const balance = await bob.getBalance();
-      assert.strictEqual(balance.unconfirmed, 10000);
+      assert.strictEqual(balance.unconfirmed, BigInt(10000));
 
       const txs = await bob.getHistory();
       assert(txs.some((wtx) => {
@@ -736,12 +738,12 @@ describe('Wallet', function() {
 
     {
       const balance = await alice.getBalance();
-      assert.strictEqual(balance.unconfirmed, 11000);
+      assert.strictEqual(balance.unconfirmed, BigInt(11000));
     }
 
     {
       const balance = await bob.getBalance();
-      assert.strictEqual(balance.unconfirmed, 10000);
+      assert.strictEqual(balance.unconfirmed, BigInt(10000));
     }
   });
 
@@ -752,19 +754,19 @@ describe('Wallet', function() {
     // Coinbase
     const t1 = new MTX();
     t1.addInput(dummyInput());
-    t1.addOutput(await alice.receiveAddress(), 5460);
-    t1.addOutput(await alice.receiveAddress(), 5460);
-    t1.addOutput(await alice.receiveAddress(), 5460);
-    t1.addOutput(await alice.receiveAddress(), 5460);
+    t1.addOutput(await alice.receiveAddress(), BigInt(5460));
+    t1.addOutput(await alice.receiveAddress(), BigInt(5460));
+    t1.addOutput(await alice.receiveAddress(), BigInt(5460));
+    t1.addOutput(await alice.receiveAddress(), BigInt(5460));
 
     await wdb.addTX(t1.toTX());
 
     // Create new transaction
     const m2 = new MTX();
-    m2.addOutput(await bob.receiveAddress(), 5460);
+    m2.addOutput(await bob.receiveAddress(), BigInt(5460));
 
     await alice.fund(m2, {
-      rate: 10000,
+      rate: BigInt(10000),
       round: true
     });
 
@@ -774,18 +776,18 @@ describe('Wallet', function() {
 
     assert(t2.verify(v2));
 
-    assert.strictEqual(t2.getInputValue(v2), 16380);
-    assert.strictEqual(t2.getOutputValue(), 6380);
-    assert.strictEqual(t2.getFee(v2), 10000);
+    assert.strictEqual(t2.getInputValue(v2), BigInt(16380));
+    assert.strictEqual(t2.getOutputValue(), BigInt(6380));
+    assert.strictEqual(t2.getFee(v2), BigInt(10000));
 
     // Create new transaction
     const t3 = new MTX();
-    t3.addOutput(await bob.receiveAddress(), 15000);
+    t3.addOutput(await bob.receiveAddress(), BigInt(15000));
 
     let err;
     try {
       await alice.fund(t3, {
-        rate: 10000,
+        rate: BigInt(10000),
         round: true
       });
     } catch (e) {
@@ -793,7 +795,7 @@ describe('Wallet', function() {
     }
 
     assert(err);
-    assert.strictEqual(err.requiredFunds, 25000);
+    assert.strictEqual(err.requiredFunds, BigInt(25000));
   });
 
   it('should fill tx with inputs with accurate fee', async () => {
@@ -922,7 +924,7 @@ describe('Wallet', function() {
   });
 
   it('should verify 2-of-3 p2sh tx', async () => {
-    await testP2SH( false);
+    await testP2SH(false);
   });
 
 
@@ -968,11 +970,11 @@ describe('Wallet', function() {
     const wallet = await wdb.create();
     const name = 'foo';
 
-    await wallet.createAccount({ name });
+    await wallet.createAccount({name});
 
     let err;
     try {
-      await wallet.createAccount({ name });
+      await wallet.createAccount({name});
     } catch (e) {
       err = e;
     }
@@ -1239,7 +1241,7 @@ describe('Wallet', function() {
       subtractFee: true,
       rate: 10000,
       round: true,
-      outputs: [{ address: await bob.receiveAddress(), value: 21840 }]
+      outputs: [{address: await bob.receiveAddress(), value: 21840}]
     };
 
     // Create new transaction
@@ -1292,7 +1294,7 @@ describe('Wallet', function() {
       subtractFee: true,
       rate: 1000,
       depth: 1,
-      outputs: [{ address: await bob.receiveAddress(), value: 1461 }]
+      outputs: [{address: await bob.receiveAddress(), value: 1461}]
     });
 
     const coins = await alice.getSmartCoins();
@@ -1354,36 +1356,36 @@ describe('Wallet', function() {
     assert(t3.verify());
   });
 
-    it(`should create non-templated tx)`, async () => {
-      const wallet = await wdb.create({ });
+  it(`should create non-templated tx)`, async () => {
+    const wallet = await wdb.create({});
 
-      // Fund wallet
-      const t1 = new MTX();
-      t1.addInput(dummyInput());
-      t1.addOutput(await wallet.receiveAddress(), 500000);
+    // Fund wallet
+    const t1 = new MTX();
+    t1.addInput(dummyInput());
+    t1.addOutput(await wallet.receiveAddress(), 500000);
 
-      await wdb.addTX(t1.toTX());
+    await wdb.addTX(t1.toTX());
 
-      const options = {
-        rate: 10000,
-        round: true,
-        outputs: [{
-          address: await wallet.receiveAddress(),
-          value: 7000
-        }],
-        template: false
-      };
+    const options = {
+      rate: 10000,
+      round: true,
+      outputs: [{
+        address: await wallet.receiveAddress(),
+        value: 7000
+      }],
+      template: false
+    };
 
-      const t2 = await wallet.createTX(options);
+    const t2 = await wallet.createTX(options);
 
-      assert(t2, 'Could not create tx.');
+    assert(t2, 'Could not create tx.');
 
-      for (const input of t2.inputs) {
-        const {script} = input;
+    for (const input of t2.inputs) {
+      const {script} = input;
 
-        assert.strictEqual(script.length, 0, 'Input is templated.');
-      }
-    });
+      assert.strictEqual(script.length, 0, 'Input is templated.');
+    }
+  });
 
 
   it('should get range of txs', async () => {
@@ -1440,10 +1442,10 @@ describe('Wallet', function() {
 
     // Coinbase
     const t1 = new MTX();
-    t1.addOutput(key.getAddress(), 5460);
-    t1.addOutput(key.getAddress(), 5460);
-    t1.addOutput(key.getAddress(), 5460);
-    t1.addOutput(key.getAddress(), 5460);
+    t1.addOutput(key.getAddress(), BigInt(5460));
+    t1.addOutput(key.getAddress(), BigInt(5460));
+    t1.addOutput(key.getAddress(), BigInt(5460));
+    t1.addOutput(key.getAddress(), BigInt(5460));
 
     t1.addInput(dummyInput());
 
@@ -1454,11 +1456,11 @@ describe('Wallet', function() {
     assert.bufferEqual(t1.hash(), wtx.hash);
 
     const options = {
-      rate: 10000,
+      rate: BigInt(10000),
       round: true,
       outputs: [{
         address: await wallet.receiveAddress(),
-        value: 7000
+        value: BigInt(7000)
       }]
     };
 
@@ -1596,7 +1598,7 @@ describe('Wallet', function() {
   });
 
   it('should recover from a missed tx', async () => {
-    const wdb = new WalletDB({ workers });
+    const wdb = new WalletDB({workers});
     await wdb.open();
 
     const alice = await wdb.create({
@@ -1657,7 +1659,7 @@ describe('Wallet', function() {
   });
 
   it('should recover from a missed tx and double spend', async () => {
-    const wdb = new WalletDB({ workers });
+    const wdb = new WalletDB({workers});
     await wdb.open();
 
     const alice = await wdb.create({
@@ -1794,7 +1796,7 @@ describe('Wallet', function() {
 
         const key2 = await wallet.getKey(address);
         assert(key2, `Could not get key for ${address.toString()}` +
-          `, Key: xpub/${type.branch}/${i+1}`);
+          `, Key: xpub/${type.branch}/${i + 1}`);
 
         assert.strictEqual(key2.name, key1.name);
         assert.strictEqual(key2.account, key1.account);
@@ -1815,10 +1817,10 @@ describe('Wallet', function() {
     let err = null;
 
     try {
-       await wallet.send({outputs: []});
+      await wallet.send({outputs: []});
     } catch (e) {
       err = e;
-   }
+    }
 
     assert(err);
     assert.equal(err.message, 'At least one output required.');
@@ -2068,7 +2070,7 @@ describe('Wallet', function() {
       const tx = await wallet.send({
         outputs: [{
           address: recAddr,
-          value: 10000
+          value: BigInt(10000)
         }]
       });
       assert(await wallet.txdb.hasPending(tx.hash()));
@@ -2083,7 +2085,7 @@ describe('Wallet', function() {
       await wallet.send({
         outputs: [{
           address: recAddr,
-          value: 10000
+          value: BigInt(10000)
         }]
       });
     }, {
@@ -2091,7 +2093,7 @@ describe('Wallet', function() {
     });
   });
 
-  describe('Corruption', function() {
+  describe('Corruption', function () {
     let workers = null;
     let wdb = null;
 
@@ -2101,7 +2103,7 @@ describe('Wallet', function() {
         size: 2
       });
 
-      wdb = new WalletDB({ workers });
+      wdb = new WalletDB({workers});
       await workers.open();
       await wdb.open();
     });
@@ -2155,7 +2157,7 @@ describe('Wallet', function() {
     });
   });
 
-  describe('Node Integration', function() {
+  describe('Node Integration', function () {
     const ports = {p2p: 49331, node: 49332, wallet: 49333};
     let node, chain, miner, wdb = null;
 

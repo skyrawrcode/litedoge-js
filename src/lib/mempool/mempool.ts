@@ -757,7 +757,7 @@ export class Mempool extends EventEmitter {
    * @returns {Promise}
    */
 
-  async insertTX(tx, id) {
+  async insertTX(tx: TX, id) {
     assert(!tx.mutable, 'Cannot add mutable TX to mempool.');
 
     const lockFlags = common.LockFlags.STANDARD_LOCKTIME_FLAGS;
@@ -783,17 +783,6 @@ export class Mempool extends EventEmitter {
       throw new VerifyError(tx, 'invalid', 'coinstake', 100);
     }
 
-
-    // TODO:: erase maybe
-    // // Do not allow CSV until it's activated.
-    // if (this.options.requireStandard) {
-    //   if (!this.chain.state.hasCSV() && tx.version >= 2) {
-    //     throw new VerifyError(tx,
-    //       'nonstandard',
-    //       'premature-version2-tx',
-    //       0);
-    //   }
-    // }
 
     // Non-contextual standardness checks.
     if (this.options.requireStandard) {
@@ -822,8 +811,7 @@ export class Mempool extends EventEmitter {
 
     // We can maybe ignore this.
     if (this.exists(hash)) {
-      throw new VerifyError(tx,
-        'alreadyknown',
+      throw new VerifyError(tx, 'alreadyknown',
         'txn-already-in-mempool',
         0);
     }

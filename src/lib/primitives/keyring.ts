@@ -414,7 +414,7 @@ export class KeyRing implements KeyRingOptions {
    * @returns {Script}
    */
 
-  getScript() {
+  getScript(): Script {
     return this.script;
   }
 

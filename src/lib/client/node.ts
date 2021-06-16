@@ -236,7 +236,7 @@ export class NodeClient extends Client {
    * @returns {Promise}
    */
 
-  getHashes(start, end) {
+  getHashes(start?, end?) {
     return this.call('get hashes', start, end);
   }
 

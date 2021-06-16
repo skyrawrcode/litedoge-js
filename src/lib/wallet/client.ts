@@ -12,6 +12,7 @@ import {NodeClient} from '../client/node.js';
 import * as util from '../utils/util.js';
 import {TX} from '../primitives/tx.js';
 import hash256 from 'bcrypto/lib/hash256.js';
+import {ChainEntry} from "../blockchain";
 
 const parsers = {
   'block connect': (entry, txs) => parseBlock(entry, txs),

@@ -20,13 +20,24 @@ import {Lock} from 'bmutex';
 import {LoggerContext} from 'blgr/lib/logger';
 
 
-import {Balance, Details, TXDB} from './txdb.js';
+import {Balance, Credit, Details, TXDB} from './txdb.js';
 import {Path} from './path.js';
 import * as common from './common.js';
 import {Script} from '../script/script.js';
 import {WalletKey} from './walletkey.js';
 import * as HD from '../hd/hd.js';
-import {Address, CoinSelector, Input, KeyRing, MTX, Output, TX} from '../primitives/index.js';
+import {
+  AbstractBlock,
+  Address,
+  Coin,
+  CoinSelector,
+  Input,
+  KeyRing, MAX_FEE,
+  MTX,
+  Outpoint,
+  Output,
+  TX
+} from '../primitives/index.js';
 import {Account} from './account.js';
 import {MasterKey} from './masterkey.js';
 import {consensus, Network, policy} from '../protocol/index.js';
@@ -35,6 +46,7 @@ import {WalletDB} from './walletdb.js';
 import {Kernel, StakeKernel} from '../staking/kernel.js';
 import {SighashType} from '../script/common.js';
 import {TXRecord} from './records.js';
+import {ChainEntry} from "../blockchain";
 
 const scriptTypes = Script.types;
 const {encoding} = bio;
@@ -1181,7 +1193,7 @@ export class Wallet extends EventEmitter {
       estimate: prev => this.estimateSize(prev)
     });
 
-    assert(mtx.getFee() <= CoinSelector.MAX_FEE, 'TX exceeds MAX_FEE.');
+    assert(mtx.getFee() <= MAX_FEE, 'TX exceeds MAX_FEE.');
   }
 
   /**
@@ -1412,8 +1424,8 @@ export class Wallet extends EventEmitter {
 
     let fee = tx.getMinFee(null, rate);
 
-    if (fee > CoinSelector.MAX_FEE)
-      fee = CoinSelector.MAX_FEE;
+    if (fee > MAX_FEE)
+      fee = MAX_FEE;
 
     if (oldFee >= fee)
       throw new Error('Fee is not increasing.');
@@ -1746,7 +1758,7 @@ export class Wallet extends EventEmitter {
    * of inputs scripts built and signed).
    */
 
-  async sign(mtx, passphrase) {
+  async sign(mtx, passphrase): Promise<any> {
     if (this.watchOnly)
       throw new Error('Cannot sign from a watch-only wallet.');
 
@@ -2094,10 +2106,11 @@ export class Wallet extends EventEmitter {
    * @param acct
    * @returns {Promise<module:wallet.Credit[]>}
    */
-  async getStakableCredits(acct) {
+  async getStakableCredits(acct): Promise<Credit[]> {
     const credits = await this.getCredits(acct);
-    const stackableCredits = [];
+    const eligibleForStaking: Credit[] = [];
     for (const credit of credits) {
+
       const coin = credit.coin;
 
       if (credit.spent)
@@ -2108,7 +2121,7 @@ export class Wallet extends EventEmitter {
 
       // Always use confirmed coins.
       if (coin.height !== -1) {
-        stackableCredits.push(credit);
+        eligibleForStaking.push(credit);
         continue;
       }
 
@@ -2120,7 +2133,7 @@ export class Wallet extends EventEmitter {
       if (!credit.own)
         continue;
 
-      if (coin.getBlocksToMaturity(this.wdb.state.height) > 0)
+      if (coin.getBlocksToMaturity(this.network, this.wdb.state.height) > 0)
         continue;
 
       const depth = coin.getDepth(this.wdb.state.height);
@@ -2128,10 +2141,10 @@ export class Wallet extends EventEmitter {
         continue;
 
 
-      stackableCredits.push(credit);
+      eligibleForStaking.push(credit);
     }
 
-    return stackableCredits;
+    return eligibleForStaking;
   }
 
   /**
@@ -2317,9 +2330,9 @@ export class Wallet extends EventEmitter {
    * @param {number} bits
    * @param {number} time
    * @param {number} searchInterval
-   * @returns {{coinStake:module:primitives.TX, keyRing: module:primitives.KeyRing}}
    */
-  async createCoinStake(bits, time, searchInterval) {
+  async createCoinStake(bits: number, time: number, searchInterval: number) {
+
     const logger = this.logger.context('coinstake');
     let tip = this.wdb.state.height; //maybe not this
     let prev = await this.wdb.getEntry(tip);
@@ -2343,6 +2356,7 @@ export class Wallet extends EventEmitter {
     const maxStakeSearchInterval = 60;
     let credit = 0n;
     let walletKey = null;
+    //For each one of my coins check if I have a kernel.
     for (const unReservedCredit of unReservedCredits) {
       //Get the chain entry
       const coin = unReservedCredit.coin;
@@ -2356,28 +2370,30 @@ export class Wallet extends EventEmitter {
       const interval = Math.min(searchInterval, maxStakeSearchInterval);
 
       const kernel = await this.findKernel(prev, bits, blockFrom, prevTx.tx, coin, time, interval)
-      if (!kernel) break;
+      if (!kernel) {
+        continue;
+      }
       logger.info("Woah! We found a kernel.")
 
       // get the signing key of the kernel so we can make a new one.
       walletKey = await this.getCoinSigningKey(coin);
       if (!walletKey) break;
-      const scriptPubKeyOut = walletKey.getScript();
+      const scriptPubKeyOut = Script.fromPubkey(walletKey.getPublicKey())
 
       coinStakeTx.time -= kernel.interval;
       coinStakeTx.addInput(Input.fromCoin(coin));
       credit += coin.value;
-      // vwtxPrev.push_back(pcoin.first); I'm not sure i need this.
       coinStakeTx.addOutput(Output.fromScript(scriptPubKeyOut, 0n));
 
       if (this.kernel.getStakeWeight(blockFrom.time, coinStakeTx.time) < StakeSplitAge)
         coinStakeTx.addOutput(Output.fromScript(scriptPubKeyOut, 0n)); //split stake
       logger.info("Added kernel type=%s", walletKey.getType());
-
     }
 
-    if (!walletKey)
+    if (!walletKey) {
+      logger.debug(`No Kernel Found`)
       return null;
+    }
 
     if (credit === 0n || credit > balance.confirmed - this.wdb.reserveBalance)
       return null;
@@ -2414,6 +2430,7 @@ export class Wallet extends EventEmitter {
     return {coinstake: coinStakeTx, keyRing: walletKey};
   }
 
+
   /**
    *
    * @param {ChainEntry} prev
@@ -2425,7 +2442,7 @@ export class Wallet extends EventEmitter {
    * @param {number} searchInterval
    * @returns {}
    */
-  async findKernel(prev, bits, blockFrom, prevTx, coin, time, searchInterval): Promise<{ interval: number; kernel: StakeKernel; }> {
+  async findKernel(prev: ChainEntry, bits: number, blockFrom: ChainEntry, prevTx: TX, coin: Coin | Outpoint, time: number, searchInterval: number): Promise<{ interval: number; kernel: StakeKernel; }> {
     let kernelFound = false;
     for (let n = 0; n < searchInterval && !kernelFound && prev.height === this.wdb.state.height; n++) {
       // Search backward in time from the given txNew timestamp
@@ -2442,7 +2459,7 @@ export class Wallet extends EventEmitter {
    * @param targetBalance
    * @returns {Promise<module:wallet.Credit[]>}
    */
-  async getUnreservedStakingCoins(targetBalance) {
+  async getUnreservedStakingCoins(targetBalance): Promise<Credit[]> {
     const stakableCredits = await this.getStakableCredits(0)
     const unReservedStakingCredits = [];
     let value = 0n;

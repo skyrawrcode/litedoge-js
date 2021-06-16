@@ -17,17 +17,25 @@ import bweb from "bweb";
 
 import {Network} from '../protocol/network.js';
 import {WorkerPool} from '../workers/workerpool.js';
-import { TX, TXMeta } from '../primitives/index.js';
+import {TX, TXMeta} from '../primitives/index.js';
+import {Mempool} from "../mempool";
+
 const RPCBase = bweb.RPC;
 
 export interface Node {
-  getBlockFilter?(hash:Buffer):Promise<any>;
-  close?():Promise<any>;
-  hasTX?(hash:Buffer):Promise<boolean>;
-  getMeta?(hash:Buffer):Promise<TXMeta>;
-  relay?(TX:TX):Promise<void>;
-  sendTX?(TX:TX):Promise<void>;
+  getBlockFilter?(hash: Buffer): Promise<any>;
+
+  close?(): Promise<any>;
+
+  hasTX?(hash: Buffer): Promise<boolean>;
+
+  getMeta?(hash: Buffer): Promise<TXMeta>;
+
+  relay?(TX: TX): Promise<void>;
+
+  sendTX?(TX: TX): Promise<void>;
 }
+
 /**
  * Node
  * Base class from which every other
@@ -39,14 +47,14 @@ export interface Node {
 
 export abstract class Node extends EventEmitter {
   config: Config;
-  network:Network
+  network: Network
   // @ts-ignore
   rpc: any;
-  memory:boolean;
-  startTime:number;
+  memory: boolean;
+  startTime: number;
   plugins: any;
   stack: any[];
-  bound:[EventEmitter, string, (...args: any[]) => void][];
+  bound: [EventEmitter, string, (...args: any[]) => void][];
   logger = null;
   workers = null;
 
@@ -54,7 +62,7 @@ export abstract class Node extends EventEmitter {
   blocks = null;
   chain = null;
   fees = null;
-  mempool = null;
+  mempool: Mempool = null;
   pool = null;
   miner = null;
   http = null;
@@ -63,6 +71,7 @@ export abstract class Node extends EventEmitter {
   filterindex = null;
   staker = null;
   loaded: any;
+
   /**
    * Create a node.
    * @constructor
@@ -272,7 +281,7 @@ export abstract class Node extends EventEmitter {
    * @param {Function} listener
    */
 
-  _bind(obj:EventEmitter, event:string, listener:(...args: any[]) => void) {
+  _bind(obj: EventEmitter, event: string, listener: (...args: any[]) => void) {
     this.bound.push([obj, event, listener]);
     obj.on(event, listener);
   }
@@ -428,7 +437,7 @@ export abstract class Node extends EventEmitter {
     }
   }
 
-  
+
   /**
    * Open plugins.
    * @private

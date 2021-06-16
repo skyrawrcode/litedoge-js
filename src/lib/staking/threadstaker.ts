@@ -19,12 +19,12 @@ import {Chain} from '../blockchain/index.js';
 import {Pool} from '../net/index.js';
 import {Kernel} from './kernel.js';
 import {BlockTemplate} from '../mining/index.js';
-import {Wallet} from '../wallet/index.js';
+import {Wallet} from '../wallet/wallet.js';
 
 /**
  * Thread Staker
- * @property {module:blockchain.Chain} chain
- * @property {module:protocol.Network} network
+ * @property  chain
+ * @property  network
  * @alias module:staking.ThreadStaker
  */
 
@@ -319,7 +319,7 @@ export class ThreadStaker extends EventEmitter {
     const isProtocolV2 = this.network.isProtocolV2(this.wallet.wdb.height + 1);
 
     // startup timestamp
-    this.lastSearchTime = this.lastSearchTime ||  util.now();
+    this.lastSearchTime = this.lastSearchTime || util.now();
 
     let coinStakeTime = util.now();
     if (isProtocolV2)

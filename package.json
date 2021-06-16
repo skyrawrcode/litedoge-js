@@ -83,7 +83,7 @@
   ],
   "devDependencies": {
     "@types/node": "^15.3.0",
-    "bmocha": "git+https://github.com/bcoin-org/bmocha.git#semver:=2.1.5",
+    "mocha": "^9.0.0",
     "nyc": "^15.1.0",
     "tslib": "^2.2.0",
     "typescript": "^4.2.4"
@@ -107,10 +107,10 @@
     "lint": "eslint $(cat .eslintfiles) || exit 0",
     "lint-ci": "eslint $(cat .eslintfiles)",
     "lint-file": "eslint",
-    "test": "bmocha --reporter spec test/*.js",
-    "test-browser": "NODE_BACKEND=js bmocha --reporter spec test/*.js",
-    "test-file": "bmocha --reporter spec",
-    "test-file-browser": "NODE_BACKEND=js bmocha --reporter spec",
+    "test": "mocha --reporter spec test/*.js",
+    "test-browser": "NODE_BACKEND=js mocha --reporter spec test/*.js",
+    "test-file": "mocha --reporter spec",
+    "test-file-browser": "NODE_BACKEND=js mocha --reporter spec",
     "test-ci": "nyc -a -n 'lib/**/*.js' --reporter=lcov --reporter=text npm run test"
   },
   "browser": {

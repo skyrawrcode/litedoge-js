@@ -394,14 +394,14 @@ export class Coin extends Output {
   }
 
   /**
-   * @param {Network} network
+   * @param network
+   * @param tipHeight
    */
-  getBlocksToMaturity(network: Network, tipHeight) {
+  getBlocksToMaturity(network: Network, tipHeight: number) {
     network = Network.get(network);
 
     if (!(this.coinbase || this.coinstake))
       return 0;
-    debugger;
     return Math.max(0, ((network.pos.coinbaseMaturity + 1) - this.getDepth(tipHeight)));
   }
 

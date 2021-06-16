@@ -30,6 +30,8 @@ import * as  records from './records.js';
 import {NullClient} from './nullclient.js';
 import {WorkerPool} from '../workers/index.js';
 import {Kernel} from '../staking/kernel.js';
+import {ChainEntry} from "../blockchain";
+import {WalletClient} from "./client";
 
 const layout = layouts.wdb;
 const tlayout = layouts.txdb;
@@ -60,7 +62,7 @@ export class WalletDB extends EventEmitter {
   logger: LoggerContext;
   workers: WorkerPool;
   kernel: Kernel;
-  client: any;
+  client: WalletClient;
   feeRate: any;
   db: bdb.DB;
   primary: any;
@@ -443,7 +445,7 @@ export class WalletDB extends EventEmitter {
    * @param {number} height
    * @returns {Promise<module:blockchain.ChainEntry>}
    */
-  getEntry(height) {
+  getEntry(height: number): ChainEntry {
     return this.client.getEntryByHeight(height)
   }
 

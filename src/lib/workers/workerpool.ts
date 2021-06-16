@@ -133,6 +133,7 @@ export class WorkerPool extends EventEmitter {
 
     child.on('event', (items) => {
       this.emit('event', items, child);
+
       this.emit(...items);
     });
 

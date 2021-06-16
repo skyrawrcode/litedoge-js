@@ -7,8 +7,7 @@
 
 'use strict';
 
-import assert from 'bsert';
-import {EventEmitter} from 'events';
+import assert from 'bsert'; 
 import { format } from 'util';
 import {Network} from '../protocol/index.js';
 import * as jobs from './jobs.js';
@@ -16,6 +15,7 @@ import {Parser} from './parser.js';
 import {Framer} from './framer.js';
 import * as packets from './packets.js';
 import {Parent} from './parent.js';
+import { EventEmitter } from 'events';
 
 /**
  * Master

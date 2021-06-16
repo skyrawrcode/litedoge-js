@@ -1074,7 +1074,8 @@ export class MTX extends TX {
     let total = 0;
 
     // Calculate the size, minus the input scripts.
-    total += 4;
+    total += 4; //version
+    total += 4; //time
     total += encoding.sizeVarint(this.inputs.length);
     total += this.inputs.length * 40;
 
@@ -1482,9 +1483,6 @@ export interface CoinSelectorOptions {
  */
 
 export class CoinSelector {
-  static MIN_FEE: bigint;
-  static MAX_FEE: bigint;
-  static FEE_RATE: bigint;
 
   tx: MTX;
   coins: any[];
@@ -1492,7 +1490,7 @@ export class CoinSelector {
   index: number;
   chosen: any[];
   change: bigint;
-  fee: any;
+  fee: bigint;
   selection: string;
   subtractFee: boolean;
   subtractIndex: number;
@@ -1521,7 +1519,7 @@ export class CoinSelector {
     this.index = 0;
     this.chosen = [];
     this.change = 0n;
-    this.fee = CoinSelector.MIN_FEE;
+    this.fee = MIN_FEE;
 
     this.selection = 'value';
     this.subtractFee = false;
@@ -1529,7 +1527,7 @@ export class CoinSelector {
     this.height = -1;
     this.depth = -1;
     this.hardFee = -1n;
-    this.rate = CoinSelector.FEE_RATE;
+    this.rate = FEE_RATE;
     this.maxFee = -1n;
     this.round = false;
     this.changeAddress = null;
@@ -1669,7 +1667,7 @@ export class CoinSelector {
     this.index = 0;
     this.chosen = [];
     this.change = 0n;
-    this.fee = CoinSelector.MIN_FEE;
+    this.fee = MIN_FEE;
     this.tx.inputs.length = 0;
 
     switch (this.selection) {
@@ -1756,11 +1754,11 @@ export class CoinSelector {
     // kb is easier to predict ahead of time.
     if (this.round) {
       const fee = policy.getRoundFee(size, this.rate);
-      return fee < CoinSelector.MAX_FEE ? fee : CoinSelector.MAX_FEE;
+      return fee < MAX_FEE ? fee : MAX_FEE;
     }
 
     const fee = policy.getMinFee(size, this.rate);
-    return fee < CoinSelector.MAX_FEE ? fee : CoinSelector.MAX_FEE;
+    return fee < MAX_FEE ? fee : MAX_FEE;
   }
 
 
@@ -1856,7 +1854,7 @@ export class CoinSelector {
   async selectEstimate() {
     // Set minimum fee and do
     // an initial round of funding.
-    this.fee = CoinSelector.MIN_FEE;
+    this.fee = MIN_FEE;
     this.fund();
 
     // Add dummy output for change.
@@ -1893,7 +1891,7 @@ export class CoinSelector {
    */
 
   selectHard() {
-    this.fee = this.hardFee < CoinSelector.MAX_FEE ? this.hardFee : CoinSelector.MAX_FEE;
+    this.fee = this.hardFee < MAX_FEE ? this.hardFee : MAX_FEE;
     this.fund();
   }
 }
@@ -1978,14 +1976,14 @@ function sortRandom(a, b) {
   return Math.random() > 0.5 ? 1 : -1;
 }
 
-function sortValue(a, b) {
+function sortValue(a, b): number {
   if (a.height === -1 && b.height !== -1)
     return 1;
 
   if (a.height !== -1 && b.height === -1)
     return -1;
 
-  return b.value - a.value;
+  return Number(b.value - a.value);
 }
 
 function sortInputs(a, b) {

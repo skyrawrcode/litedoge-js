@@ -1,14 +1,15 @@
 /* eslint-env mocha */
 /* eslint prefer-arrow-callback: "off" */
 
-'use strict';
 
-const Address = require('../lib/primitives/address');
-const Script = require('../lib/script/script');
-const assert = require('bsert');
-const nodejsUtil = require('util');
+import {Address} from "../dist/lib/primitives/address.js";
+import nodejsUtil from "util";
+import assert from "bsert";
+import {Script} from "../dist/lib/script/script.js";
 
-describe('Address', function() {
+
+
+describe('Address', function () {
   it('should match mainnet p2pkh address', () => {
     const raw = 'e34cce70c86373273efcc54ce7d2a491bb4a0e84';
     const p2pkh = Buffer.from(raw, 'hex');
@@ -47,16 +48,16 @@ describe('Address', function() {
 
   it('should match mainnet p2sh address obtained from script', () => {
     const p2sh = Buffer.from(''
-                          + '52410491bba2510912a5bd37da1fb5b1673010e4'
-                          + '3d2c6d812c514e91bfa9f2eb129e1c183329db55'
-                          + 'bd868e209aac2fbc02cb33d98fe74bf23f0c235d'
-                          + '6126b1d8334f864104865c40293a680cb9c020e7'
-                          + 'b1e106d8c1916d3cef99aa431a56d253e69256da'
-                          + 'c09ef122b1a986818a7cb624532f062c1d1f8722'
-                          + '084861c5c3291ccffef4ec687441048d2455d240'
-                          + '3e08708fc1f556002f1b6cd83f992d085097f997'
-                          + '4ab08a28838f07896fbab08f39495e15fa6fad6e'
-                          + 'dbfb1e754e35fa1c7844c41f322a1863d4621353ae','hex');
+      + '52410491bba2510912a5bd37da1fb5b1673010e4'
+      + '3d2c6d812c514e91bfa9f2eb129e1c183329db55'
+      + 'bd868e209aac2fbc02cb33d98fe74bf23f0c235d'
+      + '6126b1d8334f864104865c40293a680cb9c020e7'
+      + 'b1e106d8c1916d3cef99aa431a56d253e69256da'
+      + 'c09ef122b1a986818a7cb624532f062c1d1f8722'
+      + '084861c5c3291ccffef4ec687441048d2455d240'
+      + '3e08708fc1f556002f1b6cd83f992d085097f997'
+      + '4ab08a28838f07896fbab08f39495e15fa6fad6e'
+      + 'dbfb1e754e35fa1c7844c41f322a1863d4621353ae', 'hex');
     const script = Script.fromRaw(p2sh);
     const addr = Address.fromScript(script);
     const expectedAddr = '3QJmV3qfvL9SuYo34YihAf3sRCW3qSinyC';
@@ -88,8 +89,6 @@ describe('Address', function() {
   });
 
 
-
-
   it('should handle invalid segwit hrp', () => {
     const addr = 'tc1qw508d6qejxtdg4y5r3zarvary0c5xw7kg3g4ty';
     assert.throws(() => Address.fromString(addr, 'main'));
@@ -112,13 +111,13 @@ describe('Address', function() {
 
   it('should handle invalid segwit program length 2', () => {
     const addr = 'bc10w508d6qejxtdg4y5r3zarvary0c5xw7kw5'
-               + '08d6qejxtdg4y5r3zarvary0c5xw7kw5rljs90';
+      + '08d6qejxtdg4y5r3zarvary0c5xw7kw5rljs90';
     assert.throws(() => Address.fromString(addr, 'main'));
   });
 
   it('should handle segwit mixed case', () => {
     const addr = 'tb1qrp33g0q5c5txsp9arysrx4k6z'
-               + 'dkfs4nce4xj0gdcccefvpysxf3q0sL5k7';
+      + 'dkfs4nce4xj0gdcccefvpysxf3q0sL5k7';
     assert.throws(() => Address.fromString(addr, 'main'));
   });
 
@@ -129,7 +128,7 @@ describe('Address', function() {
 
   it('should handle segwit non-zero padding in 8-to-5 conversion', () => {
     const addr = 'tb1qrp33g0q5c5txsp9arysrx4k6'
-               + 'zdkfs4nce4xj0gdcccefvpysxf3pjxtptv';
+      + 'zdkfs4nce4xj0gdcccefvpysxf3pjxtptv';
     assert.throws(() => Address.fromString(addr, 'main'));
   });
 

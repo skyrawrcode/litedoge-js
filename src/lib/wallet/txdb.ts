@@ -1628,12 +1628,12 @@ export class TXDB {
    * @returns {Promise} - Returns {@link Coin}[].
    */
 
-  getCredits(acct) {
+  async getCredits(acct): Promise<Credit[]> {
     assert(typeof acct === 'number');
 
     // Slow case
     if (acct !== -1)
-      return this.getAccountCredits(acct);
+      return await this.getAccountCredits(acct);
 
     // Fast case
     return this.bucket.range({
@@ -1655,9 +1655,9 @@ export class TXDB {
    * @returns {Promise} - Returns {@link Coin}[].
    */
 
-  async getAccountCredits(acct) {
+  async getAccountCredits(acct): Promise<Credit[]> {
     const outpoints = await this.getOutpoints(acct);
-    const credits = [];
+    const credits: Credit[] = [];
 
     for (const {hash, index} of outpoints) {
       const credit = await this.getCredit(hash, index);
@@ -2300,7 +2300,7 @@ class BalanceDelta {
  * @property {Boolean} own;
  */
 
-class Credit {
+export class Credit {
   coin: Coin;
   spent: boolean;
   own: boolean;

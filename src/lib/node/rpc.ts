@@ -1895,7 +1895,7 @@ export class RPC extends RPCBase {
 
     const tx = TX.fromRaw(data);
 
-    this.node.relay(tx);
+    await this.node.relay(tx);
 
     return tx.txid();
   }
@@ -1985,7 +1985,7 @@ export class RPC extends RPCBase {
       }
     }
 
-    let type =  SighashType.ALL;
+    let type = SighashType.ALL;
     if (sighash) {
       const parts: string[] = sighash.split('|');
 
