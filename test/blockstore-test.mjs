@@ -3,14 +3,20 @@
 
 'use strict';
 
-const Logger = require('blgr');
-const bio = require('bufio');
-const assert = require('bsert');
-const common = require('./util/common');
-const {resolve} = require('path');
-const fs = require('bfile');
-const {rimraf, testdir} = require('./util/common');
-const random = require('bcrypto/lib/random');
+import Logger from "blgr";
+import bio from "bufio";
+import assert from "bsert";
+import * as common  from "./util/common.js";
+import {rimraf, testdir} from './util/common.js'
+import {resolve} from "path";
+
+import fs from "bfile";
+
+import random from "bcrypto/lib/random.js";
+import {AbstractBlockStore, FileBlockStore, LevelBlockStore} from "../dist/lib/blockstore/index.js";
+import * as  layout from "../dist/lib/blockstore/layout.js";
+import {BlockStoreTypes} from "../dist/lib/blockstore/common.js";
+import {BlockRecord, FileRecord} from "../dist/lib/blockstore/records.js";
 
 const vectors = [
   common.readBlock('block300025'),
@@ -35,19 +41,6 @@ const merkles = [
   common.readMerkle('merkle300025-extended')
 ];
 
-const {
-  AbstractBlockStore,
-  FileBlockStore,
-  LevelBlockStore
-} = require('../lib/blockstore');
-
-const layout = require('../lib/blockstore/layout');
-const {types} = require('../lib/blockstore/common');
-
-const {
-  BlockRecord,
-  FileRecord
-} = require('../lib/blockstore/records');
 
 describe('BlockStore', function() {
   describe('Abstract', function() {
@@ -364,7 +357,7 @@ describe('BlockStore', function() {
       it('will fail with length above file max', async () => {
         let err = null;
         try {
-          await store.allocate(types.BLOCK, 1025);
+          await store.allocate(BlockStoreTypes.BLOCK, 1025);
         } catch (e) {
           err = e;
         }
@@ -375,39 +368,39 @@ describe('BlockStore', function() {
 
     describe('filepath', function() {
       it('will give correct path (0)', () => {
-        const filepath = store.filepath(types.BLOCK, 0);
+        const filepath = store.filepath(BlockStoreTypes.BLOCK, 0);
         assert.equal(filepath, `${location()}blk00000.dat`);
       });
 
       it('will give correct path (1)', () => {
-        const filepath = store.filepath(types.BLOCK, 7);
+        const filepath = store.filepath(BlockStoreTypes.BLOCK, 7);
         assert.equal(filepath, `${location()}blk00007.dat`);
       });
 
       it('will give correct path (2)', () => {
-        const filepath = store.filepath(types.BLOCK, 23);
+        const filepath = store.filepath(BlockStoreTypes.BLOCK, 23);
         assert.equal(filepath, `${location()}blk00023.dat`);
       });
 
       it('will give correct path (3)', () => {
-        const filepath = store.filepath(types.BLOCK, 456);
+        const filepath = store.filepath(BlockStoreTypes.BLOCK, 456);
         assert.equal(filepath, `${location()}blk00456.dat`);
       });
 
       it('will give correct path (4)', () => {
-        const filepath = store.filepath(types.BLOCK, 8999);
+        const filepath = store.filepath(BlockStoreTypes.BLOCK, 8999);
         assert.equal(filepath, `${location()}blk08999.dat`);
       });
 
       it('will give correct path (5)', () => {
-        const filepath = store.filepath(types.BLOCK, 99999);
+        const filepath = store.filepath(BlockStoreTypes.BLOCK, 99999);
         assert.equal(filepath, `${location()}blk99999.dat`);
       });
 
       it('will fail over max size', () => {
         let err = null;
         try {
-          store.filepath(types.BLOCK, 100000);
+          store.filepath(BlockStoreTypes.BLOCK, 100000);
         } catch (e) {
           err = e;
         }
@@ -417,12 +410,12 @@ describe('BlockStore', function() {
       });
 
       it('will give undo type', () => {
-        const filepath = store.filepath(types.UNDO, 99999);
+        const filepath = store.filepath(BlockStoreTypes.UNDO, 99999);
         assert.equal(filepath, `${location()}blu99999.dat`);
       });
 
       it('will give merkle type', () => {
-        const filepath = store.filepath(types.MERKLE, 99999);
+        const filepath = store.filepath(BlockStoreTypes.MERKLE, 99999);
         assert.equal(filepath, `${location()}blm99999.dat`);
       });
 
@@ -755,9 +748,9 @@ describe('BlockStore', function() {
         assert.bufferEqual(block2, block);
       }
 
-      const first = await fs.stat(store.filepath(types.BLOCK, 0));
-      const second = await fs.stat(store.filepath(types.BLOCK, 1));
-      const third = await fs.stat(store.filepath(types.BLOCK, 2));
+      const first = await fs.stat(store.filepath(BlockStoreTypes.BLOCK, 0));
+      const second = await fs.stat(store.filepath(BlockStoreTypes.BLOCK, 1));
+      const third = await fs.stat(store.filepath(BlockStoreTypes.BLOCK, 2));
       assert.equal(first.size, 952);
       assert.equal(second.size, 952);
       assert.equal(third.size, 272);
@@ -785,9 +778,9 @@ describe('BlockStore', function() {
         assert.bufferEqual(block2, block);
       }
 
-      const first = await fs.stat(store.filepath(types.UNDO, 0));
-      const second = await fs.stat(store.filepath(types.UNDO, 1));
-      const third = await fs.stat(store.filepath(types.UNDO, 2));
+      const first = await fs.stat(store.filepath(BlockStoreTypes.UNDO, 0));
+      const second = await fs.stat(store.filepath(BlockStoreTypes.UNDO, 1));
+      const third = await fs.stat(store.filepath(BlockStoreTypes.UNDO, 2));
 
       const magic = (40 * 16);
       const len = first.size + second.size + third.size - magic;
@@ -812,9 +805,9 @@ describe('BlockStore', function() {
         assert.bufferEqual(block2, block);
       }
 
-      const first = await fs.stat(store.filepath(types.MERKLE, 0));
-      const second = await fs.stat(store.filepath(types.MERKLE, 1));
-      const third = await fs.stat(store.filepath(types.MERKLE, 2));
+      const first = await fs.stat(store.filepath(BlockStoreTypes.MERKLE, 0));
+      const second = await fs.stat(store.filepath(BlockStoreTypes.MERKLE, 1));
+      const third = await fs.stat(store.filepath(BlockStoreTypes.MERKLE, 2));
 
       const magic = (8 * 16);
       const len = first.size + second.size + third.size - magic;
@@ -843,7 +836,7 @@ describe('BlockStore', function() {
       // would not be updated to include the used bytes and
       // thus this data should be overwritten.
       {
-        const filepath = store.filepath(types.BLOCK, 0);
+        const filepath = store.filepath(BlockStoreTypes.BLOCK, 0);
 
         const fd = await fs.open(filepath, 'a');
 
@@ -939,7 +932,7 @@ describe('BlockStore', function() {
       const pruned = await store.prune(hash);
       assert.equal(pruned, true);
 
-      assert.equal(await fs.exists(store.filepath(types.BLOCK, 0)), false);
+      assert.equal(await fs.exists(store.filepath(BlockStoreTypes.BLOCK, 0)), false);
     });
 
     it('will return null if block not found', async () => {
@@ -985,9 +978,9 @@ describe('BlockStore', function() {
         await store.write(hash, block);
       }
 
-      const first = await fs.stat(store.filepath(types.BLOCK, 0));
-      const second = await fs.stat(store.filepath(types.BLOCK, 1));
-      const third = await fs.stat(store.filepath(types.BLOCK, 2));
+      const first = await fs.stat(store.filepath(BlockStoreTypes.BLOCK, 0));
+      const second = await fs.stat(store.filepath(BlockStoreTypes.BLOCK, 1));
+      const third = await fs.stat(store.filepath(BlockStoreTypes.BLOCK, 2));
 
       const magic = (8 * 16);
       const len = first.size + second.size + third.size - magic;
@@ -998,16 +991,16 @@ describe('BlockStore', function() {
         assert.strictEqual(pruned, true);
       }
 
-      assert.equal(await fs.exists(store.filepath(types.BLOCK, 0)), false);
-      assert.equal(await fs.exists(store.filepath(types.BLOCK, 1)), false);
-      assert.equal(await fs.exists(store.filepath(types.BLOCK, 2)), false);
+      assert.equal(await fs.exists(store.filepath(BlockStoreTypes.BLOCK, 0)), false);
+      assert.equal(await fs.exists(store.filepath(BlockStoreTypes.BLOCK, 1)), false);
+      assert.equal(await fs.exists(store.filepath(BlockStoreTypes.BLOCK, 2)), false);
 
       for (let i = 0; i < 16; i++) {
         const exists = await store.has(hashes[i]);
         assert.strictEqual(exists, false);
       }
 
-      const exists = await store.db.has(layout.f.encode(types.BLOCK, 0));
+      const exists = await store.db.has(layout.f.encode(BlockStoreTypes.BLOCK, 0));
       assert.strictEqual(exists, false);
     });
 
@@ -1020,9 +1013,9 @@ describe('BlockStore', function() {
         await store.writeUndo(hash, block);
       }
 
-      const first = await fs.stat(store.filepath(types.UNDO, 0));
-      const second = await fs.stat(store.filepath(types.UNDO, 1));
-      const third = await fs.stat(store.filepath(types.UNDO, 2));
+      const first = await fs.stat(store.filepath(BlockStoreTypes.UNDO, 0));
+      const second = await fs.stat(store.filepath(BlockStoreTypes.UNDO, 1));
+      const third = await fs.stat(store.filepath(BlockStoreTypes.UNDO, 2));
 
       const magic = (40 * 16);
       const len = first.size + second.size + third.size - magic;
@@ -1033,16 +1026,16 @@ describe('BlockStore', function() {
         assert.strictEqual(pruned, true);
       }
 
-      assert.equal(await fs.exists(store.filepath(types.UNDO, 0)), false);
-      assert.equal(await fs.exists(store.filepath(types.UNDO, 1)), false);
-      assert.equal(await fs.exists(store.filepath(types.UNDO, 2)), false);
+      assert.equal(await fs.exists(store.filepath(BlockStoreTypes.UNDO, 0)), false);
+      assert.equal(await fs.exists(store.filepath(BlockStoreTypes.UNDO, 1)), false);
+      assert.equal(await fs.exists(store.filepath(BlockStoreTypes.UNDO, 2)), false);
 
       for (let i = 0; i < 16; i++) {
         const exists = await store.hasUndo(hashes[i]);
         assert.strictEqual(exists, false);
       }
 
-      const exists = await store.db.has(layout.f.encode(types.UNDO, 0));
+      const exists = await store.db.has(layout.f.encode(BlockStoreTypes.UNDO, 0));
       assert.strictEqual(exists, false);
     });
   });
@@ -1116,9 +1109,9 @@ describe('BlockStore', function() {
 
       await store.close();
 
-      assert.equal(await fs.exists(store.filepath(types.BLOCK, 0)), true);
-      assert.equal(await fs.exists(store.filepath(types.BLOCK, 1)), true);
-      assert.equal(await fs.exists(store.filepath(types.BLOCK, 2)), false);
+      assert.equal(await fs.exists(store.filepath(BlockStoreTypes.BLOCK, 0)), true);
+      assert.equal(await fs.exists(store.filepath(BlockStoreTypes.BLOCK, 1)), true);
+      assert.equal(await fs.exists(store.filepath(BlockStoreTypes.BLOCK, 2)), false);
 
       // Write partial block as would be the case in a
       // block write interrupt.
@@ -1130,7 +1123,7 @@ describe('BlockStore', function() {
         const part = raw.length - 1;
         raw = raw.slice(0, part);
 
-        const filepath = store.filepath(types.BLOCK, 1);
+        const filepath = store.filepath(BlockStoreTypes.BLOCK, 1);
 
         const fd = await fs.open(filepath, 'a');
 

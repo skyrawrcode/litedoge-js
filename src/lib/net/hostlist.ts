@@ -18,7 +18,7 @@ import {LoggerContext} from 'blgr/lib/logger';
 import {randomRange} from 'bcrypto/lib/random.js';
 
 import * as util from '../utils/util.js';
-import {Network} from '../protocol/network.js';
+import {Network, primary} from '../protocol/network.js';
 import {NetAddress} from './netaddress.js';
 import * as common from './common.js';
 import * as seeds from './seeds/index.js';
@@ -1541,7 +1541,7 @@ class HostListOptions {
    */
 
   constructor(options) {
-    this.network = Network.primary;
+    this.network = primary;
     this.logger = Logger.global;
     this.resolve = dns.lookup;
     this.host = '0.0.0.0';

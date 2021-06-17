@@ -15,7 +15,7 @@ import Logger from 'blgr';
 
 import {LoggerContext} from 'blgr/lib/logger';
 
-import {Network} from '../protocol/network.js';
+import {Network, primary} from '../protocol/network.js';
 import {util} from '../utils/index.js';
 import {layout} from './layout.js';
 import {CoinView} from '../coins/coinview.js';
@@ -659,7 +659,7 @@ class IndexOptions {
 
   constructor(module?: string, options?: any) {
     this.module = module;
-    this.network = Network.primary;
+    this.network = primary;
     this.logger = Logger.global;
     this.blocks = null;
     this.chain = null;

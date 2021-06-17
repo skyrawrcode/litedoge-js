@@ -15,8 +15,8 @@ import hash160 from 'bcrypto/lib/hash160.js';
 import hash256 from 'bcrypto/lib/hash256.js';
 import {Network} from '../protocol/network.js';
 import {consensus} from '../protocol/index.js';
-import {inspectSymbol} from '../utils/index.js';
 import {Script} from '../script/index.js';
+import {inspectSymbol} from "../utils/index.js";
 
 
 /**

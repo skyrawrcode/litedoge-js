@@ -3,16 +3,16 @@
 
 'use strict';
 
-const Validator = require('bval');
-const base58 = require('bcrypto/lib/encoding/base58');
-const {encoding} = require('bufio');
-const assert = require('bsert');
-const Amount = require('../lib/btc/amount');
-const fixed = require('../lib/utils/fixed');
+import base58 from "bcrypto/lib/encoding/base58.js";
+import sha256 from "bcrypto/lib/sha256.js";
+import assert from "bsert";
+import {encoding} from "bufio";
+import Validator from "bval";
+import {Amount} from "../dist/lib/btc/amount.js";
+import {KeyRing} from "../dist/lib/primitives/keyring.js";
+import * as fixed from "../dist/lib/utils/fixed.js";
 
-const sha256 = require('bcrypto/lib/sha256');
-const KeyRing = require('../lib/primitives/keyring');
-const message = require('../lib/utils/message');
+import * as message from "../dist/lib/utils/message.js";
 
 const base58Tests = [
   ['', ''],
@@ -35,7 +35,7 @@ const base58Tests = [
   ['00000000000000000000', '1111111111']
 ];
 
-describe('Utils', function() {
+describe('Utils', function () {
   it('should encode/decode base58', () => {
     const buf = Buffer.from('000000deadbeef', 'hex');
     const str = base58.encode(buf);
@@ -51,17 +51,17 @@ describe('Utils', function() {
   });
 
   it('should convert satoshi to btc', () => {
-    assert.strictEqual(Amount.btc(5460), '0.0000546');
-    assert.strictEqual(Amount.btc(54678 * 1000000), '546.78');
-    assert.strictEqual(Amount.btc(5460 * 10000000), '546.0');
+    assert.strictEqual(Amount.btc(BigInt(5460)), '0.0000546');
+    assert.strictEqual(Amount.btc(BigInt(54678 * 1000000)), '546.78');
+    assert.strictEqual(Amount.btc(BigInt(5460 * 10000000)), '546.0');
   });
 
   it('should convert btc to satoshi', () => {
-    assert.strictEqual(Amount.value('0.0000546'), 5460);
-    assert.strictEqual(Amount.value('546.78'), 54678 * 1000000);
-    assert.strictEqual(Amount.value('546'), 5460 * 10000000);
-    assert.strictEqual(Amount.value('546.0'), 5460 * 10000000);
-    assert.strictEqual(Amount.value('546.0000'), 5460 * 10000000);
+    assert.strictEqual(Amount.value('0.0000546'), BigInt(5460));
+    assert.strictEqual(Amount.value('546.78'), BigInt(54678 * 1000000));
+    assert.strictEqual(Amount.value('546'), BigInt(5460 * 10000000));
+    assert.strictEqual(Amount.value('546.0'), BigInt(5460 * 10000000));
+    assert.strictEqual(Amount.value('546.0000'), BigInt(5460 * 10000000));
 
     assert.doesNotThrow(() => {
       Amount.value('546.00000000000000000');
@@ -91,10 +91,10 @@ describe('Utils', function() {
     assert.strictEqual(parseFloat('0.15645647') * 1e8, 15645646.999999998);
     assert.strictEqual(15645647 / 1e8, 0.15645647);
 
-    assert.strictEqual(fixed.decode('0.15645647', 8), 15645647);
-    assert.strictEqual(fixed.encode(15645647, 8), '0.15645647');
-    assert.strictEqual(fixed.fromFloat(0.15645647, 8), 15645647);
-    assert.strictEqual(fixed.toFloat(15645647, 8), 0.15645647);
+    assert.strictEqual(fixed.decode('0.15645647', 8), BigInt(15645647));
+    assert.strictEqual(fixed.encode(BigInt(15645647), 8), '0.15645647');
+    assert.strictEqual(fixed.fromFloat(0.15645647, 8), BigInt(15645647));
+    assert.strictEqual(fixed.toFloat(BigInt(15645647), 8), 0.15645647);
   });
 
   it('should write/read new varints', () => {
@@ -169,17 +169,18 @@ describe('Utils', function() {
     assert.strictEqual(validator.bool('shouldBeFalse'), false);
   });
 
-  describe('message', function() {
+  describe('message', function () {
     const key = sha256.digest(Buffer.from('private-key'));
     const msg = 'Message To Sign';
 
     const uncompressed =
-      'G87wcBTu5HXBjBUwpsu+2U9q/0oVqPROSSG0kXaQEK4J' +
-      'AoZAUUtVagvd3AHfX7TS2bHEzDnbn7t/uiIcFeZznlI=';
+      'G3qmlJ3mNIjZE5sQgb8q4nK9zSWGe6VE+MMuCAgDzD+q' +
+      'YdU8Bs31krJ1btbkt1S3vEqBL7KN7PffehdrHzgi8d8=';
+
 
     const compressed =
-      'H87wcBTu5HXBjBUwpsu+2U9q/0oVqPROSSG0kXaQEK4J' +
-      'AoZAUUtVagvd3AHfX7TS2bHEzDnbn7t/uiIcFeZznlI=';
+      'H3qmlJ3mNIjZE5sQgb8q4nK9zSWGe6VE+MMuCAgDzD+q' +
+      'YdU8Bs31krJ1btbkt1S3vEqBL7KN7PffehdrHzgi8d8=';
 
     it('should sign message', () => {
       assert.strictEqual(
@@ -204,5 +205,6 @@ describe('Utils', function() {
         KeyRing.fromKey(key, false).getPublicKey().toString('base64')
       );
     });
+
   });
 });

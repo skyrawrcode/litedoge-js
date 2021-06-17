@@ -204,7 +204,7 @@ export class Output {
     const cmp = this.value - output.value;
 
     if (cmp !== 0n)
-      return cmp;
+      return Number(cmp);
 
     return this.script.compare(output.script);
   }
@@ -301,7 +301,7 @@ export class Output {
       return 0n;
 
     let size = this.getSize();
-    size += 32 + 4 + 1 + 107 + 4;
+    // size += 32 + 4 + 4 + 1 + 107 + 4;
 
     return 3n * policy.getMinFee(size, rate);
   }

@@ -296,9 +296,10 @@ export class MTX extends TX {
    * mtx.addOutput(script, 100000);
    */
 
-  addOutput(script: Address | Script | Output | object, value: bigint | null = null): Output {
+  addOutput(script: Address | Script | Output | object, value: bigint | number | null = null): Output {
     let output: Output;
-
+    if (typeof(value) === 'number')
+      value = BigInt(value)
     if (value != null)
       output = Output.fromScript(script as Script | Address, value);
     else

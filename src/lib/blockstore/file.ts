@@ -13,7 +13,7 @@ import fs from 'bfile';
 import bio from 'bufio';
 import hash256 from 'bcrypto/lib/hash256.js';
 
-import {Network} from '../protocol/network.js';
+import {Network, primary} from '../protocol/network.js';
 import {AbstractBlockStore} from './abstract.js';
 import {BlockRecord, FileRecord} from './records.js';
 import {layout} from './layout.js';
@@ -58,7 +58,7 @@ export class FileBlockStore extends AbstractBlockStore {
     assert(Number.isSafeInteger(this.maxFileLength),
       'Invalid max file length.');
 
-    this.network = Network.primary;
+    this.network = primary;
 
     if (options.network != null)
       this.network = Network.get(options.network);

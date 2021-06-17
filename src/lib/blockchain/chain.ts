@@ -16,7 +16,7 @@ import {BufferMap} from 'buffer-map';
 import {BN} from 'bcrypto';
 import {LoggerContext} from 'blgr/lib/logger';
 
-import {Network, NetworkPOS} from '../protocol/network.js';
+import {Network, NetworkPOS, primary} from '../protocol/network.js';
 import {ChainDB} from './chaindb.js';
 import * as consensus from '../protocol/consensus.js';
 import * as util from '../utils/util.js';
@@ -2526,7 +2526,7 @@ export class ChainOptions {
    */
 
   constructor(options?: ChainOptionsOptions) {
-    this.network = Network.primary;
+    this.network = primary;
     this.logger = Logger.global;
     this.blocks = null;
     this.workers = null;

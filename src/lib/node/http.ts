@@ -23,7 +23,7 @@ import * as util from '../utils/util.js';
 import {Address} from '../primitives/address.js';
 import {TX} from '../primitives/tx.js';
 import {Outpoint} from '../primitives/outpoint.js';
-import {Network} from '../protocol/network.js';
+import {Network, primary} from '../protocol/network.js';
 import * as pkg from '../pkg.js';
 import {Chain} from "../blockchain/index.js";
 import {Mempool, PolicyEstimator} from "../mempool/index.js";
@@ -723,7 +723,7 @@ class HTTPOptions {
    */
 
   constructor(options?) {
-    this.network = Network.primary;
+    this.network = primary;
     this.logger = null;
     this.node = null;
     this.apiKey = base58.encode(random.randomBytes(20));

@@ -4,22 +4,26 @@
 
 'use strict';
 
-const assert = require('bsert');
-const Network = require('../lib/protocol/network');
-const util = require('../lib/utils/util');
-const NetAddress = require('../lib/net/netaddress');
-const TX = require('../lib/primitives/tx');
-const Framer = require('../lib/net/framer');
-const Parser = require('../lib/net/parser');
-const packets = require('../lib/net/packets');
-const common = require('./util/common');
+import assert from "bsert";
+import {createRequire} from "module";
+import {Framer} from "../dist/lib/net/framer.js";
+import {NetAddress} from "../dist/lib/net/netaddress.js";
+import * as packets from "../dist/lib/net/packets.js";
+import {Parser} from "../dist/lib/net/parser.js";
+import {TX} from "../dist/lib/primitives/index.js";
+import {Network} from "../dist/lib/protocol/network.js";
+import * as util from "../dist/lib/utils/util.js";
+
+import * as common from "./util/common.js";
+
+const require = createRequire(import.meta.url);
 const network = Network.get('main');
 
 const tx8 = common.readTX('tx8');
 const tx9 = common.readTX('tx9');
 
-describe('Protocol', function() {
-  const pkg = require('../lib/pkg');
+describe('Protocol', function () {
+  const pkg = require('../dist/lib/pkg.js');
   const agent = `/bcoin:${pkg.version}/`;
   let parser, framer;
 

@@ -18,7 +18,7 @@ import random from 'bcrypto/lib/random.js';
 import {Amount} from '../btc/amount.js';
 import {Address} from '../primitives/address.js';
 import {BlockEntry, BlockTemplate} from './template.js';
-import {Network} from '../protocol/network.js';
+import {Network, primary} from '../protocol/network.js';
 import * as consensus from '../protocol/consensus.js';
 import * as policy from '../protocol/policy.js';
 import {CPUMiner} from './cpuminer.js';
@@ -408,7 +408,7 @@ class MinerOptions {
    */
 
   constructor(options?) {
-    this.network = Network.primary;
+    this.network = primary;
     this.logger = null;
     this.workers = null;
     this.chain = null;

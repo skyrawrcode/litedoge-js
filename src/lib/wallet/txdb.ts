@@ -2528,7 +2528,7 @@ export class Details {
 
     for (const input of this.inputs) {
       if (!input.path)
-        return 0;
+        return 0n;
 
       inputValue += input.value;
     }
@@ -2569,8 +2569,8 @@ export class Details {
       mdate: util.date(this.mtime),
       size: this.size,
       virtualSize: this.vsize,
-      fee: fee,
-      rate: rate,
+      fee: fee.toString(),
+      rate: rate.toString(),
       confirmations: this.getDepth(height),
       inputs: this.inputs.map((input) => {
         return input.getJSON(network);

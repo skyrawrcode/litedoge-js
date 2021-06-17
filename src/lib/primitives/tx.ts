@@ -1942,8 +1942,8 @@ export class TX {
    */
 
   getJSON(network?: Network, view?: CoinView, entry?: ChainEntry, index?: number): TXJson {
-    let rate: bigint,
-      fee: bigint,
+    let rate: bigint = 0n,
+      fee: bigint = 0n,
       height: number,
       block: string,
       time: number,

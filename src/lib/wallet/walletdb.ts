@@ -19,7 +19,7 @@ import {LoggerContext} from 'blgr/lib/logger';
 import {safeEqual} from 'bcrypto/lib/safe.js';
 import aes from 'bcrypto/lib/aes.js';
 
-import {Network} from '../protocol/index.js';
+import * as Network from '../protocol/index.js';
 import {Path} from './path.js';
 import * as common from './common.js';
 import {Wallet} from './wallet.js';
@@ -58,7 +58,7 @@ export interface WalletDBOptions {
 export class WalletDB extends EventEmitter {
   options: WalletOptions;
   reserveBalance: bigint;
-  network: Network;
+  network: Network.Network;
   logger: LoggerContext;
   workers: WorkerPool;
   kernel: Kernel;
@@ -555,7 +555,7 @@ export class WalletDB extends EventEmitter {
     if (!json)
       throw new Error('Fee not found.');
 
-    if (!Number.isInteger(json.rate))
+    if (!Number.isInteger(Number(json.rate)))
       throw new Error('Fee is not an integer.');
 
     if (json.rate < this.network.feeRate)
@@ -2270,7 +2270,7 @@ interface WalletOptionsOptions {
   spv: any;
   wipeNoReally: any;
   reserveBalance: any;
-  network: Network;
+  network: Network.Network;
 
 }
 
@@ -2280,7 +2280,7 @@ interface WalletOptionsOptions {
  */
 
 class WalletOptions {
-  network: Network;
+  network: Network.Network;
   logger: Logger;
   workers: any;
   client: any;
@@ -2343,7 +2343,7 @@ class WalletOptions {
 
   fromOptions(options: WalletOptionsOptions) {
     if (options.network != null)
-      this.network = Network.get(options.network);
+      this.network = Network.Network.get(options.network);
 
     if (options.logger != null) {
       assert(typeof options.logger === 'object');

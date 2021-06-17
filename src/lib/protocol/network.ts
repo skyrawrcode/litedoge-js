@@ -34,11 +34,6 @@ export interface NetworkPOS {
  */
 
 export class Network {
-  static main: Network;
-  static primary: Network;
-  static type: NetworkType;
-  static testnet: any;
-  static regtest: any;
   genesis: BlockOptions;
   feeRate: any;
   type: NetworkType;
@@ -138,8 +133,8 @@ export class Network {
 
     Network[network.type] = network;
 
-    if (!Network.primary)
-      Network.primary = network;
+    if (!primary)
+      primary = network;
 
     return network;
   }
@@ -152,11 +147,11 @@ export class Network {
    * @returns {Network}
    */
 
-  static set(type: NetworkType): Network {
-    assert(typeof type === 'string', 'Bad network.');
-    Network.primary = Network.get(type);
-    Network.type = type;
-    return Network.primary;
+  static set(t: NetworkType): Network {
+    assert(typeof t === 'string', 'Bad network.');
+    primary = Network.get(t);
+    type = t;
+    return primary;
   }
 
   /**
@@ -167,8 +162,8 @@ export class Network {
 
   static get(type: NetworkType | Network): Network {
     if (!type) {
-      assert(Network.primary, 'No default network.');
-      return Network.primary;
+      assert(primary, 'No default network.');
+      return primary;
     }
 
     if (type instanceof Network)
@@ -188,8 +183,8 @@ export class Network {
 
   static ensure(type: NetworkType | Network): Network {
     if (!type) {
-      assert(Network.primary, 'No default network.');
-      return Network.primary;
+      assert(primary, 'No default network.');
+      return primary;
     }
 
     if (type instanceof Network)
@@ -200,9 +195,9 @@ export class Network {
         return Network.create(type);
     }
 
-    assert(Network.primary, 'No default network.');
+    assert(primary, 'No default network.');
 
-    return Network.primary;
+    return primary;
   }
 
   /**
@@ -507,22 +502,22 @@ export class Network {
  * @type {Network}
  */
 
-Network.primary = null;
+export let primary: Network = null;
 
 /**
  * Default network type.
  * @type {String}
  */
 
-Network.type = null;
+export let type: NetworkType = null;
 
 /*
  * Networks (to avoid hash table mode).
  */
 
-Network.main = null;
-Network.testnet = null;
-Network.regtest = null;
+export let main: Network = null;
+export let testnet: Network = null;
+export let regtest: Network = null;
 
 /*
  * Set initial network.

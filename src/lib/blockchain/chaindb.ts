@@ -16,7 +16,7 @@ import LRU from 'blru';
 import {BufferMap} from 'buffer-map';
 
 import {Amount} from '../btc/amount.js';
-import {Network} from '../protocol/network.js';
+import {Network, primary} from '../protocol/network.js';
 import {CoinView} from '../coins/coinview.js';
 import {UndoCoins} from '../coins/undocoins.js';
 import {layout} from './layout.js';
@@ -1696,7 +1696,7 @@ class ChainFlags {
    */
 
   constructor(options?: ChainFlagsOptions) {
-    this.network = Network.primary;
+    this.network = primary;
     this.spv = false;
     this.prune = false;
 

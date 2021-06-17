@@ -3,26 +3,27 @@
 
 'use strict';
 
-const assert = require('bsert');
-const common = require('./util/common');
-const {BloomFilter} = require('bfilter');
-const {BufferMap} = require('buffer-map');
-const TX = require('../lib/primitives/tx');
-const Block = require('../lib/primitives/block');
-const MerkleBlock = require('../lib/primitives/merkleblock');
-const consensus = require('../lib/protocol/consensus');
-const Script = require('../lib/script/script');
-const nodejsUtil = require('util');
-const bip152 = require('../lib/net/bip152');
+import random from "bcrypto/lib/random.js";
+import {BloomFilter} from "bfilter";
+import assert from "bsert";
+
+import {BufferMap} from "buffer-map";
+import {CoinView} from "../dist/lib/coins/coinview.js";
+import * as bip152 from "../dist/lib/net/bip152.js";
+import {Block} from "../dist/lib/primitives/block.js";
+import {MerkleBlock} from "../dist/lib/primitives/merkleblock.js";
+import {Outpoint} from "../dist/lib/primitives/outpoint.js";
+import {Output} from "../dist/lib/primitives/output.js";
+
+import {TX} from "../dist/lib/primitives/tx.js";
+import * as consensus from "../dist/lib/protocol/consensus.js";
+import {Script} from "../dist/lib/script/script.js";
+import filterTests from "../test/data/filter-valid.json";
+import * as common from "./util/common.js";
+
 const CompactBlock = bip152.CompactBlock;
 const TXRequest = bip152.TXRequest;
 const TXResponse = bip152.TXResponse;
-const filterTests = require('../test/data/filter-valid.json');
-const CoinView = require('../lib/coins/coinview');
-const random = require('bcrypto/lib/random');
-const Output = require('../lib/primitives/output');
-const Outpoint = require('../lib/primitives/outpoint');
-
 // Block test vectors
 const block300025 = common.readBlock('block300025');
 
@@ -50,7 +51,7 @@ const sigopsVectors = [
   ['block1087400', 1298, 193331]
 ];
 
-describe('Block', function() {
+describe('Block', function () {
   this.timeout(10000);
 
   it('should parse partial merkle tree', () => {
@@ -157,7 +158,7 @@ describe('Block', function() {
     assert(block.verify());
     assert(block.txs[0].isCoinbase());
     assert(block.txs[0].isSane());
-     assert.strictEqual(block.getWeight(), 1136924);
+    assert.strictEqual(block.getWeight(), 1136924);
 
     let sigops = 0;
     let reward = 0;
@@ -251,10 +252,10 @@ describe('Block', function() {
 
     for (let i = 1; i < block.txs.length; i++) {
       const tx = block.txs[i];
-      map.set(tx.hash(), { tx });
+      map.set(tx.hash(), {tx});
     }
 
-    const full = cblock1.fillMempool(false, { map });
+    const full = cblock1.fillMempool(false, {map});
     assert(full);
 
     for (const tx of cblock1.available)
@@ -277,10 +278,10 @@ describe('Block', function() {
 
     for (let i = 1; i < ((block.txs.length + 1) >>> 1); i++) {
       const tx = block.txs[i];
-      map.set(tx.hash(), { tx });
+      map.set(tx.hash(), {tx});
     }
 
-    const full = cblock1.fillMempool(false, { map });
+    const full = cblock1.fillMempool(false, {map});
     assert(!full);
 
     const rawReq = cblock1.toRequest().toRaw();
@@ -315,10 +316,10 @@ describe('Block', function() {
 
     for (let i = 1; i < block.txs.length; i++) {
       const tx = block.txs[i];
-      map.set(tx.hash(), { tx });
+      map.set(tx.hash(), {tx});
     }
 
-    const full = cblock1.fillMempool(false, { map });
+    const full = cblock1.fillMempool(false, {map});
     assert(full);
 
     for (const tx of cblock1.available)
@@ -343,10 +344,10 @@ describe('Block', function() {
 
     for (let i = 1; i < ((block.txs.length + 1) >>> 1); i++) {
       const tx = block.txs[i];
-      map.set(tx.hash(), { tx });
+      map.set(tx.hash(), {tx});
     }
 
-    const full = cblock1.fillMempool(false, { map });
+    const full = cblock1.fillMempool(false, {map});
     assert(!full);
 
     const rawReq = cblock1.toRequest().toRaw();
@@ -386,7 +387,6 @@ describe('Block', function() {
       });
     }
   }
-
 
 
   it('should deserialize with offset positions for txs', () => {

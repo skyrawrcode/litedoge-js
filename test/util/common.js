@@ -17,7 +17,7 @@ import {Output} from "../../dist/lib/primitives/output.js";
 
 import {TX} from "../../dist/lib/primitives/tx.js";
 
-//TODO:: switch to exports
+const __dirname = path.resolve(path.dirname(''));
 
 export function readFile(name, enc) {
   const file = path.resolve(__dirname, '..', 'data', name);

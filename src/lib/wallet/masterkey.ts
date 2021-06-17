@@ -14,13 +14,12 @@ import hash256 from 'bcrypto/lib/hash256.js';
 import secp256k1 from 'bcrypto/lib/secp256k1.js';
 import pbkdf2 from 'bcrypto/lib/pbkdf2.js';
 import scrypt from 'bcrypto/lib/scrypt.js';
-import {random} from 'bcrypto'
+import {aes, cleanse, random} from 'bcrypto'
 import * as  util from '../utils/util.js';
 import {HDPrivateKey} from '../hd/private.js';
 import {Mnemonic} from '../hd/mnemonic.js';
 import {inspectSymbol} from '../utils/index.js';
 import {Network} from '../protocol/index.js';
-import {aes, cleanse} from 'bcrypto';
 
 const {encoding} = bio;
 
@@ -58,9 +57,6 @@ export class MasterKeyOptions {
  */
 
 export class MasterKey {
-  static algByVal: any;
-  static SALT: any;
-  static alg: MasterKeyAlg;
   encrypted: boolean;
   iv: any;
   ciphertext: any;
@@ -312,7 +308,7 @@ export class MasterKey {
    */
 
   async derive(passwd): Promise<any> {
-    const salt = MasterKey.SALT;
+    const salt = SALT;
     const n = this.n;
     const r = this.r;
     const p = this.p;
@@ -655,7 +651,7 @@ export class MasterKey {
 
       this.alg = br.readU8();
 
-      assert(this.alg < MasterKey.algByVal.length);
+      assert(MasterKeyAlg[this.alg]);
 
       this.n = br.readU32();
       this.r = br.readU32();
@@ -765,7 +761,7 @@ export class MasterKey {
  * @default
  */
 
-MasterKey.SALT = Buffer.from('bcoin', 'ascii');
+const SALT = Buffer.from('bcoin', 'ascii');
 
 
 /*

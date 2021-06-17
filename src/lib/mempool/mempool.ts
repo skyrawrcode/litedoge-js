@@ -19,7 +19,7 @@ import Logger from 'blgr/lib/blgr';
 import {Batch} from 'bdb/lib/db';
 import {Lock} from 'bmutex';
 
-import {consensus, Network, policy} from '../protocol/index.js'
+import {consensus, Network, policy, primary} from '../protocol/index.js'
 import {VerifyError} from '../protocol/errors.js'
 import * as util from '../utils/util.js';
 import {Script} from '../script/script.js';
@@ -1928,7 +1928,7 @@ class MempoolOptions {
   maxOrphans = policy.MEMPOOL_MAX_ORPHANS;
   maxAncestors = policy.MEMPOOL_MAX_ANCESTORS;
   expiryTime = policy.MEMPOOL_EXPIRY_TIME;
-  minRelay = Network.primary.minRelay;
+  minRelay = primary.minRelay;
 
   prefix = null;
   location = null;
@@ -1948,7 +1948,7 @@ class MempoolOptions {
    */
 
   constructor(options?) {
-    this.network = Network.primary;
+    this.network = primary;
     this.chain = null;
     this.logger = null;
     this.workers = null;

@@ -16,4 +16,4 @@ export * as message from './message.js';
 
 
 // const {inspect: {custom}} = require('src/utils/util');
-export const inspectSymbol = 'inspect';
+export const inspectSymbol = Symbol.for('nodejs.util.inspect.custom');

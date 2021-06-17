@@ -27,7 +27,7 @@ import {Amount} from '../btc/amount.js';
 import {NetAddress} from '../net/netaddress.js';
 import {Script} from '../script/script.js';
 import {Address, Block, Headers, Input, KeyRing, MerkleBlock, MTX, Outpoint, Output, TX} from '../primitives/index.js'
-import {Network} from '../protocol/network.js';
+import {main, Network} from '../protocol/network.js';
 import * as consensus from '../protocol/consensus.js';
 import * as pkg from '../pkg.js';
 import {WorkerPool} from "../workers/index.js";
@@ -269,7 +269,7 @@ export class RPC extends RPCBase {
       connections: this.pool.peers.size(),
       proxy: '',
       difficulty: toDifficulty(this.chain.tip.bits),
-      testnet: this.network !== Network.main,
+      testnet: this.network !== main,
       keypoololdest: 0,
       keypoolsize: 0,
       unlocked_until: 0,
@@ -1580,7 +1580,7 @@ export class RPC extends RPCBase {
       genproclimit: this.procLimit,
       networkhashps: await this.getHashRate(120),
       pooledtx: this.totalTX(),
-      testnet: this.network !== Network.main,
+      testnet: this.network !== main,
       chain: this.network.type !== 'testnet'
         ? this.network.type
         : 'test',

@@ -22,7 +22,7 @@ import {safeEqual} from 'bcrypto/lib/safe.js';
 import {MTX} from '../primitives/mtx.js';
 import {Outpoint} from '../primitives/outpoint.js';
 import {Script} from '../script/script.js';
-import {Network} from '../protocol/network.js';
+import {Network, primary} from '../protocol/network.js';
 import {Address} from '../primitives/address.js';
 import {KeyRing} from '../primitives/keyring.js';
 import {Mnemonic} from '../hd/mnemonic.js';
@@ -1070,7 +1070,7 @@ export class HTTP extends Server {
 
 
 export class HTTPOptions {
-  network = Network.primary;
+  network = primary;
   logger = null;
   node = null;
   apiKey = base58.encode(random.randomBytes(20));

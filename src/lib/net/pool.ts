@@ -26,7 +26,7 @@ import * as common from './common.js';
 import * as chainCommon from '../blockchain/common.js';
 import {Address} from '../primitives/address.js';
 import * as BIP152 from './bip152.js';
-import {Network} from '../protocol/network.js';
+import {Network, primary} from '../protocol/network.js';
 import {Peer} from './peer.js';
 import {HostList, scores} from './hostlist.js';
 import {InvItem, InvType} from '../primitives/invitem.js';
@@ -3637,7 +3637,7 @@ class PoolOptions {
    */
 
   constructor(options?: PoolOptionsOptions) {
-    this.network = Network.primary;
+    this.network = primary;
     this.logger = null;
     this.chain = null;
     this.mempool = null;

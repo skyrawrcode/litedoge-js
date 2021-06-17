@@ -26,18 +26,7 @@ import * as common from './common.js';
 import {Script} from '../script/script.js';
 import {WalletKey} from './walletkey.js';
 import * as HD from '../hd/hd.js';
-import {
-  AbstractBlock,
-  Address,
-  Coin,
-  CoinSelector,
-  Input,
-  KeyRing, MAX_FEE,
-  MTX,
-  Outpoint,
-  Output,
-  TX
-} from '../primitives/index.js';
+import {AbstractBlock, Address, Coin, Input, KeyRing, MAX_FEE, MTX, Outpoint, Output, TX} from '../primitives/index.js';
 import {Account} from './account.js';
 import {MasterKey} from './masterkey.js';
 import {consensus, Network, policy} from '../protocol/index.js';
@@ -1752,13 +1741,14 @@ export class Wallet extends EventEmitter {
   /**
    * Build input scripts and sign inputs for a transaction. Only attempts
    * to build/sign inputs that are redeemable by this wallet.
-   * @param {MTX} tx
+   * @param {MTX} mtx
    * @param {Object|String|Buffer} options - Options or passphrase.
+   * @param {Object|String|Buffer} passphrase - Options or passphrase.
    * @returns {Promise} - Returns Number (total number
    * of inputs scripts built and signed).
    */
 
-  async sign(mtx, passphrase): Promise<any> {
+  async sign(mtx: MTX, passphrase): Promise<number> {
     if (this.watchOnly)
       throw new Error('Cannot sign from a watch-only wallet.');
 
@@ -2388,6 +2378,7 @@ export class Wallet extends EventEmitter {
       if (this.kernel.getStakeWeight(blockFrom.time, coinStakeTx.time) < StakeSplitAge)
         coinStakeTx.addOutput(Output.fromScript(scriptPubKeyOut, 0n)); //split stake
       logger.info("Added kernel type=%s", walletKey.getType());
+      break;
     }
 
     if (!walletKey) {
@@ -2406,7 +2397,7 @@ export class Wallet extends EventEmitter {
       throw new Error("failed to calculate coin age")
 
     const reward = consensus.getProofOfStakeReward(this.wdb.state.height)
-    if (reward <= 0)
+    if (reward <= 0n)
       return null;
 
     credit += reward;

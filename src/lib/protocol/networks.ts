@@ -653,3 +653,388 @@ testnet.selfConnect = false;
 
 testnet.requestMempool = false;
 
+
+/**
+ * regtestnet
+ * @static
+ * @type {Object}
+ */
+
+export const regtest: NetworkOptions = {};
+
+/**
+ * Symbolic network type.
+ * @const {String}
+ * @default
+ */
+
+regtest.type = 'regtest';
+
+/**
+ * Default DNS seeds.
+ * @const {String[]}
+ * @default
+ */
+
+regtest.seeds = [
+  'seed01.litedogeofficial.org',
+  'seed02.litedogeofficial.org',
+  'seed03.litedogeofficial.org',
+  'seed04.litedogeofficial.org',
+  'seed05.litedogeofficial.org',
+  'seed06.litedogeofficial.org',
+  'seed07.litedogeofficial.org',
+  'seed08.litedogeofficial.org'
+];
+
+/**
+ * Packet magic number.
+ * @const {Number}
+ * @default
+ */
+
+regtest.magic = 0x06154465;
+
+/**
+ * Default network port.
+ * @const {Number}
+ * @default
+ */
+
+regtest.port = 37014;
+
+/**
+ * Checkpoint block list. Stored as revHex
+ * @const {Object}
+ */
+
+regtest.checkpointMap = {};
+
+
+/**
+ * Last checkpoint height.
+ * @const {Number}
+ * @default
+ */
+
+regtest.lastCheckpoint = 0;
+
+/**
+ * @const {Number}
+ * @default
+ */
+
+regtest.halvingInterval = 210000;
+
+/**
+ * Genesis block header.
+ * @const {Object}
+ */
+
+regtest.genesis = {
+  version: 1,
+  hash: b('c6674f5395dd5a1332747194621b9efcf7536319b1ddcde7272f030121030000'),
+  prevBlock:
+    b('0000000000000000000000000000000000000000000000000000000000000000'),
+  merkleRoot:
+    b('6e8089863e3811437cca6029c8eb113e0ddec4cb553e7cfdf8944c964cf86832'),
+  time: 1426450258,
+  bits: 504365055,
+  nonce: 925125,
+  height: 0
+};
+
+/**
+ * The network's genesis block in a hex string.
+ * @const {String}
+ */
+
+regtest.genesisBlock =
+  '0100000000000000000000000000000000000000000000000000000000000000000000003268f84c964c94f8fd7c3e55cbc4de0d3e11ebc82960ca7c4311383e8689806e52e705' +
+  '55ffff0f1ec51d0e00' +
+  '010100000052e7055501000000000000000000' +
+  '0000000000000000000000000000000000000000000000ffffffff1900012a15706c7a2074696d65207374616d702e207374616870ffffffff0100000000000000000000000000';
+
+/**
+ * POW-related constants.
+ * @enum {Number}
+ * @default
+ */
+
+regtest.pow = {
+  /**
+   * Default target.
+   * @const {BN}
+   */
+
+  limit: new BN(
+    '00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+    'hex'
+  ),
+
+  /**
+   * Compact pow limit.
+   * @const {Number}
+   * @default
+   */
+  bits: 504365055,
+
+  /**
+   * Minimum chaintrust for best chain.
+   * @const {BN}
+   */
+
+  chaintrust: new BN(
+    '00000000000000000000000000000000000000000259c9b7d8c7779d29a1188f',
+    'hex'
+  ),
+
+  /**
+   * Desired retarget period in seconds.
+   * @const {Number}
+   * @default
+   */
+
+  targetTimespan: 16 * 60,
+
+  /**
+   * Average block time.
+   * @const {Number}
+   * @default
+   */
+
+  targetSpacing: 10 * 60,
+
+  /**
+   * Retarget interval in blocks.
+   * @const {Number}
+   * @default
+   */
+
+  retargetInterval: 2016,
+
+  /**
+   * Whether to reset target if a block
+   * has not been mined recently.
+   * @const {Boolean}
+   * @default
+   */
+
+  targetReset: false,
+
+  /**
+   * Do not allow retargetting.
+   * @const {Boolean}
+   * @default
+   */
+
+  noRetargeting: false
+};
+
+regtest.pos = {
+  /**
+   * Default target.
+   * @const {BN}
+   */
+
+  limit: new BN(
+    '00000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffff',
+    'hex'
+  ),
+
+  /**
+   *  Compact pos limit.
+   * @const {Number}
+   */
+  bits: 504365055,
+  /**
+   * Minimum age before staking starts is 8 hours.
+   * @const {Number}
+   */
+  stakeMinAge: 8 * 60 * 60,
+  /**
+   * Time to elapse before a new modifier is computed
+   */
+  modifierInterval: 10 * 60,
+  coinbaseMaturity: 500,
+}
+
+/**
+ * Block constants.
+ * @enum {Number}
+ * @default
+ */
+
+regtest.block = {
+
+
+  /**
+   * Safe height to start pruning.
+   */
+
+  pruneAfterHeight: 1000,
+
+  /**
+   * Safe number of blocks to keep.
+   */
+
+  keepBlocks: 288,
+
+  /**
+   * Age used for the time delta to
+   * determine whether the chain is synced.
+   */
+
+  maxTipAge: 24 * 60 * 60,
+
+  /**
+   * Height at which block processing is
+   * slow enough that we can output
+   * logs without spamming.
+   */
+
+  slowHeight: 325000
+};
+
+/**
+ * Map of historical blocks which create duplicate transactions hashes.
+ * @see https://github.com/bitcoin/bips/blob/master/bip-0030.mediawiki
+ * @const {Object}
+ * @default
+ */
+
+regtest.bip30 = {};
+
+/**
+ * For versionbits.
+ * @const {Number}
+ * @default
+ */
+
+regtest.activationThreshold = 1916; // 95% of 2016
+
+/**
+ * Confirmation window for versionbits.
+ * @const {Number}
+ * @default
+ */
+
+regtest.minerWindow = 2016; // nPowTargetTimespan / nPowTargetSpacing
+
+/**
+ * Deployments for versionbits.
+ * @const {Object}
+ * @default
+ */
+
+regtest.deployments = {
+  csv: {
+    name: 'csv',
+    bit: 0,
+    startTime: 1462060800, // May 1st, 2016
+    timeout: 1493596800, // May 1st, 2017
+    threshold: -1,
+    window: -1,
+    required: false,
+    force: true
+  }
+};
+
+/**
+ * Deployments for versionbits (array form, sorted).
+ * @const {Array}
+ * @default
+ */
+
+regtest.deploys = [
+  main.deployments.csv
+];
+
+/**
+ * Key prefixes.
+ * @enum {Number}
+ * @default
+ */
+
+regtest.keyPrefix = {
+  privkey: 0xab, //wif prefix
+  xpubkey: 0x0488b21e,
+  xprivkey: 0x0488ade4,
+  xpubkey58: 'xpub',
+  xprivkey58: 'xprv',
+  coinType: 0
+};
+
+/**
+ * {@link Address} prefixes.
+ * @enum {Number}
+ */
+
+regtest.addressPrefix = {
+  pubkeyhash: 0x5a,
+  scripthash: 0x07,
+  bech32: ''
+};
+
+/**
+ * Default value for whether the mempool
+ * accepts non-standard transactions.
+ * @const {Boolean}
+ * @default
+ */
+
+regtest.requireStandard = true;
+
+/**
+ * Default http port.
+ * @const {Number}
+ * @default
+ */
+
+regtest.rpcPort = 17015;
+
+/**
+ * Default wallet port.
+ * @const {Number}
+ * @default
+ */
+
+regtest.walletPort = 37015;
+
+/**
+ * Default min relay rate.
+ * @const {Rate}
+ * @default
+ */
+
+regtest.minRelay = 10000000n;
+
+/**
+ * Default normal relay rate.
+ * @const {Rate}
+ * @default
+ */
+
+regtest.feeRate = 100000n;
+
+/**
+ * Maximum normal relay rate.
+ * @const {Rate}
+ * @default
+ */
+
+regtest.maxFeeRate = 400000n;
+
+/**
+ * Whether to allow self-connection.
+ * @const {Boolean}
+ */
+
+regtest.selfConnect = false;
+
+/**
+ * Whether to request mempool on sync.
+ * @const {Boolean}
+ */
+
+regtest.requestMempool = false;

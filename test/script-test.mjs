@@ -3,13 +3,15 @@
 
 'use strict';
 
-const assert = require('bsert');
-const Script = require('../lib/script/script');
-const Stack = require('../lib/script/stack');
-const Opcode = require('../lib/script/opcode');
-const TX = require('../lib/primitives/tx');
-const consensus = require('../lib/protocol/consensus');
-const {fromFloat} = require('../lib/utils/fixed');
+import assert from "bsert";
+import {TX} from "../dist/lib/primitives/index.js";
+import * as consensus from "../dist/lib/protocol/consensus.js";
+import {Opcode} from "../dist/lib/script/opcode.js";
+import {Stack} from "../dist/lib/script/stack.js";
+import {fromFloat} from "../dist/lib/utils/fixed.js";
+import {Script} from "../dist/lib/script/script.js";
+import {createRequire} from 'module'
+const require = createRequire(import.meta.url);
 
 // test files: https://github.com/bitcoin/bitcoin/tree/master/src/test/data
 const scripts = require('./data/core-data/script-tests.json');
@@ -63,7 +65,7 @@ function parseScriptTest(data) {
   };
 }
 
-describe('Script', function() {
+describe('Script', function () {
   it('should recognize a P2SH output', () => {
     const hex = 'a91419a7d869032368fd1f1e26e5e73a4ad0e474960e87';
     const decoded = Script.fromRaw(hex, 'hex');

@@ -12,7 +12,7 @@
 import assert from 'bsert';
 import EventEmitter from 'events';
 import os from 'os';
-import {Network} from '../protocol/index.js';
+import * as Network from '../protocol/index.js';
 import {Child} from './child.js';
 import * as jobs from './jobs.js';
 import {Parser} from './parser.js';

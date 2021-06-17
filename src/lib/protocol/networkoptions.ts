@@ -8,12 +8,13 @@
 import { BN } from "bcrypto";
 
 import { BlockOptions } from "../primitives/index.js";
+import {NetworkType} from "../types";
 
 export interface NetworkOptions {
   magic?: number;
   port?: number;
   checkpointMap?: { [key: number]: Buffer; };
-  type?: 'main' | 'testnet';
+  type?: NetworkType;
   seeds?: string[];
   lastCheckpoint?: number;
   halvingInterval?: number;

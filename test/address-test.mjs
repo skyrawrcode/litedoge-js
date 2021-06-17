@@ -134,7 +134,7 @@ describe('Address', function () {
 
   it('should inspect', () => {
     const obj = new Address();
-    const fmt = nodejsUtil.format(obj);
+    const fmt = nodejsUtil.inspect(obj);
     assert(typeof fmt === 'string');
     assert(fmt.includes('Address'));
     assert(fmt.includes('str='));

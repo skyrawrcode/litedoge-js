@@ -28,7 +28,7 @@ import * as bip152 from './bip152.js';
 import {Block} from '../primitives/block.js';
 import {TX} from '../primitives/tx.js';
 import {NetAddress} from './netaddress.js';
-import {Network} from '../protocol/network.js';
+import {Network, primary} from '../protocol/network.js';
 import {inspectSymbol} from '../utils/index.js';
 import {PoolOptionsOptions} from './pool.js';
 import {LoggerContext} from 'blgr/lib/logger';
@@ -2052,7 +2052,7 @@ export class PeerOptions {
    */
 
   constructor(options?) {
-    this.network = Network.primary;
+    this.network = primary;
     this.logger = Logger.global;
 
     this.createSocket = tcp.createSocket;
